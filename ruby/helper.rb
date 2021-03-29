@@ -10,6 +10,18 @@ def pt(arg) #position_translated
   end
 end
 
+def invert_color(color)
+  if color == :white
+    :black
+  else
+    :white
+  end
+end
+
 def reload!
   Dir.glob('./**/*.rb') { |f| load f }
+end
+
+def log(text)
+  puts "#{Time.now} - #{text}"
 end

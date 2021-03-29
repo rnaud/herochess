@@ -4,7 +4,7 @@ class Pawn < Piece
     black: "♟︎",
   }
 
-  def directions
+  def directions(type:)
     h = {}
     if white?
       h = {

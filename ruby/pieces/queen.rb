@@ -6,7 +6,7 @@ class Queen < SlidingPiece
     black: "♛",
   }
 
-  def directions
+  def directions(type:)
     {
       up: [-1, 0],
       down: [1, 0],

@@ -4,16 +4,16 @@ class Knight < Piece
     black: "♞",
   }
 
-  def directions
+  def directions(type:)
     {
-      up: [-1, 0],
-      down: [1, 0],
-      left: [1, 0],
-      right: [1, 0],
-      nw: [1, 0],
-      ne: [1, 0],
-      sw: [1, 0],
-      se: [1, 0],
+      up1: [-2, -1],
+      up2: [-2, 1],
+      down1: [2, -1],
+      down2: [2, 1],
+      left1: [-1, -2],
+      left2: [-1, 2],
+      right1: [1, -2],
+      right2: [1, 2],
     }
   end
 end

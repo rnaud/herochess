@@ -14,19 +14,15 @@ class Game
   end
 
   def switch_turn!
-    if @turn == :white
-      @turn = :black
-    else
-      @turn = :white
-    end
+    @turn = invert_color(@turn)
   end
 
   def move(from, to)
     @board.move(from, to, turn)
     switch_turn!
   rescue => error
-    puts "Sorry there was an issue: #{error}"
-    puts error.backtrace
+    log "Sorry there was an issue: #{error}"
+    log error.backtrace
   end
 end
 

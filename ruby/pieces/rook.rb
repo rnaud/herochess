@@ -1,12 +1,15 @@
 require_relative "sliding_piece"
 
 class Rook < SlidingPiece
+  LEFT_COL = 0
+  RIGHT_COL = 7
+  
   ICONS = {
     white: "♖",
     black: "♜",
   }
 
-  def directions
+  def directions(type:)
     {
       up: [-1, 0],
       down: [1, 0],

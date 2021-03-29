@@ -55,6 +55,12 @@ class Board
     @squares[coord[0]][coord[1]]
   end
 
+  def square_attacked?(color, coord)
+    pieces.any? do |p|
+      p.color == color && p.possible_moves(type: :attack).include?(coord)
+    end
+  end
+
   def in_check?
     false
   end

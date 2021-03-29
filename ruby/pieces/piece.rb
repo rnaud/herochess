@@ -13,7 +13,7 @@ class Piece
   end
 
   def kill!
-    puts "killed #{self.class} #{pt self.position}"
+    log "killed #{self.class} #{pt self.position}"
     @killed = true
   end
 
@@ -25,32 +25,38 @@ class Piece
     self.class::ICONS[@color]
   end
 
-  def directions
+  def directions(type: :all)
     raise DirectionsUndefinedError
   end
 
-  def possible_moves
+  def possible_moves(type: :all)
+    log "possibles moves for #{self.class.name} #{pt(@position)}"
     moves = []
-    directions.each do | direction, vector |
+    directions(type: type).each do | direction, vector |
       moves << valid_options(vector)
     end
     moves.flatten!(1)
-    puts "possible_moves: #{moves.map {|a| pt(a)}}"
+    log "possible_moves: #{moves.map {|a| pt(a)}}"
     moves
   end
 
   def valid_options(vector)
     options = []
     exploring = [(@position[0] + vector[0]), (@position[1] + vector[1])]
+
+    other_piece = @board.find_piece(exploring)
+    ennemy_piece = other_piece && other_piece.color != self.color
+    valid_coord = @board.valid_coord?(exploring)
     
-    options << exploring
+    if valid_coord && (other_piece.nil? || ennemy_piece)
+      options << exploring
+    end
+
     options
   end
 
   def valid_move?(end_position)
-    puts "possibles moves for #{self.class.name} #{pt(@position)}"
-    
-    puts "end_position: #{pt(end_position)}"
+    log "end_position: #{pt(end_position)}"
     possible_moves.include?(end_position)
   end
 

@@ -6,7 +6,7 @@ class Bishop < SlidingPiece
     black: "♝",
   }
 
-  def directions
+  def directions(type:)
     {
       nw: [-1, -1],
       ne: [-1, 1],
