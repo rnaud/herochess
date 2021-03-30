@@ -1,7 +1,7 @@
 class Piece
   attr_reader :color
   attr_reader :has_moved
-  attr_reader :killed
+  attr_reader :captured
   attr_reader :position
 
   def initialize(color:, position:, board:)
@@ -9,16 +9,20 @@ class Piece
     @position = position
     @board = board
     @has_moved = false
-    @killed = false
+    @captured = false
   end
 
-  def kill!
-    log "killed #{self.class} #{pt self.position}"
-    @killed = true
+  def capture!
+    log "captured #{self.class} #{pt self.position}"
+    @captured = true
   end
 
   def white?
     @color == :white
+  end
+
+  def black?
+    @color == :black
   end
 
   def icon
@@ -72,5 +76,9 @@ class Piece
 
   def has_moved?
     @has_moved
+  end
+
+  def inspect
+    "#{self.class.name} - #{self.color} - #{self.position}"
   end
 end

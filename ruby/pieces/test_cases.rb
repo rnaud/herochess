@@ -18,6 +18,8 @@ class TestCases
 
 
     @game.board.find_piece(pt("e1"))&.possible_moves
-    @game.board.render
+    @game.render
+
+    @game.board.captured_pieces
   end
 end

@@ -17,6 +17,10 @@ class Game
     @turn = invert_color(@turn)
   end
 
+  def render
+    Renderer.new(self).display
+  end
+
   def move(from, to)
     @board.move(from, to, turn)
     switch_turn!

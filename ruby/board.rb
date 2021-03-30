@@ -41,7 +41,7 @@ class Board
   def place_piece!(piece, coord)
     return unless valid_coord?(coord)
     current_piece = @squares[coord[0]][coord[1]]
-    current_piece.kill! if current_piece
+    current_piece.capture! if current_piece
     @squares[coord[0]][coord[1]] = piece
   end
 
@@ -59,6 +59,10 @@ class Board
     pieces.any? do |p|
       p.color == color && p.possible_moves(type: :attack).include?(coord)
     end
+  end
+
+  def captured_pieces
+    pieces.select { |p| p.captured }
   end
 
   def in_check?
@@ -94,9 +98,4 @@ class Board
       @pieces << @squares[coord[0]][coord[1]] = klass.new(color: color, position: coord, board: self)
     end
   end
-
-  def render
-    Renderer.new(self).display
-  end
-
 end
