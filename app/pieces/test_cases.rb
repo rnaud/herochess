@@ -1,6 +1,20 @@
 
 class TestCases
 
+  def pawn_take
+    @game = Game.new
+    @game.move("d2", "d4")
+    @game.move("c7", "c5")
+    @game.move("d4", "d5")
+
+
+    @game = Game.new
+    @game.move("d2", "d4")
+    @game.move("e7", "e5")
+    @game.move("d4", "e5")
+    @game.board.squares[3][4]
+  end
+
   def castle_test_case
     @game = Game.new
     @game.move("d2", "d4")

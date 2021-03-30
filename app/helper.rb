@@ -22,9 +22,17 @@ def reload!
   Dir.glob("#{File.dirname(__FILE__)}/**/*.rb") { |f| load f }
 end
 
-def log(text)
-  return unless @verbose
-  puts "#{Time.now} - #{text}"
+class Logger
+  def self.level=(level)
+    @@level = level
+  end
+
+  def self.level
+    @@level || :verbose
+  end
 end
 
-@verbose = false
+def log(text)
+  return unless Logger.level == :verbose
+  puts "#{Time.now} - #{text}"
+end

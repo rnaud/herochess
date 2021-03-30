@@ -15,6 +15,7 @@ class Board
     end
 
     @pieces = []
+    @captured_pieces = []
   end
 
   def move(from, to, color_to_play)
@@ -55,8 +56,6 @@ class Board
 
   def place_piece!(piece, coord)
     return unless valid_coord?(coord)
-    current_piece = @squares[coord[0]][coord[1]]
-    current_piece.capture! if current_piece
     @squares[coord[0]][coord[1]] = piece
   end
 
@@ -82,8 +81,9 @@ class Board
     end
   end
 
-  def captured_pieces
-    pieces.select { |p| p.captured }
+  def piece_captured!(piece)
+    @pieces.delete(piece)
+    @captured_pieces.push(piece)
   end
 
   def pieces(color: nil)

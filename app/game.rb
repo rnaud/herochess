@@ -24,6 +24,8 @@ class Game
       "#{invert_color(turn)} wins by checkmate"
     elsif @board.drawn?(turn)
       "drawn game"
+    elsif @board.in_check?(turn)
+      "in check, #{turn} to play"
     else
       "#{turn} to play"
     end
@@ -39,6 +41,6 @@ class Game
     state
   rescue => error
     puts error.backtrace
-    error.to_s
+    "#{state} - #{error}"
   end
 end

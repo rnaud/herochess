@@ -16,7 +16,9 @@ class Piece
 
   def capture!
     log "captured #{self.class} #{pt self.position}"
+    @position = [nil, nil]
     @captured = true
+    @board.piece_captured!(self)
   end
 
   def white?
@@ -67,19 +69,16 @@ class Piece
 
   def move_to!(end_position)
     # remove piece from current location
-    @board.remove_piece!(@position)
+    @board.remove_piece!(self.position)
+
+    # capture end position piece
+    old_piece = @board.remove_piece!(end_position)
+    old_piece.capture! if old_piece
 
     # set piece in the new location
     @board.place_piece!(self, end_position)
     @position = end_position
     @has_moved = true
-  end
-
-  def revert_move!
-    @board.remove_piece!(@position)
-    @has_moved = @previous_state[:has_moved]
-    @position = @previous_state[:position]
-    @board.place_piece!(@position)
   end
 
   def has_moved?

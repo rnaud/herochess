@@ -30,15 +30,17 @@ function drag(ev) {
   ev.dataTransfer.setData("position", ev.target.parentElement.dataset.position);
 }
 
-function drop(ev) {
+function drop(ev, el) {
+  console.log(ev)
   ev.preventDefault();
   var data = ev.dataTransfer.getData("text");
-  ev.target.appendChild(document.getElementById(data));
+  el.innerHTML = ""
+  el.appendChild(document.getElementById(data));
 
   var from = ev.dataTransfer.getData("position");
-  var to = ev.target.dataset.position;
-  // console.log(from)
-  // console.log(to)
+  var to = el.dataset.position;
+  console.log(from)
+  console.log(to)
   move(from, to)
 
 }
