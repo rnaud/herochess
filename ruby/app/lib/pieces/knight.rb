@@ -1,3 +1,5 @@
+require_relative "piece"
+
 class Knight < Piece
   ICONS = {
     white: "♘",

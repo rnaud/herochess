@@ -1,3 +1,6 @@
+require_relative "errors"
+require_relative "pieces/all"
+
 class Board
   BOARD_SIZE = 8
   COLUMN_INDEX = ("a".."h").to_a
@@ -15,6 +18,9 @@ class Board
   end
 
   def move(from, to, color_to_play)
+    raise MoveInvalidError.new("Missing move data") if from.nil? || to.nil?
+    raise MoveInvalidError.new("Missing move data") if from.empty? || to.empty?
+
     start_coord = pt(from)
     end_coord = pt(to)
 

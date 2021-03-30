@@ -1,3 +1,6 @@
+require_relative "board"
+require_relative "renderer"
+
 class Game
   attr_reader :board
   attr_accessor :turn
@@ -35,7 +38,7 @@ class Game
     switch_turn!
     state
   rescue => error
-    puts error
     puts error.backtrace if @verbose
+    error.to_s
   end
 end

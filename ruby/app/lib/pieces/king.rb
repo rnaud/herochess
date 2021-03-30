@@ -1,3 +1,5 @@
+require_relative "piece"
+
 class King < Piece
   ICONS = {
     white: "♔",

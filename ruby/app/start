@@ -1,9 +1,11 @@
 #!/usr/bin/env ruby
 
-Dir.glob('./**/*.rb') { |f| require_relative f }
 require 'pry'
 require 'colorize'
 require 'irb'
+
+require_relative "lib/game"
+require_relative "lib/helper"
 
 $VERBOSE = nil
 

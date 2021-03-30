@@ -19,7 +19,7 @@ def invert_color(color)
 end
 
 def reload!
-  Dir.glob('./**/*.rb') { |f| load f }
+  Dir.glob("#{File.dirname(__FILE__)}/**/*.rb") { |f| load f }
 end
 
 def log(text)

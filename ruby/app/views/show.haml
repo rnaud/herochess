@@ -1,0 +1,19 @@
+%h1 Game
+
+%b= @game.state
+
+%br
+%br
+%br
+= @game.board.pieces
+
+%br
+%br
+%br
+
+= @move_result
+
+%form{method: "post"}
+  %input{type: "text", name: "from", placeholder: "From"}
+  %input{type: "text", name: "to", placeholder: "To"}
+  %input{type: "submit"}
