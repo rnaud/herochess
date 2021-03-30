@@ -7,6 +7,8 @@ class Board
   LINE_INDEX = ("1".."8").to_a.reverse
 
   attr_reader :squares
+  attr_reader :captured_pieces
+  attr_reader :pieces
 
   def initialize
     @squares = Array.new(BOARD_SIZE)
@@ -37,7 +39,8 @@ class Board
     raise MoveInvalidError.new("Drawn game") if drawn?(color_to_play)
     raise MoveInvalidError.new("You are still in check") if in_check?(color_to_play) && in_check_after_move?(piece, end_coord)
 
-    piece.move_to!(end_coord)
+    status = piece.move_to!(end_coord)
+    return piece, status
   end
 
   def valid_input?(str)
@@ -86,14 +89,14 @@ class Board
     @captured_pieces.push(piece)
   end
 
-  def pieces(color: nil)
+  def pieces_with(color: nil)
     return @pieces if color.nil?
     @pieces.select { |p| p.color == color }
   end
 
   def in_check?(color)
     king = find_king(color)
-    other_team_pieces = pieces(color: invert_color(color))
+    other_team_pieces = pieces_with(color: invert_color(color))
     other_team_pieces.any? do |piece|
       piece.possible_moves(type: :attack).include?(king.position)
     end
@@ -118,7 +121,7 @@ class Board
   end
 
   def cant_get_out(color)
-    team_pieces = pieces(color: color)
+    team_pieces = pieces_with(color: color)
     cant_get_out = true
     team_pieces.each do |p|
       p.possible_moves(type: :attack).each do |coord|

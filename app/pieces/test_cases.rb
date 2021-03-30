@@ -65,10 +65,16 @@ class TestCases
   end
 
   def new_checkmate_test_case
-    @game = Game.new(spawn: :custom)
+    @game = Game.new(fen: "")
     @game.board.spawn(King, :black, "h8")
     @game.board.spawn(King, :white, "d1")
     @game.board.spawn(Queen, :black, "d2")
     @game.board.spawn(Rook, :black, "a2")
   end
+
+  def fen_setup
+    @game = Game.new(fen: "rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2")
+    
+  end
+
 end

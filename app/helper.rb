@@ -38,3 +38,15 @@ def log(text)
   return unless Logger.level == :verbose
   puts "#{Time.now} - #{text}"
 end
+
+class String
+  def is_i?
+    !!(self =~ /\A[-+]?[0-9]+\z/)
+  end
+end
+
+class String
+  def is_lower?
+    self == self.downcase
+  end
+end

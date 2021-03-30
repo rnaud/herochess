@@ -42,8 +42,9 @@ class Pawn < Piece
   end
 
   def move_to!(end_position)
-    super
+    status = super
     promote! if can_be_promoted?
+    status
   end
 
   def can_be_promoted?

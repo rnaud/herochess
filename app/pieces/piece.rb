@@ -79,6 +79,8 @@ class Piece
     @board.place_piece!(self, end_position)
     @position = end_position
     @has_moved = true
+
+    old_piece ? :captured : :moved
   end
 
   def has_moved?
