@@ -1,17 +1,9 @@
-%h1 Game
+.state
+  %h3 State:
+  = @move_result ? @move_result : @game.state
 
-%b= @game.state
-
-%br
-%br
-%br
-= @game.board.pieces
-
-%br
-%br
-%br
-
-= @move_result
+.game
+  = haml :chessboard
 
 %form{method: "post"}
   %input{type: "text", name: "from", placeholder: "From"}

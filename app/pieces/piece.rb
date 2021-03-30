@@ -89,4 +89,8 @@ class Piece
   def inspect
     "#{self.class.name} - #{self.color} - #{pt self.position}"
   end
+
+  def name
+    self.class.name.downcase
+  end
 end

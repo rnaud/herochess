@@ -2,13 +2,10 @@ require "sinatra"
 require "sinatra/reloader" if development?
 require "pry"
 
-require_relative "lib/game"
-require_relative "lib/helper"
+require_relative "app/game"
+require_relative "app/helper"
 
-configure do
-  set :games, {}
-end
-
+set :games, {}
 set :haml, format: :html5
 
 get "/" do

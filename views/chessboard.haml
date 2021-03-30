@@ -1,0 +1,9 @@
+%table#chessboard
+  - Board::BOARD_SIZE.times do |line|
+    %tr{"data-line" => line}
+      - Board::BOARD_SIZE.times do |col|
+        - coord = [line, col]
+        - piece = @game.board.find_piece(coord)
+        %td.chess-cell{"data-line" => col, "data-color": piece&.color, "data-piece": piece&.name, position: pt(coord)}
+          - if piece
+            %img{src: "/img/pieces/#{piece.color}_#{piece&.name}.png"}
