@@ -23,12 +23,14 @@ def reload!
 end
 
 class Logger
+  @@level = :error
+
   def self.level=(level)
     @@level = level
   end
 
   def self.level
-    @@level || :verbose
+    @@level
   end
 end
 

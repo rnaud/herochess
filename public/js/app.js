@@ -31,16 +31,15 @@ function drag(ev) {
 }
 
 function drop(ev, el) {
-  console.log(ev)
   ev.preventDefault();
   var data = ev.dataTransfer.getData("text");
-  el.innerHTML = ""
-  el.appendChild(document.getElementById(data));
-
   var from = ev.dataTransfer.getData("position");
   var to = el.dataset.position;
-  console.log(from)
-  console.log(to)
-  move(from, to)
 
+  if (from == to)
+    return
+
+  el.innerHTML = ""
+  el.appendChild(document.getElementById(data));
+  move(from, to)
 }
