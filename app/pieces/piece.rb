@@ -93,4 +93,8 @@ class Piece
   def name
     self.class.name.downcase
   end
+
+  def id
+    "#{name}-#{object_id}"
+  end
 end

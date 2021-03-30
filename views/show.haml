@@ -2,8 +2,8 @@
 
 %form#moves_form{method: "post"}
   %input{type: "hidden", name: "uuid", value: @uuid}
-  %input{type: "text", name: "from", placeholder: "From"}
-  %input{type: "text", name: "to", placeholder: "To"}
+  %input#from{type: "text", name: "from", placeholder: "From"}
+  %input#to{type: "text", name: "to", placeholder: "To"}
   %input{type: "submit"}
 
 #msgs
