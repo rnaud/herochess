@@ -38,7 +38,7 @@ class Game
     switch_turn!
     state
   rescue => error
-    puts error.backtrace if @verbose
+    puts error.backtrace
     error.to_s
   end
 end

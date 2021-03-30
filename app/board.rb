@@ -18,8 +18,8 @@ class Board
   end
 
   def move(from, to, color_to_play)
-    raise MoveInvalidError.new("Missing move data") if from.nil? || to.nil?
-    raise MoveInvalidError.new("Missing move data") if from.empty? || to.empty?
+    raise MoveInvalidError.new("Invalid from") unless valid_input?(from)
+    raise MoveInvalidError.new("Invalid to") unless valid_input?(to)
 
     start_coord = pt(from)
     end_coord = pt(to)
@@ -37,6 +37,16 @@ class Board
     raise MoveInvalidError.new("You are still in check") if in_check?(color_to_play) && in_check_after_move?(piece, end_coord)
 
     piece.move_to!(end_coord)
+  end
+
+  def valid_input?(str)
+    return false if str.nil?
+    return false if str.empty?
+    return false if str.length != 2
+    arr = str.split("")
+    return false unless COLUMN_INDEX.include?(arr[0])
+    return false unless LINE_INDEX.include?(arr[1])
+    true
   end
 
   def valid_coord?(coord)

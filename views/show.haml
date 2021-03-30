@@ -1,11 +1,9 @@
-.state
-  %h3 State:
-  = @move_result ? @move_result : @game.state
+= haml :game
 
-.game
-  = haml :chessboard
-
-%form{method: "post"}
+%form#moves_form{method: "post"}
+  %input{type: "hidden", name: "uuid", value: @uuid}
   %input{type: "text", name: "from", placeholder: "From"}
   %input{type: "text", name: "to", placeholder: "To"}
   %input{type: "submit"}
+
+#msgs
