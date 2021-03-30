@@ -20,3 +20,5 @@
 }
 
 #chessboard .square img.piece {width: 100%; height: 100%; cursor: move;}
+
+#moves_form {display: none;}

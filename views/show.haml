@@ -1,6 +1,6 @@
 = haml :game
 
-%form#moves_form{method: "post"}
+%form#moves_form
   %input{type: "hidden", name: "uuid", value: @uuid}
   %input#from{type: "text", name: "from", placeholder: "From"}
   %input#to{type: "text", name: "to", placeholder: "To"}
