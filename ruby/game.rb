@@ -1,15 +1,10 @@
-Dir.glob('./**/*.rb') { |f| require_relative f }
-require 'pry'
-require 'colorize'
-
-$VERBOSE = nil
-
 class Game
   attr_reader :board
-  attr_reader :turn
+  attr_accessor :turn
 
-  def initialize
+  def initialize(spawn: :default)
     @board = Board.new
+    @board.spawn_pieces! if spawn == :default
     @turn = :white
   end
 
@@ -21,13 +16,26 @@ class Game
     Renderer.new(self).display
   end
 
+  def state
+    if @board.checkmate?(turn)
+      "#{invert_color(turn)} wins by checkmate"
+    elsif @board.drawn?(turn)
+      "drawn game"
+    else
+      "#{turn} to play"
+    end
+  end
+
+  def inspect
+    "Game - state: #{state}"
+  end
+
   def move(from, to)
     @board.move(from, to, turn)
     switch_turn!
+    state
   rescue => error
-    log "Sorry there was an issue: #{error}"
-    log error.backtrace
+    puts error
+    puts error.backtrace if @verbose
   end
 end
-
-@game = Game.new

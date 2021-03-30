@@ -1,8 +1,8 @@
 
 class TestCases
 
-  def test
-    @game = Game.new ; 1
+  def castle_test_case
+    @game = Game.new
     @game.move("d2", "d4")
     @game.move("e7", "e5")
     @game.move("c1", "d2")
@@ -19,7 +19,42 @@ class TestCases
 
     @game.board.find_piece(pt("e1"))&.possible_moves
     @game.render
+  end
 
-    @game.board.captured_pieces
+  def check_test_case
+    @game = Game.new
+    @game.move("d2", "d4")
+    @game.move("e7", "e5")
+    @game.move("e1", "d2")
+    @game.move("d8", "g5")
+    @game.board.in_check?(:white) # true
+    @game.move("c2", "c3") #invalid move
+    @game.move("c2", "c3") #valid move, get out of check
+    @game.render
+  end
+
+  def checkmate_test_case
+    @game = Game.new
+    @game.move("f2", "f4")
+    @game.move("e7", "e5")
+    @game.move("g2", "g4")
+    @game.move("d8", "h4")
+    @game.board.in_check?(:white) # true
+
+    king = @game.board.pieces.find { |p| p.color == :white && p.is_a?(King) }
+    king.possible_moves
+    @game.board.in_check_after_move?(king, [6, 5])
+
+    @game.board.checkmate?(:white) # true
+    @game.move("c2", "c3") #invalid move
+    @game.render
+  end
+
+  def new_checkmate_test_case
+    @game = Game.new(spawn: :custom)
+    @game.board.spawn(King, :black, "h8")
+    @game.board.spawn(King, :white, "d1")
+    @game.board.spawn(Queen, :black, "d2")
+    @game.board.spawn(Rook, :black, "a2")
   end
 end

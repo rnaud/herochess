@@ -4,7 +4,6 @@ class Board
   LINE_INDEX = ("1".."8").to_a.reverse
 
   attr_reader :squares
-  attr_reader :pieces
 
   def initialize
     @squares = Array.new(BOARD_SIZE)
@@ -13,8 +12,6 @@ class Board
     end
 
     @pieces = []
-
-    spawn_pieces
   end
 
   def move(from, to, color_to_play)
@@ -28,8 +25,10 @@ class Board
     raise MoveInvalidError.new("Could not find a piece here") if piece.nil?
     raise MoveInvalidError.new("This piece does not belong to you") if piece.color != color_to_play
     raise MoveInvalidError.new("You already have a piece there") if other_piece && other_piece.color == piece.color
-    raise MoveInvalidError.new("You are in check") if in_check? && in_check_after_move?    
     raise MoveInvalidError.new("This piece cannot go here") unless piece.valid_move?(end_coord)
+    raise MoveInvalidError.new("Checkmate! #{invert_color(color_to_play)} wins") if checkmate?(color_to_play)
+    raise MoveInvalidError.new("Drawn game") if drawn?(color_to_play)
+    raise MoveInvalidError.new("You are still in check") if in_check?(color_to_play) && in_check_after_move?(piece, end_coord)
 
     piece.move_to!(end_coord)
   end
@@ -47,12 +46,18 @@ class Board
 
   def remove_piece!(coord)
     return unless valid_coord?(coord)
+    piece = @squares[coord[0]][coord[1]]
     @squares[coord[0]][coord[1]] = nil
+    piece
   end
 
   def find_piece(coord)
     return unless valid_coord?(coord)
     @squares[coord[0]][coord[1]]
+  end
+
+  def find_king(color)
+    @pieces.find { |p| p.is_a?(King) && p.color == color }
   end
 
   def square_attacked?(color, coord)
@@ -65,15 +70,59 @@ class Board
     pieces.select { |p| p.captured }
   end
 
-  def in_check?
-    false
+  def pieces(color: nil)
+    return @pieces if color.nil?
+    @pieces.select { |p| p.color == color }
   end
 
-  def in_check_after_move?
-    false
+  def in_check?(color)
+    king = find_king(color)
+    other_team_pieces = pieces(color: invert_color(color))
+    other_team_pieces.any? do |piece|
+      piece.possible_moves(type: :attack).include?(king.position)
+    end
   end
 
-  def spawn_pieces
+  def in_check_after_move?(piece, end_position)
+    original_position = piece.position
+    remove_piece!(piece.position)
+    piece_on_end_position = remove_piece!(end_position)
+    place_piece!(piece, end_position)
+    piece.position = end_position
+    
+    result = in_check?(piece.color)
+    
+    # reset the piece
+    remove_piece!(end_position)
+    place_piece!(piece, original_position)
+    piece.position = original_position
+    place_piece!(piece_on_end_position, end_position) if piece_on_end_position
+
+    result
+  end
+
+  def cant_get_out(color)
+    team_pieces = pieces(color: color)
+    cant_get_out = true
+    team_pieces.each do |p|
+      p.possible_moves(type: :attack).each do |coord|
+        unless in_check_after_move?(p, coord)
+          cant_get_out = false
+        end
+      end
+    end
+    cant_get_out
+  end
+
+  def checkmate?(color)
+    in_check?(color) && cant_get_out(color)
+  end
+
+  def drawn?(color)
+    !in_check?(color) && cant_get_out(color)
+  end
+
+  def spawn_pieces!
     spawn(Pawn, :black, (0..7).to_a.map { |i| [1, i] })
     spawn(Pawn, :white, (0..7).to_a.map { |i| [6, i] })
 
@@ -94,7 +143,9 @@ class Board
   end
 
   def spawn(klass, color, coords)
+    coords = [coords] if coords.is_a?(String)
     coords.each do |coord|
+      coord = pt(coord) if coord.is_a?(String)
       @pieces << @squares[coord[0]][coord[1]] = klass.new(color: color, position: coord, board: self)
     end
   end

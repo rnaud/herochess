@@ -1,0 +1,12 @@
+#!/usr/bin/env ruby
+
+Dir.glob('./**/*.rb') { |f| require_relative f }
+require 'pry'
+require 'colorize'
+require 'irb'
+
+$VERBOSE = nil
+
+@game = Game.new
+
+IRB.start

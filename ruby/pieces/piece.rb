@@ -2,14 +2,16 @@ class Piece
   attr_reader :color
   attr_reader :has_moved
   attr_reader :captured
-  attr_reader :position
+  attr_accessor :position
+  attr_reader :was
 
-  def initialize(color:, position:, board:)
+  def initialize(color:, position:, board:, was: nil)
     @color = color
     @position = position
     @board = board
     @has_moved = false
     @captured = false
+    @was = was
   end
 
   def capture!
@@ -34,13 +36,12 @@ class Piece
   end
 
   def possible_moves(type: :all)
-    log "possibles moves for #{self.class.name} #{pt(@position)}"
     moves = []
     directions(type: type).each do | direction, vector |
       moves << valid_options(vector)
     end
     moves.flatten!(1)
-    log "possible_moves: #{moves.map {|a| pt(a)}}"
+    log "possible_moves - #{self.inspect} - #{moves.map {|a| pt(a)}.join(", ")}"
     moves
   end
 
@@ -74,11 +75,18 @@ class Piece
     @has_moved = true
   end
 
+  def revert_move!
+    @board.remove_piece!(@position)
+    @has_moved = @previous_state[:has_moved]
+    @position = @previous_state[:position]
+    @board.place_piece!(@position)
+  end
+
   def has_moved?
     @has_moved
   end
 
   def inspect
-    "#{self.class.name} - #{self.color} - #{self.position}"
+    "#{self.class.name} - #{self.color} - #{pt self.position}"
   end
 end

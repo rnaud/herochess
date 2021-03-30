@@ -4,6 +4,8 @@ class Pawn < Piece
     black: "♟︎",
   }
 
+  attr_accessor :promoted_to
+
   def directions(type:)
     h = {}
     if white?
@@ -36,4 +38,21 @@ class Pawn < Piece
 
     other_piece.color != self.color
   end
+
+  def move_to!(end_position)
+    super
+    promote! if can_be_promoted?
+  end
+
+  def can_be_promoted?
+    color == :white && @position[0] == 7 ||
+      color == :black && @position[0] == 0
+  end
+
+  def promote!(klass = Queen)
+    new_piece = Queen.new(color: @color, position: @position, board: @board, was: self)
+    self.promoted_to = new_piece
+    new_piece.move_to!(@position)
+  end
+
 end

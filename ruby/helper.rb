@@ -23,5 +23,8 @@ def reload!
 end
 
 def log(text)
+  return unless @verbose
   puts "#{Time.now} - #{text}"
 end
+
+@verbose = false
