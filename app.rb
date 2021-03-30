@@ -18,7 +18,7 @@ end
 get "/new" do
   uuid = SecureRandom.uuid
   @game = Game.new
-  settings.games[uuid] = {game: @game, moves: []}
+  settings.games[uuid] = {game: @game, moves: [], sockets: []}
 
   redirect "/game/#{uuid}"
 end
@@ -36,7 +36,7 @@ def websocket_handler
   request.websocket do |ws|
     ws.onopen do
       # ws.send("Hello World!")
-      settings.sockets << ws
+      @game_hash[:sockets] << ws
     end
     ws.onmessage do |msg|
       data = JSON.parse(msg)
@@ -44,14 +44,14 @@ def websocket_handler
       html = haml :game, layout: false
 
       EM.next_tick do
-        settings.sockets.each do |s|    
+        @game_hash[:sockets].each do |s|
           s.send(html)
         end
       end
     end
     ws.onclose do
       # warn("websocket closed")
-      settings.sockets.delete(ws)
+      @game_hash[:sockets].delete(ws)
     end
   end
 end

@@ -1,7 +1,5 @@
 window.onload = function() {
   var ws       = new WebSocket('ws://' + window.location.host + window.location.pathname);
-  // ws.onopen    = function()  { show('websocket opened'); };
-  // ws.onclose   = function()  { show('websocket closed'); }
   ws.onmessage = function(m) { 
     document.getElementById('game').outerHTML = m.data;
   };
