@@ -41,11 +41,10 @@ def websocket_handler
     ws.onmessage do |msg|
       data = JSON.parse(msg)
       @move_result = @game.move(data["from"], data["to"])
-      html = haml :game, layout: false
-
+      
       EM.next_tick do
         @game_hash[:sockets].each do |s|
-          s.send(html)
+          s.send(@game.to_json)
         end
       end
     end

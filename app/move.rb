@@ -14,4 +14,19 @@ class Move
     @turn_count = turn_count
     @status = status
   end
+
+  def to_s
+    "#{turn_count} - #{turn} - #{piece.icon} - #{from} - #{to} - #{status}"
+  end
+
+  def to_json
+    {
+      piece: piece.class.name,
+      from: from,
+      to: to,
+      turn: turn,
+      turn_count: turn_count,
+      status: status,
+    }
+  end
 end

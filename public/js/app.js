@@ -1,6 +1,10 @@
+import {INPUT_EVENT_TYPE, Chessboard} from "/js/Chessboard.js"
+
 var ws       = new WebSocket('ws://' + window.location.host + window.location.pathname);
 ws.onmessage = function(m) { 
-  document.getElementById('game').outerHTML = m.data;
+  console.log(m.data);
+  const game = JSON.parse(m.data);
+  updateGame(game)
 };
 
 document.forms["moves_form"].onsubmit = function(e) {
@@ -15,31 +19,45 @@ document.forms["moves_form"].onsubmit = function(e) {
   event.target.reset();
 }
 
+function updateGame(game) {
+  board.setPosition(game.fen)
+  document.getElementById("state").innerHTML = game.state
+
+  const movesEl = document.getElementById("moves")
+  movesEl.innerHTML = ""
+  game.moves.forEach(function (item, index) {
+    console.log(item)
+    var li = document.createElement("li");
+    var textnode = document.createTextNode(item);
+    li.appendChild(textnode);
+    movesEl.appendChild(li);
+  });
+}
+
 function move(from, to) {
   document.getElementById("from").value = from;
   document.getElementById("to").value = to;
   document.forms["moves_form"].dispatchEvent(new Event('submit'));
 }
 
-function allowDrop(ev) {
-  ev.preventDefault();
+const board = new Chessboard(document.getElementById("board"), {
+  sprite: {url: "/img/chessboard-sprite-staunty.svg"},
+  animationDuration: 300
+})
+
+board.enableMoveInput(inputHandler)
+function inputHandler(event) {
+    switch (event.type) {
+        case INPUT_EVENT_TYPE.moveStart:
+            console.log(`moveStart: ${event.square}`)
+            return true
+        case INPUT_EVENT_TYPE.moveDone:
+            console.log(`moveDone: ${event.squareFrom}-${event.squareTo}`)
+            move(event.squareFrom, event.squareTo)
+            return true
+        case INPUT_EVENT_TYPE.moveCanceled:
+            console.log(`moveCanceled`)
+    }
 }
 
-function drag(ev) {
-  ev.dataTransfer.setData("text", ev.target.id);
-  ev.dataTransfer.setData("position", ev.target.parentElement.dataset.position);
-}
-
-function drop(ev, el) {
-  ev.preventDefault();
-  var data = ev.dataTransfer.getData("text");
-  var from = ev.dataTransfer.getData("position");
-  var to = el.dataset.position;
-
-  if (from == to)
-    return
-
-  el.innerHTML = ""
-  el.appendChild(document.getElementById(data));
-  move(from, to)
-}
+updateGame(window.game)

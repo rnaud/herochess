@@ -1,18 +1,9 @@
 #game
-  .state
+  .header
     %h3 State:
-    = @move_result ? @move_result : @game.state
+    #state
 
-  #chessboard{"data-uuid" => @uuid}
-    - Board::BOARD_SIZE.times do |line|
-      .row{"data-line" => line}
-        - Board::BOARD_SIZE.times do |col|
-          - coord = [line, col]
-          - piece = @game.board.find_piece(coord)
-          .square{"data-col" => col, "data-color" => piece&.color, "data-piece" => piece&.name, "data-position" => pt(coord), ondrop: "drop(event, this)", ondragover: "allowDrop(event)"}
-            - if piece
-              %img.piece{src: "/img/pieces/#{piece.color}_#{piece&.name}.png", draggable: true, ondragstart: "drag(event)", id: piece.id}
-
+  #board
   %ul#moves
-    - @game.moves.reverse.each do |move|
-      %li= "#{move.turn_count} - #{move.turn} - #{move.piece.icon} - #{move.from} - #{move.to} - #{move.status}"
+:javascript
+  window.game = #{@game.to_json}

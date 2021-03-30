@@ -1,6 +1,7 @@
 require_relative "board"
 require_relative "renderer"
 require_relative "move"
+require_relative "fen/all"
 
 class Game
   attr_reader :board
@@ -11,12 +12,12 @@ class Game
   def initialize(fen: nil)
     @board = Board.new
     if fen
-      set_fen(fen) 
+      set_fen(fen)
     else
       @board.spawn_pieces!
-    end    
-    @turn_count = 1
-    @turn = :white
+      @turn_count = 1
+      @turn = :white
+    end
     @moves = []
   end
 
@@ -52,27 +53,28 @@ class Game
   end
 
   def set_fen(fen_str)
-    fen_split = fen_str.split(" ")
-    board_data = fen_split[0]
-    # replace numbers with spaces
-    clean_board = board_data.split("").map { |char| char.is_i? ? " " * char.to_i : char }.join("")
-    rows = clean_board.split("/")
-
-    rows.each_with_index do |row, row_index|
-      row.split("").each_with_index do |col, col_index|
-        next if col == " "
-        klass = fen_class(col)
-        color = col.is_lower? ? :black : :white
-        coord = [row_index, col_index]
-        @board.spawn(klass, color, [coord])
-      end
+    game_state = FEN::Parser.new(fen_str)
+    game_state.pieces_attributes.each do |attr|
+      @board.spawn(attr[0], attr[1], [attr[2]])
     end
+    @turn_count = 1
+    @turn = game_state.turn
+  end
 
-    if fen_split[0] == "b"
-      @turn = :black
-    else
-      @turn = :white
-    end
+  def fen
+    FEN::Serializer.new(self).serialized
+  end
+
+  def as_json
+    {
+      moves: @moves.reverse.map(&:to_s),
+      state: state,
+      fen: fen
+    }
+  end
+
+  def to_json
+    JSON.generate(as_json)
   end
 
   def inspect
