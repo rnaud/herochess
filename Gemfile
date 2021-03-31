@@ -7,6 +7,8 @@ gem "sinatra-websocket"
 gem "activesupport"
 gem "colorize"
 gem "pry"
+gem "rubocop"
+
 
 group :test do
   gem "rspec"
