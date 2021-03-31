@@ -10,16 +10,18 @@ describe Game do
     expect(game.board.captured_pieces).to eq []
   end
 
-  it "return in check" do
+  it "block the king from moving when in check" do
     game = Game.new
     game.move("d2", "d4")
     game.move("e7", "e5")
     game.move("e1", "d2")
     game.move("d8", "g5")
     expect(game.board.in_check?(:white)).to be true
+    expect(game.move("d2", "e3")).to eq "in check, white to play - You are still in check"
+    expect(game.board.in_check?(:white)).to be true
   end
 
-  it "returns checkmates after the right moves" do
+  it "returns checkmates when king is stuck" do
     game = Game.new
     game.move("f2", "f4")
     game.move("e7", "e5")

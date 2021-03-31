@@ -49,6 +49,7 @@ class Board
     raise MoveInvalidError.new("Checkmate! #{invert_color(color_to_play)} wins") if checkmate?(color_to_play)
     raise MoveInvalidError.new("Drawn game") if drawn?(color_to_play)
     raise MoveInvalidError.new("You are still in check") if in_check?(color_to_play) && in_check_after_move?(piece, end_coord)
+    raise MoveInvalidError.new("This would put you in check") if in_check_after_move?(piece, end_coord)
 
     status = piece.move_to!(end_coord)
     return piece, status
