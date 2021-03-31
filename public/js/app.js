@@ -4,6 +4,7 @@ var ws_protocol = (window.location.protocol === "https:") ? "wss://" : "ws://"
 var ws       = new WebSocket(ws_protocol + window.location.host + window.location.pathname);
 ws.onmessage = function(m) { 
   const game = JSON.parse(m.data);
+  console.log(game)
   updateGame(game)
 };
 
@@ -27,7 +28,6 @@ function updateGame(game) {
   const movesEl = document.getElementById("moves_list")
   movesEl.innerHTML = ""
   game.moves.forEach(function (item, index) {
-    console.log(item)
     var li = document.createElement("li");
     var textnode = document.createTextNode(item);
     li.appendChild(textnode);

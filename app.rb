@@ -22,7 +22,7 @@ get "/new" do
   uuid = SecureRandom.hex(4)
   white_uuid = SecureRandom.hex(4)
   black_uuid = SecureRandom.hex(4)
-  cookies[:color_uuid] = white_uuid
+  cookies[uuid] = white_uuid
   @game = Game.new
 
   settings.games[uuid] = {
@@ -78,11 +78,11 @@ def find_game
 end
 
 def find_or_set_player
-  if cookies[:color_uuid]
-    @player = :white if @game_hash[:colors][:white] == cookies[:color_uuid]
-    @player = :black if @game_hash[:colors][:black] == cookies[:color_uuid]
+  if cookies[@uuid]
+    @player = :white if @game_hash[:colors][:white] == cookies[@uuid]
+    @player = :black if @game_hash[:colors][:black] == cookies[@uuid]
   else
-    cookies[:color_uuid] = @game_hash[:colors][:black]
+    cookies[@uuid] = @game_hash[:colors][:black]
     @player = :black
   end
 end
