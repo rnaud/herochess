@@ -9,17 +9,11 @@ import Rails from "@rails/ujs"
 import Turbolinks from "turbolinks"
 import "channels"
 import {INPUT_EVENT_TYPE, Chessboard} from 'cm-chessboard'
+import consumer from '../channels/consumer'
+// import gameChannel from "../channels/game_channel";
 
 Rails.start()
 Turbolinks.start()
-
-var ws_protocol = (window.location.protocol === "https:") ? "wss://" : "ws://"
-var ws       = new WebSocket(ws_protocol + window.location.host + window.location.pathname);
-ws.onmessage = function(m) { 
-  const game = JSON.parse(m.data);
-  console.log(game)
-  updateGame(game)
-};
 
 function updateGame(game) {
   window.board.setPosition(game.fen)
@@ -36,20 +30,6 @@ function updateGame(game) {
   });
 }
 
-function move(from, to) {
-  document.getElementById("from").value = from;
-  document.getElementById("to").value = to;
-
-  var form = document.getElementById("moves_form")
-  var formData = new FormData(form);
-  var object = {};
-  formData.forEach((value, key) => object[key] = value);
-  var json = JSON.stringify(object);
-  ws.send(json);
-
-  form.reset();
-}
-
 function inputHandler(event) {
     switch (event.type) {
         case INPUT_EVENT_TYPE.moveStart:
@@ -57,7 +37,7 @@ function inputHandler(event) {
             return true
         case INPUT_EVENT_TYPE.moveDone:
             console.log(`moveDone: ${event.squareFrom}-${event.squareTo}`)
-            move(event.squareFrom, event.squareTo)
+            window.gameChannel.move(event.squareFrom, event.squareTo)
             return true
         case INPUT_EVENT_TYPE.moveCanceled:
             console.log(`moveCanceled`)
@@ -65,15 +45,39 @@ function inputHandler(event) {
 }
 
 window.addEventListener('load', function () {
-  console.log("here")
+  if (document.getElementById("board")) {
+    var uuid = document.getElementById("game").dataset.uuid
+    window.subscribe(uuid)
+    window.board = new Chessboard(document.getElementById("board"), {
+      sprite: {url: "/img/chessboard-sprite-staunty.svg"},
+      animationDuration: 300
+    })
 
-  window.board = new Chessboard(document.getElementById("board"), {
-    sprite: {url: "/img/chessboard-sprite-staunty.svg"},
-    animationDuration: 300
-  })
+    console.log(board)
 
-  console.log(board)
-
-  window.board.enableMoveInput(inputHandler)
-  updateGame(window.game)
+    window.board.enableMoveInput(inputHandler)
+    updateGame(window.game)  
+  }
+  
 }, false);
+
+window.subscribe = function(uuid) {
+  window.gameChannel = consumer.subscriptions.create({channel: "GameChannel", uuid: uuid}, {
+    connected() {
+      // Called when the subscription is ready for use on the server
+      console.log("Connected to the game");
+    },
+
+    disconnected() {
+      // Called when the subscription has been terminated by the server
+    },
+
+    received(data) {
+      updateGame(data)
+    },
+
+     move(from, to) {
+      this.perform('move', { from: from, to: to })
+    }
+  });
+}
