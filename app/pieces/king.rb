@@ -1,10 +1,12 @@
+# frozen_string_literal: true
+
 require_relative "piece"
 
 class King < Piece
   ICONS = {
     white: "♔",
-    black: "♚",
-  }
+    black: "♚"
+  }.freeze
 
   def directions(type:)
     h = {
@@ -15,7 +17,7 @@ class King < Piece
       nw: [-1, -1],
       ne: [-1, 1],
       sw: [1, -1],
-      se: [1, 1],
+      se: [1, 1]
     }
 
     h[:castle_left] = [0, -2] if type == :all && can_castle?(:left)
@@ -24,42 +26,42 @@ class King < Piece
   end
 
   def can_castle?(side)
-    line = self.position[0]
+    line = position[0]
 
-    return false unless @board.castling_priviledges[self.color][side]
+    return false unless @board.castling_priviledges[color][side]
 
     # check that the squares in between are empty and not currently attacked
-    if side == :left
-      squares_to_check = (1..3)
-    else
-      squares_to_check = (5..6)
-    end
+    squares_to_check = if side == :left
+                         (1..3)
+                       else
+                         (5..6)
+                       end
     squares_to_check.each do |i|
       coord = [line, i]
-      return false if @board.square_attacked?(invert_color(self.color), coord)
+      return false if @board.square_attacked?(invert_color(color), coord)
       return false if @board.find_piece(coord)
     end
   end
 
   def move_to!(end_position)
-    original_position = self.position
+    original_position = position
     status = super(end_position)
 
     line = original_position[0]
     # the king moved to 2 squares to the left, move the rook as well
-    if original_position[1] - end_position[1] == 2 
+    case original_position[1] - end_position[1]
+    when 2
       left_rook = @board.find_piece([line, Rook::LEFT_COL])
       left_rook.move_to!([line, 3])
     # the king moved to 2 squares to the right, move the rook as well
-    elsif original_position[1] - end_position[1] == -2
+    when -2
       right_rook = @board.find_piece([line, Rook::RIGHT_COL])
       right_rook.move_to!([line, 5])
     end
 
-    @board.castling_priviledges[self.color][:left] = false
-    @board.castling_priviledges[self.color][:right] = false
+    @board.castling_priviledges[color][:left] = false
+    @board.castling_priviledges[color][:right] = false
 
     status
   end
-
 end

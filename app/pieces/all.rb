@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require_relative "king"
 require_relative "queen"
 require_relative "knight"

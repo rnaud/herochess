@@ -1,10 +1,12 @@
+# frozen_string_literal: true
+
 require_relative "piece"
 
 class Knight < Piece
   ICONS = {
     white: "♘",
-    black: "♞",
-  }
+    black: "♞"
+  }.freeze
 
   def directions(type:)
     {
@@ -15,7 +17,7 @@ class Knight < Piece
       left1: [-1, -2],
       left2: [-1, 2],
       right1: [1, -2],
-      right2: [1, 2],
+      right2: [1, 2]
     }
   end
 end

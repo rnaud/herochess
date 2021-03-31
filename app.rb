@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "sinatra"
 require "sinatra-websocket"
 require "sinatra/cookies"
@@ -22,7 +24,7 @@ get "/new" do
   black_uuid = SecureRandom.hex(4)
   cookies[:color_uuid] = white_uuid
   @game = Game.new
-  
+
   settings.games[uuid] = {
     game: @game,
     sockets: [],
@@ -40,10 +42,10 @@ get "/game/:uuid" do
   find_game
   find_or_set_player
 
-  if !request.websocket?
-    haml :show
-  else
+  if request.websocket?
     websocket_handler
+  else
+    haml :show
   end
 end
 
@@ -55,7 +57,7 @@ def websocket_handler
     ws.onmessage do |msg|
       data = JSON.parse(msg)
       @move_result = @game.move(data["from"], data["to"], @player)
-      
+
       EM.next_tick do
         @game_hash[:sockets].each do |s|
           s.send(@game.to_json)
@@ -84,6 +86,3 @@ def find_or_set_player
     @player = :black
   end
 end
-
-
-

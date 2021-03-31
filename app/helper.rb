@@ -1,4 +1,8 @@
-def pt(arg) #position_translated
+# frozen_string_literal: true
+
+# position_translated
+
+def pt(arg)
   if arg.is_a?(String)
     c = Board::COLUMN_INDEX.find_index(arg[0])
     l = Board::LINE_INDEX.find_index(arg[1])
@@ -23,30 +27,23 @@ def reload!
 end
 
 class Logger
-  @@level = :error
-
-  def self.level=(level)
-    @@level = level
+  class << self
+    attr_writer :level
   end
 
   def self.level
-    @@level
+    @level || :error
   end
 end
 
 def log(text)
   return unless Logger.level == :verbose
+
   puts "#{Time.now} - #{text}"
 end
 
 class String
-  def is_i?
+  def i?
     !!(self =~ /\A[-+]?[0-9]+\z/)
-  end
-end
-
-class String
-  def is_lower?
-    self == self.downcase
   end
 end

@@ -1,13 +1,15 @@
+# frozen_string_literal: true
+
 require_relative "sliding_piece"
 
 class Rook < SlidingPiece
   LEFT_COL = 0
   RIGHT_COL = 7
-  
+
   ICONS = {
     white: "♖",
-    black: "♜",
-  }
+    black: "♜"
+  }.freeze
 
   def directions(type:)
     {
@@ -20,14 +22,10 @@ class Rook < SlidingPiece
 
   def move_to!(end_position)
     status = super
-    
-    if self.original_position[1] == LEFT_COL
-      @board.castling_priviledges[self.color][:left] = false
-    end
 
-    if self.original_position[1] == RIGHT_COL
-      @board.castling_priviledges[self.color][:left] = false
-    end
+    @board.castling_priviledges[color][:left] = false if original_position[1] == LEFT_COL
+
+    @board.castling_priviledges[color][:left] = false if original_position[1] == RIGHT_COL
 
     status
   end

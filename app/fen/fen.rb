@@ -1,4 +1,6 @@
-class FEN
+# frozen_string_literal: true
+
+module FEN
   MATCH = {
     r: [Rook, :black],
     R: [Rook, :white],
@@ -12,6 +14,6 @@ class FEN
     Q: [Queen, :white],
     k: [King, :black],
     K: [King, :white]
-  }
+  }.freeze
   INVERT_MATCH = MATCH.invert
 end

@@ -1,8 +1,9 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: true
 
-require 'pry'
-require 'colorize'
-require 'irb'
+require "pry"
+require "colorize"
+require "irb"
 
 require_relative "app/game"
 require_relative "app/helper"

@@ -1,10 +1,12 @@
+# frozen_string_literal: true
+
 require_relative "sliding_piece"
 
 class Queen < SlidingPiece
   ICONS = {
     white: "♕",
-    black: "♛",
-  }
+    black: "♛"
+  }.freeze
 
   def directions(type:)
     {
@@ -15,8 +17,7 @@ class Queen < SlidingPiece
       nw: [-1, -1],
       ne: [-1, 1],
       sw: [1, -1],
-      se: [1, 1],
+      se: [1, 1]
     }
   end
-
 end
