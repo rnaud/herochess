@@ -26,6 +26,20 @@ class FEN::Serializer
       end
       lines << line
     end
-    lines.join("/") + " b KQkq - 1 2"
+
+    castling = []
+    castling << "q" if @game.board.castling_priviledges[:black][:left]
+    castling << "k" if @game.board.castling_priviledges[:white][:right]
+    castling << "Q" if @game.board.castling_priviledges[:black][:left]
+    castling << "K" if @game.board.castling_priviledges[:white][:right]
+    
+    arr = []
+    arr << lines.join("/")
+    arr << (@game.turn == :white ? "w" : "b")
+    arr << (castling.empty? ? "-" : castling.join(""))
+    arr << "-"
+    arr << @game.turn_count
+    arr << @game.half_moves_count
+    arr.join(" ")
   end
 end

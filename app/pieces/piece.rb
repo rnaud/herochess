@@ -3,11 +3,13 @@ class Piece
   attr_reader :has_moved
   attr_reader :captured
   attr_accessor :position
+  attr_accessor :original_position
   attr_reader :was
 
   def initialize(color:, position:, board:, was: nil)
     @color = color
     @position = position
+    @original_position = position
     @board = board
     @has_moved = false
     @captured = false

@@ -24,13 +24,9 @@ class King < Piece
   end
 
   def can_castle?(side)
-    return false if has_moved?
     line = self.position[0]
-    
-    # check if rook has moved
-    rook_column = side == :left ? Rook::LEFT_COL : Rook::RIGHT_COL
-    rook = @board.find_piece([line, rook_column])
-    return false if !rook || rook.has_moved?
+
+    return false unless @board.castling_priviledges[self.color][side]
 
     # check that the squares in between are empty and not currently attacked
     if side == :left
@@ -47,7 +43,7 @@ class King < Piece
 
   def move_to!(end_position)
     original_position = self.position
-    super(end_position)
+    status = super(end_position)
 
     line = original_position[0]
     # the king moved to 2 squares to the left, move the rook as well
@@ -59,6 +55,11 @@ class King < Piece
       right_rook = @board.find_piece([line, Rook::RIGHT_COL])
       right_rook.move_to!([line, 5])
     end
+
+    @board.castling_priviledges[self.color][:left] = false
+    @board.castling_priviledges[self.color][:right] = false
+
+    status
   end
 
 end

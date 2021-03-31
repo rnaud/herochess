@@ -9,6 +9,7 @@ class Board
   attr_reader :squares
   attr_reader :captured_pieces
   attr_reader :pieces
+  attr_accessor :castling_priviledges
 
   def initialize
     @squares = Array.new(BOARD_SIZE)
@@ -18,6 +19,16 @@ class Board
 
     @pieces = []
     @captured_pieces = []
+    @castling_priviledges = {
+      black: {
+        left: true,
+        right: true
+      },
+      white: {
+        left: true,
+        right: true
+      }
+    }
   end
 
   def move(from, to, color_to_play)

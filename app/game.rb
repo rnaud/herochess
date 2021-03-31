@@ -6,6 +6,7 @@ require_relative "fen/all"
 class Game
   attr_reader :board
   attr_accessor :turn
+  attr_accessor :half_moves_count
   attr_accessor :turn_count
   attr_accessor :moves
 
@@ -16,6 +17,7 @@ class Game
     else
       @board.spawn_pieces!
       @turn_count = 1
+      @half_moves_count = 0
       @turn = :white
     end
     @moves = []
@@ -41,10 +43,19 @@ class Game
       "#{turn} to play"
     end
   end
+  
+  def increment_half_moves!(status)
+    if status == :captured || :pawn_move
+      @half_moves_count = 0
+    else
+      @half_moves_count += 1
+    end
+  end
 
   def move(from, to)
     piece, status = @board.move(from, to, turn)
     @moves << Move.new(piece, from, to, self.turn, self.turn_count, status)
+    increment_half_moves!(status)
     switch_turn!
     state
   rescue => error
@@ -59,6 +70,8 @@ class Game
     end
     @turn_count = 1
     @turn = game_state.turn
+    @half_moves_count = game_state.half_moves_count
+    @board.castling_priviledges = game_state.castling_priviledges
   end
 
   def fen
