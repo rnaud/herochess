@@ -10,6 +10,7 @@ class Game
   attr_accessor :turn_count
   attr_accessor :moves
   attr_accessor :en_passant
+  attr_reader :last_error
 
   def initialize(fen: nil, spawn: true)
     @board = Board.new
@@ -22,6 +23,7 @@ class Game
       @turn = :white
       @en_passant = nil
     end
+    @last_error = nil
     @moves = []
   end
 
@@ -54,8 +56,14 @@ class Game
     end
   end
 
-  def move(from, to)
-    piece, status = @board.move(from, to, turn)
+  def my_turn?(turn)
+    false if turn != @turn
+  end
+
+  def move(from, to, who_is_playing = nil)
+    @last_error = nil
+    who_is_playing = turn if who_is_playing.nil?
+    piece, status = @board.move(from, to, turn, who_is_playing)
     @moves << Move.new(piece, from, to, self.turn, self.turn_count, status)
     
     increment_half_moves!(status)
@@ -64,6 +72,7 @@ class Game
     
     state
   rescue => error
+    @last_error = error
     # puts error.backtrace
     "#{state} - #{error}"
   end
@@ -88,6 +97,7 @@ class Game
     {
       moves: @moves.reverse.map(&:to_s),
       state: state,
+      error: last_error,
       fen: fen
     }
   end

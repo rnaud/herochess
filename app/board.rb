@@ -31,7 +31,8 @@ class Board
     }
   end
 
-  def move(from, to, color_to_play)
+  def move(from, to, color_to_play, who_is_playing)
+    raise MoveInvalidError.new("Not your turn to play") if color_to_play != who_is_playing
     raise MoveInvalidError.new("Invalid from") unless valid_input?(from)
     raise MoveInvalidError.new("Invalid to") unless valid_input?(to)
 

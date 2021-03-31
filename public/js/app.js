@@ -2,7 +2,6 @@ import {INPUT_EVENT_TYPE, Chessboard} from "/js/Chessboard.js"
 
 var ws       = new WebSocket('ws://' + window.location.host + window.location.pathname);
 ws.onmessage = function(m) { 
-  console.log(m.data);
   const game = JSON.parse(m.data);
   updateGame(game)
 };
@@ -22,8 +21,9 @@ document.forms["moves_form"].onsubmit = function(e) {
 function updateGame(game) {
   board.setPosition(game.fen)
   document.getElementById("state").innerHTML = game.state
+  document.getElementById("error").innerHTML = game.error
 
-  const movesEl = document.getElementById("moves")
+  const movesEl = document.getElementById("moves_list")
   movesEl.innerHTML = ""
   game.moves.forEach(function (item, index) {
     console.log(item)

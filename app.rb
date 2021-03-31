@@ -1,5 +1,6 @@
 require "sinatra"
 require "sinatra-websocket"
+require "sinatra/cookies"
 require "sinatra/reloader" if development?
 require "pry"
 require "json"
@@ -16,15 +17,29 @@ get "/" do
 end
 
 get "/new" do
-  uuid = SecureRandom.uuid
+  uuid = SecureRandom.hex(4)
+  white_uuid = SecureRandom.hex(4)
+  black_uuid = SecureRandom.hex(4)
+  cookies[:color_uuid] = white_uuid
   @game = Game.new
-  settings.games[uuid] = {game: @game, moves: [], sockets: []}
+  
+  settings.games[uuid] = {
+    game: @game,
+    sockets: [],
+    colors: {
+      white: white_uuid,
+      black: black_uuid
+    },
+    invitation_accepted: false
+  }
 
   redirect "/game/#{uuid}"
 end
 
 get "/game/:uuid" do
   find_game
+  find_or_set_player
+
   if !request.websocket?
     haml :show
   else
@@ -40,7 +55,7 @@ def websocket_handler
     end
     ws.onmessage do |msg|
       data = JSON.parse(msg)
-      @move_result = @game.move(data["from"], data["to"])
+      @move_result = @game.move(data["from"], data["to"], @player)
       
       EM.next_tick do
         @game_hash[:sockets].each do |s|
@@ -61,3 +76,16 @@ def find_game
   redirect "/" unless @game_hash
   @game = @game_hash[:game]
 end
+
+def find_or_set_player
+  if cookies[:color_uuid]
+    @player = :white if @game_hash[:colors][:white] == cookies[:color_uuid]
+    @player = :black if @game_hash[:colors][:black] == cookies[:color_uuid]
+  else
+    cookies[:color_uuid] = @game_hash[:colors][:black]
+    @player = :black
+  end
+end
+
+
+

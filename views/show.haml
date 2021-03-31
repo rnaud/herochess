@@ -1,4 +1,18 @@
-= haml :game
+#game
+  #board
+  #side
+    #player You are the #{@player} player
+    #invite
+      %a{href: "/invite/#{@uuid}"} Link to invite black to play
+    #next
+      .title State
+      #state
+      #error
+    #moves
+      %ul#moves_list
+
+:javascript
+  window.game = #{@game.to_json}
 
 %form#moves_form
   %input{type: "hidden", name: "uuid", value: @uuid}
