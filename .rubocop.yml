@@ -8,6 +8,10 @@ AllCops:
   # Set to lowest supported version
   TargetRubyVersion: 3.0.0
   NewCops: enable
+  Exclude:
+    - 'node_modules/**/*'
+    - 'bin/**/*'
+    - 'vendor/**/*'
 
 # Not a useful metric compared to, e.g. `AbcSize`.
 Metrics/BlockLength:
@@ -20,8 +24,8 @@ Metrics/ClassLength:
 # The Ruby Style Guide recommends to "Limit lines to 80 characters."
 # (https://github.com/bbatsov/ruby-style-guide#80-character-limits)
 # Please aim for 80, but up to 100 is OK.
-Metrics/LineLength:
-  Max: 100
+Layout/LineLength:
+  Max: 120
 
 Metrics/MethodLength:
   Enabled: false

@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-# require_relative "piece"
-
 module Piece
   class Pawn < Piece::Base
     ICONS = {

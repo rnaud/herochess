@@ -7,9 +7,6 @@ require "sinatra/reloader" if development?
 require "pry"
 require "json"
 
-require_relative "app/game"
-require_relative "app/helper"
-
 set :sockets, []
 set :games, {}
 set :haml, format: :html5

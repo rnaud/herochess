@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-# require_relative "sliding_piece"
-
 module Piece
   class Rook < Piece::SlidingPiece
     LEFT_COL = 0

@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-# require_relative "piece"
-
 module Piece
   class SlidingPiece < Piece::Base
     def valid_options(vector)

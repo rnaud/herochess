@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-# require_relative "../pieces/all"
-
 module Fen
   class Parser
     attr_accessor :pieces_attributes, :castling_priviledges, :turn, :turn_count, :half_moves_count,
