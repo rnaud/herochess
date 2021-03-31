@@ -1,6 +1,7 @@
 import {INPUT_EVENT_TYPE, Chessboard} from "/js/Chessboard.js"
 
-var ws       = new WebSocket('ws://' + window.location.host + window.location.pathname);
+var ws_protocol = (window.location.protocol === "https:") ? "wss://" : "ws://"
+var ws       = new WebSocket(ws_protocol + window.location.host + window.location.pathname);
 ws.onmessage = function(m) { 
   const game = JSON.parse(m.data);
   updateGame(game)
