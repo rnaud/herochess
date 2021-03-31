@@ -4,7 +4,7 @@
   - games.each do |uuid, game_hash|
     %li
       - game = game_hash[:game]
-      = link_to game.inspect, game_path(game.uuid)
+      = link_to game.inspect, game_path(uuid)
 
 .div Welcome, create a new game
 

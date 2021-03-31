@@ -24,7 +24,7 @@ class Helper
     end
 
     def log(text)
-      puts "#{Time.now} - #{text}"
+      # puts "#{Time.now} - #{text}"
     end
   end
 end

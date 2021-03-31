@@ -1919,6 +1919,11 @@ clone-deep@^4.0.1:
     kind-of "^6.0.2"
     shallow-clone "^3.0.0"
 
+cm-chessboard@^3.10.1:
+  version "3.10.1"
+  resolved "https://registry.yarnpkg.com/cm-chessboard/-/cm-chessboard-3.10.1.tgz#9aa71cbd17e8f34d7e248225109e046dc1f13fbc"
+  integrity sha512-bXKvPCZcupTNDnZuN7aEdabuALVo/XB4qQ428D1DyvTDT00Y/yWlQvVhsbTLxpjQzSlM95irl/FfX/uT65EuKw==
+
 coa@^2.0.2:
   version "2.0.2"
   resolved "https://registry.yarnpkg.com/coa/-/coa-2.0.2.tgz#43f6c21151b4ef2bf57187db0d73de229e3e7ec3"
