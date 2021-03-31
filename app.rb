@@ -50,7 +50,6 @@ end
 def websocket_handler
   request.websocket do |ws|
     ws.onopen do
-      # ws.send("Hello World!")
       @game_hash[:sockets] << ws
     end
     ws.onmessage do |msg|
@@ -64,7 +63,6 @@ def websocket_handler
       end
     end
     ws.onclose do
-      # warn("websocket closed")
       @game_hash[:sockets].delete(ws)
     end
   end

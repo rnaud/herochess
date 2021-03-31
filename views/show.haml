@@ -2,8 +2,9 @@
   #board
   #side
     #player You are the #{@player} player
-    #invite
-      %a{href: "/invite/#{@uuid}"} Link to invite black to play
+    - if @player == :white
+      #invite
+        %a{href: "/game/#{@uuid}"} Link to invite black to play
     #next
       .title State
       #state
