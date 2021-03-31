@@ -92,7 +92,7 @@ module Piece
     end
 
     def name
-      self.class.name.downcase
+      self.class.name.downcase.demodulize
     end
 
     def id

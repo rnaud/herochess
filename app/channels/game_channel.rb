@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class GameChannel < ApplicationCable::Channel
   def subscribed
     # stream_from "my_game_channel"
@@ -8,12 +10,8 @@ class GameChannel < ApplicationCable::Channel
     # Any cleanup needed when channel is unsubscribed
   end
 
-  def speak(data, bla)
-    ActionCable.server.broadcast "game_channel", message: data["message"], sent_by: data["name"]
-  end
-
   def move(data)
-    @player = [:white, :black].sample
+    @player = %i[white black].sample
     @game_hash = GamesController.games[params[:uuid]]
     @game = @game_hash[:game]
     @move_result = @game.move(data["from"], data["to"], @player)
