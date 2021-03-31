@@ -82,7 +82,7 @@ class Piece
     @position = end_position
     @has_moved = true
 
-    old_piece ? :captured : :moved
+    old_piece ? :captured : "#{self.name}_moved".to_sym
   end
 
   def has_moved?

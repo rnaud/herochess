@@ -28,16 +28,19 @@ class FEN::Serializer
     end
 
     castling = []
-    castling << "q" if @game.board.castling_priviledges[:black][:left]
-    castling << "k" if @game.board.castling_priviledges[:white][:right]
-    castling << "Q" if @game.board.castling_priviledges[:black][:left]
     castling << "K" if @game.board.castling_priviledges[:white][:right]
+    castling << "Q" if @game.board.castling_priviledges[:black][:left]
+    castling << "k" if @game.board.castling_priviledges[:white][:right]
+    castling << "q" if @game.board.castling_priviledges[:black][:left]
+    
+    
+    
     
     arr = []
     arr << lines.join("/")
     arr << (@game.turn == :white ? "w" : "b")
     arr << (castling.empty? ? "-" : castling.join(""))
-    arr << "-"
+    arr << (@game.en_passant ? @game.en_passant : "-")
     arr << @game.turn_count
     arr << @game.half_moves_count
     arr.join(" ")

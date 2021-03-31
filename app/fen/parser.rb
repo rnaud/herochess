@@ -6,6 +6,7 @@ class FEN::Parser
   attr_accessor :turn
   attr_accessor :turn_count
   attr_accessor :half_moves_count
+  attr_accessor :en_passant
 
   def initialize(fen_str)
     @fen_str = fen_str
@@ -31,9 +32,10 @@ class FEN::Parser
     @fen_split = @fen_str.split(" ")
     parse_pieces
     parse_turn
+    parse_castling
+    parse_en_passant
     parse_turn_count
     parse_half_moves_count
-    parse_castling
     
     self
   end
@@ -60,18 +62,22 @@ class FEN::Parser
     @turn = :black if @fen_split[1] == "b"
   end
 
+  def parse_castling
+    @castling_priviledges[:white][:right] = true if @fen_split[2].include? "K"
+    @castling_priviledges[:white][:left] = true if @fen_split[2].include? "Q"
+    @castling_priviledges[:black][:right] = true if @fen_split[2].include? "k"
+    @castling_priviledges[:black][:left] = true if @fen_split[2].include? "q"
+  end
+
+  def parse_en_passant
+    @en_passant = @fen_split[3] unless @fen_split[3] == "-"
+  end
+
   def parse_turn_count
     @turn_count = @fen_split[4].to_i
   end
 
   def parse_half_moves_count
     @half_moves_count = @fen_split[5].to_i
-  end
-
-  def parse_castling
-    @castling_priviledges[:white][:right] = true if @fen_split[2].include? "K"
-    @castling_priviledges[:white][:left] = true if @fen_split[2].include? "Q"
-    @castling_priviledges[:black][:right] = true if @fen_split[2].include? "k"
-    @castling_priviledges[:black][:left] = true if @fen_split[2].include? "q"
   end
 end
