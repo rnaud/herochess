@@ -44,7 +44,7 @@ function inputHandler(event) {
     }
 }
 
-window.addEventListener('load', function () {
+function setupPage() {
   if (document.getElementById("board")) {
     var uuid = document.getElementById("game").dataset.uuid
     window.subscribe(uuid)
@@ -58,8 +58,15 @@ window.addEventListener('load', function () {
     window.board.enableMoveInput(inputHandler)
     updateGame(window.game)  
   }
-  
-}, false);
+}
+
+document.addEventListener("turbolinks:load", function() {
+  setupPage()
+});
+
+// window.addEventListener('load', function () {
+//   setupPage()
+// }, false);
 
 window.subscribe = function(uuid) {
   window.gameChannel = consumer.subscriptions.create({channel: "GameChannel", uuid: uuid}, {

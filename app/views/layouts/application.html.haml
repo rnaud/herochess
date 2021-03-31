@@ -10,5 +10,5 @@
     = stylesheet_link_tag 'application', media: 'all', 'data-turbolinks-track': 'reload'
     = javascript_pack_tag 'application', 'data-turbolinks-track': 'reload'
   %body
-    %h1 Hero Chess
+    %h1= link_to "Hero Chess", root_path
     = yield

@@ -13,7 +13,7 @@ class GameChannel < ApplicationCable::Channel
   end
 
   def move(data)
-    @player = :white
+    @player = [:white, :black].sample
     @game_hash = GamesController.games[params[:uuid]]
     @game = @game_hash[:game]
     @move_result = @game.move(data["from"], data["to"], @player)
