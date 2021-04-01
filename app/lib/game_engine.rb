@@ -85,19 +85,6 @@ class GameEngine
     Fen::Serializer.new(self).serialized
   end
 
-  def as_json
-    {
-      moves: @moves.reverse.map(&:to_s),
-      state: state,
-      error: last_error,
-      fen: fen
-    }
-  end
-
-  def to_json(*_args)
-    JSON.generate(as_json)
-  end
-
   def inspect
     "Game - state: #{state}"
   end

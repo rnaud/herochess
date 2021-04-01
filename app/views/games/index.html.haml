@@ -1,10 +1,9 @@
 %h4 Current games
 
 %ul
-  - games.each do |uuid, game_hash|
+  - @games.each do |game|
     %li
-      - game = game_hash[:game]
-      = link_to game.inspect, game_path(uuid)
+      = link_to game.name, game_path(game)
 
 .div Welcome, create a new game
 

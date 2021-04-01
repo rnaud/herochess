@@ -3,7 +3,7 @@
 class GameChannel < ApplicationCable::Channel
   def subscribed
     # stream_from "my_game_channel"
-    stream_from "game_#{params[:uuid]}"
+    stream_from "game_#{params[:id]}"
   end
 
   def unsubscribed
@@ -11,10 +11,12 @@ class GameChannel < ApplicationCable::Channel
   end
 
   def move(data)
-    @player = %i[white black].sample
-    @game_hash = GamesController.games[params[:uuid]]
-    @game = @game_hash[:game]
+    puts params
+    puts data
+    @game = Game.find(params[:id])
+    @player = @game.color?(current_user)
     @move_result = @game.move(data["from"], data["to"], @player)
-    ActionCable.server.broadcast "game_#{params[:uuid]}", @game.as_json
+    ActionCable.server.broadcast "game_#{params[:id]}", @game.as_json
   end
+
 end

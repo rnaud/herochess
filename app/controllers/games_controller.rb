@@ -1,14 +1,11 @@
 # frozen_string_literal: true
 
 class GamesController < ApplicationController
-  cattr_accessor :games
-  self.games = {}
-
-  before_action :find_game, only: [:show]
+  before_action :set_game, only: [:show, :destroy]
   before_action :find_or_set_player, only: [:show]
 
   def index
-    @games = games
+    @games = Game.all
   end
 
   def show
@@ -16,43 +13,24 @@ class GamesController < ApplicationController
   end
 
   def new
-    uuid = SecureRandom.hex(4)
-    white_uuid = SecureRandom.hex(4)
-    black_uuid = SecureRandom.hex(4)
-    cookies[uuid] = white_uuid
-
-    @game = Game.new
-
-    games[uuid] = {
-      game: @game,
-      sockets: [],
-      colors: {
-        white: white_uuid,
-        black: black_uuid
-      },
-      invitation_accepted: false
-    }
-
-    redirect_to game_path(uuid)
+    @game = Game.create(white_user_id: current_user)
+    redirect_to game_path(@game)
   end
 
   def destroy; end
 
-  def find_game
-    @uuid = params[:id]
-    @game_hash = games[@uuid]
-    @game = @game_hash[:game] if @game_hash
+  def set_game
+    @game = Game.find(params[:id])
   end
 
   def find_or_set_player
-    return unless @game_hash
-
-    if cookies[@uuid]
-      @player = :white if @game_hash[:colors][:white] == cookies[@uuid]
-      @player = :black if @game_hash[:colors][:black] == cookies[@uuid]
-    else
-      cookies[@uuid] = @game_hash[:colors][:black]
-      @player = :black
+    return unless @game
+    
+    if @game.white_user_id != current_user && @game.black_user_id.nil?
+      @game.black_user_id = current_user
+      @game.save
     end
+
+    @player = @game.color?(current_user)
   end
 end

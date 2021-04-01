@@ -46,8 +46,8 @@ function inputHandler(event) {
 
 function setupPage() {
   if (document.getElementById("board")) {
-    var uuid = document.getElementById("game").dataset.uuid
-    window.subscribe(uuid)
+    var id = document.getElementById("game").dataset.id
+    window.subscribe(window.game.id)
     window.board = new Chessboard(document.getElementById("board"), {
       sprite: {url: "/img/chessboard-sprite-staunty.svg"},
       animationDuration: 300
@@ -68,8 +68,9 @@ document.addEventListener("turbolinks:load", function() {
 //   setupPage()
 // }, false);
 
-window.subscribe = function(uuid) {
-  window.gameChannel = consumer.subscriptions.create({channel: "GameChannel", uuid: uuid}, {
+window.subscribe = function(id) {
+  console.log(1)
+  window.gameChannel = consumer.subscriptions.create({channel: "GameChannel", id: id}, {
     connected() {
       // Called when the subscription is ready for use on the server
       console.log("Connected to the game");
