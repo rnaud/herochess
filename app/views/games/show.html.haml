@@ -8,7 +8,7 @@
   = turbo_stream_from "game_#{@game.id}"
   = render @game
 
-= form_with model: @game do |form|
+= form_with model: @game, id: "move_form" do |form|
   = form.hidden_field :color, value: @player
   = form.text_field :from
   = form.text_field :to

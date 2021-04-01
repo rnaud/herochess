@@ -31,10 +31,13 @@ body {color: #444;}
 #side #next .title {font-weight: bold;}
 
 #chessboard {width: 500px; float: left;}
-#chessboard .square {display: inline-block; width: 50px; height: 50px; background: #ecdab9;}
+#chessboard .square {display: inline-block; width: 50px; height: 50px; background: #ecdab9; border: 1px solid transparent;}
 #chessboard .square img {width: 100%; height: 100%;}
 
 #chessboard .row:nth-child(odd) .square:nth-child(even),
 #chessboard .row:nth-child(even) .square:nth-child(odd) {
   background: #c5a076;
 }
+
+#chessboard .square.drop-active {border: 1px solid green;}
+#chessboard .square.drop-target {border: 1px solid red;}

@@ -3,10 +3,10 @@
     - 8.times do |row|
       .row{"data-row": row}
         - 8.times do |square|
-          .square{"data-row": row, "data-col": square}
+          .square{"data-row": row, "data-col": square, "data-square": Helper.pt([row, square])}
             - piece = game.instance.board.squares[row][square]
             - if piece
-              = image_tag "pieces/#{piece.color}_#{piece.name}.png"
+              .piece= image_tag "pieces/#{piece.color}_#{piece.name}.png"
 
   #side
     #next

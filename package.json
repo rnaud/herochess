@@ -6,7 +6,7 @@
     "@rails/actioncable": "^6.0.0",
     "@rails/ujs": "^6.0.0",
     "@rails/webpacker": "5.2.1",
-    "cm-chessboard": "^3.10.1",
+    "interactjs": "^1.10.11",
     "stimulus": "^2.0.0"
   },
   "version": "0.1.0",
