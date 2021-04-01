@@ -23,7 +23,7 @@ class Game < ApplicationRecord
   end
 
   after_validation do
-    broadcast_replace_to "game_#{id}" if self.errors.any?
+    broadcast_replace_to "game_#{id}" if errors.any?
   end
 
   def name
@@ -48,15 +48,15 @@ class Game < ApplicationRecord
   end
 
   def update_state
-    if self.board.checkmate?(turn)
-      self.state = "#{Helper.invert_color(turn)} wins by checkmate"
-    elsif self.board.drawn?(turn)
-      self.state = "drawn game"
-    elsif board.in_check?(turn)
-      self.state = "in check, #{turn} to play"
-    else
-      self.state = "#{turn} to play"
-    end
+    self.state = if board.checkmate?(turn)
+                   "#{Helper.invert_color(turn)} wins by checkmate"
+                 elsif board.drawn?(turn)
+                   "drawn game"
+                 elsif board.in_check?(turn)
+                   "in check, #{turn} to play"
+                 else
+                   "#{turn} to play"
+                 end
   end
 
   def increment_half_moves!(status)
@@ -69,11 +69,11 @@ class Game < ApplicationRecord
 
   def move(from, to, who_is_playing = nil)
     who_is_playing = turn if who_is_playing.nil?
-    piece, status = self.board.move(from, to, turn, who_is_playing)
+    piece, status = board.move(from, to, turn, who_is_playing)
 
     increment_half_moves!(status)
     en_passant = to if status == :pawn_moved
-    
+
     switch_turn!
     update_state
   rescue StandardError => e
@@ -86,13 +86,13 @@ class Game < ApplicationRecord
   def parse_fen(fen_str)
     game_state = Fen::Parser.new(fen_str)
     game_state.pieces_attributes.each do |attr|
-      self.board.spawn(attr[0], attr[1], [attr[2]])
+      board.spawn(attr[0], attr[1], [attr[2]])
     end
     self.moves_count = game_state.moves_count
     self.turn = game_state.turn
     self.half_moves_count = game_state.half_moves_count
     self.en_passant = game_state.en_passant
-    self.board.castling_priviledges = game_state.castling_priviledges
+    board.castling_priviledges = game_state.castling_priviledges
   end
 
   def fen
@@ -104,19 +104,20 @@ class Game < ApplicationRecord
       self.board = Marshal.load(Base64.decode64(serialized_board))
     else
       self.board = Board.new
-      if self.fen_initial
-        parse_fen(self.fen_initial)
+      if fen_initial
+        parse_fen(fen_initial)
       else
-        self.board.spawn_pieces!
+        board.spawn_pieces!
       end
       update_state
     end
   end
 
   def move_board_and_validate
-    return unless self.from && self.to
-    move(self.from, self.to, self.color)
-    
+    return unless from && to
+
+    move(from, to, color)
+
     self.from = nil
     self.to = nil
     self.color = nil
