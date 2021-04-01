@@ -29,4 +29,4 @@ body {color: #444;}
 #side #player {font-size: 18px; font-weight: bold;}
 #side #next {margin-top: 10px;}
 #side #next #error {color: red;}
-#side #next .title {font: weight: bold;}
+#side #next .title {font-weight: bold;}
