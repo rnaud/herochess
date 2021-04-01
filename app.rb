@@ -20,7 +20,7 @@ get "/new" do
   white_uuid = SecureRandom.hex(4)
   black_uuid = SecureRandom.hex(4)
   cookies[uuid] = white_uuid
-  @game = Game.new
+  @game = GameEngine.new
 
   settings.games[uuid] = {
     game: @game,

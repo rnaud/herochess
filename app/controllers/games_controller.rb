@@ -36,6 +36,8 @@ class GamesController < ApplicationController
     redirect_to game_path(uuid)
   end
 
+  def destroy; end
+
   def find_game
     @uuid = params[:id]
     @game_hash = games[@uuid]

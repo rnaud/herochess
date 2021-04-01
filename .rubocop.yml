@@ -1,3 +1,5 @@
+require: rubocop-rails
+
 # Please:
 #
 # - Comment any deviations from the Ruby Style Guide

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Game
+class GameEngine
   attr_reader :board, :last_error
   attr_accessor :turn, :half_moves_count, :turn_count, :moves, :en_passant
 
