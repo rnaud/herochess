@@ -7,3 +7,13 @@
             - piece = game.instance.board.squares[row][square]
             - if piece
               = image_tag "pieces/#{piece.color}_#{piece.name}.png"
+
+  #side
+    #next
+      .title State
+      #state= game.instance.state
+      #error= game.instance.last_error
+    #moves
+      %ul#moves_list
+        - game.instance.moves.each do |m|
+          %li= m.to_s

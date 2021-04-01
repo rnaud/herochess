@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 class GamesController < ApplicationController
-  before_action :set_game, only: %i[show destroy]
-  before_action :find_or_set_player, only: [:show]
+  before_action :set_game, only: %i[show destroy update]
+  before_action :find_or_set_player, only: %i[show destroy update]
 
   def index
     @games = Game.all
@@ -10,6 +10,11 @@ class GamesController < ApplicationController
 
   def show
     redirect_to root_path unless @game
+  end
+
+  def update
+    @game.instance.move(params[:game][:from], params[:game][:to], @player)
+    @game.save
   end
 
   def new

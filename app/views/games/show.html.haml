@@ -1,14 +1,14 @@
 #game
-  = turbo_stream_from "game_#{@game.id}"
-  = render @game
-  #side
+  #game-header
     #player You are the #{@player} player
     - if @player == :white
       #invite
         = link_to "Link to invite black to play", game_path(@game, color: :black)
-    #next
-      .title State
-      #state
-      #error
-    #moves
-      %ul#moves_list
+
+  = turbo_stream_from "game_#{@game.id}"
+  = render @game
+
+= form_with model: @game do |form|
+  = form.text_field :from
+  = form.text_field :to
+  = form.submit
