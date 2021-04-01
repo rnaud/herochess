@@ -25,7 +25,6 @@ describe Game do
 
   it "returns checkmates when king is stuck" do
     game = Game.create(white_user_id: 1)
-    binding.pry
     game.update(from: "f2", to: "f4")
     game.update(from: "e7", to: "e5")
     game.update(from: "g2", to: "g4")
@@ -40,7 +39,7 @@ describe Game do
     expect(game.state).to eq "black wins by checkmate"
   end
 
-  xit "can parse fen" do
+  it "can parse fen" do
     array = [
       "rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2",
       "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1",
