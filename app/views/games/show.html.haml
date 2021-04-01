@@ -9,6 +9,7 @@
   = render @game
 
 = form_with model: @game do |form|
+  = form.hidden_field :color, value: @player
   = form.text_field :from
   = form.text_field :to
   = form.submit

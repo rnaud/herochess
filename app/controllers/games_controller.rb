@@ -13,7 +13,7 @@ class GamesController < ApplicationController
   end
 
   def update
-    @game.instance.move(params[:game][:from], params[:game][:to], @player)
+    @game.instance.move(params[:game][:from], params[:game][:to], params[:game][:color].to_sym)
     @game.save
   end
 
