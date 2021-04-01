@@ -1,4 +1,5 @@
 #game
+  = turbo_stream_from "game_#{@game.id}"
   = render @game
   #side
     #player You are the #{@player} player
@@ -11,6 +12,3 @@
       #error
     #moves
       %ul#moves_list
-
-:javascript
-  window.game = #{@game.to_json.html_safe}

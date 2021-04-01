@@ -7,11 +7,20 @@ class Game < ApplicationRecord
   before_save :serialize_game_instance
 
   validates :white_user_id, presence: true
-
-  # broadcasts
-  after_create_commit { broadcast_prepend_to "games"; puts "yo" }
-  after_update_commit { broadcast_replace_to "games" }
-  after_destroy_commit { broadcast_remove_to "games" }
+  
+  after_create_commit do 
+    broadcast_prepend_to :games, partial: "games/game_list" 
+    broadcast_prepend_to "game_#{self.id}"
+  end
+  after_update_commit do 
+    broadcast_replace_to :games, partial: "games/game_list"
+    broadcast_replace_to :games, partial: "games/game_list" 
+    broadcast_replace_to "game_#{self.id}"
+  end
+  after_destroy_commit do
+    broadcast_remove_to :games
+    broadcast_remove_to "game_#{self.id}"
+  end
 
   def name
     instance.inspect

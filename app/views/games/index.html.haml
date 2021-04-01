@@ -1,6 +1,5 @@
 %h4 Current games
 
-
 = turbo_stream_from "games"
 = turbo_frame_tag "games" do
   = render partial: "games/game_list", collection: @games, as: :game
