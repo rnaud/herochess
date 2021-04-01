@@ -17,7 +17,7 @@ module Piece
     end
 
     def capture!
-      Helper.log "captured #{self.class} #{Helper.pt(position)}"
+      Rails.logger.info "captured #{self.class} #{Helper.pt(position)}"
       @position = [nil, nil]
       @captured = true
       @board.piece_captured!(self)
@@ -45,7 +45,7 @@ module Piece
         moves << valid_options(vector)
       end
       moves.flatten!(1)
-      Helper.log "possible_moves - #{inspect} - #{moves.map { |a| Helper.pt(a) }.join(', ')}"
+      Rails.logger.info "possible_moves - #{inspect} - #{moves.map { |a| Helper.pt(a) }.join(', ')}"
       moves
     end
 
@@ -63,7 +63,7 @@ module Piece
     end
 
     def valid_move?(end_position)
-      Helper.log "end_position: #{Helper.pt(end_position)}"
+      Rails.logger.info "end_position: #{Helper.pt(end_position)}"
       possible_moves.include?(end_position)
     end
 

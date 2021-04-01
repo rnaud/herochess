@@ -8,23 +8,23 @@ class Helper
         c = Board::COLUMN_INDEX.find_index(arg[0])
         l = Board::LINE_INDEX.find_index(arg[1])
         [l, c]
-      else
+      elsif arg[0].present?
         c = Board::COLUMN_INDEX[arg[1]]
         l = Board::LINE_INDEX[arg[0]]
         c + l
+      else
+        "-"
       end
     end
 
     def invert_color(color)
-      if color.to_s == "white"
-        "black"
+      if color == :white
+        :black
+      elsif color == :black
+        :white
       else
-        "white"
+        raise "should not get here"
       end
-    end
-
-    def log(text)
-      # puts "#{Time.now} - #{text}"
     end
   end
 end

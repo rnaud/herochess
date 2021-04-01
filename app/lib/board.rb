@@ -45,27 +45,12 @@ class Board
 
     raise MoveInvalidError, "Could not find a piece here" if piece.nil?
     raise MoveInvalidError, "This piece does not belong to you" if piece.color != color_to_play
-
-    if other_piece && other_piece.color == piece.color
-      raise MoveInvalidError,
-            "You already have a piece there"
-    end
+    raise MoveInvalidError, "You already have a piece there" if other_piece && other_piece.color == piece.color
     raise MoveInvalidError, "This piece cannot go here" unless piece.valid_move?(end_coord)
-
-    if checkmate?(color_to_play)
-      raise MoveInvalidError,
-            "Checkmate! #{Helper.invert_color(color_to_play)} wins"
-    end
+    raise MoveInvalidError, "Checkmate! #{Helper.invert_color(color_to_play)} wins" if checkmate?(color_to_play)
     raise MoveInvalidError, "Drawn game" if drawn?(color_to_play)
-
-    if in_check?(color_to_play) && in_check_after_move?(
-      piece, end_coord
-    )
-      raise MoveInvalidError,
-            "You are still in check"
-    end
-    raise MoveInvalidError, "This would put you in check" if in_check_after_move?(piece,
-                                                                                  end_coord)
+    raise MoveInvalidError, "You are still in check" if in_check?(color_to_play) && in_check_after_move?(piece, end_coord)
+    raise MoveInvalidError, "This would put you in check" if in_check_after_move?(piece, end_coord)
 
     status = piece.move_to!(end_coord)
     @moves << Move.new(piece, from, to, color_to_play, 0, status)
