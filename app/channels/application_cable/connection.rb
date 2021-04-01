@@ -3,9 +3,11 @@
 module ApplicationCable
   class Connection < ActionCable::Connection::Base
     identified_by :current_user
+    attr_accessor :game_sessions
 
     def connect
       self.current_user = find_verified_user
+      self.game_sessions = session["games"]
     end
 
     private

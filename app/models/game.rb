@@ -1,17 +1,12 @@
 # frozen_string_literal: true
 
 class Game < ApplicationRecord
-  attr_accessor :instance, :color
+  attr_accessor :instance
 
   after_initialize :load_defaults
   before_save :serialize_game_instance
 
   validates :white_user_id, presence: true
-
-  # def move(from, to, who_is_playing)
-  #   self.instance.move(from, to, who_is_playing)
-  #   save
-  # end
 
   def name
     instance.inspect

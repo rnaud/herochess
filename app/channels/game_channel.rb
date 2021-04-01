@@ -14,7 +14,8 @@ class GameChannel < ApplicationCable::Channel
     Rails.logger.debug params
     Rails.logger.debug data
     @game = Game.find(params[:id])
-    @player = @game.color?(current_user)
+    sessions = connection.game_sessions
+    @player = sessions[@game.id.to_s].to_sym
     @move_result = @game.instance.move(data["from"], data["to"], @player)
     @game.save
     ActionCable.server.broadcast "game_#{params[:id]}", @game.as_json

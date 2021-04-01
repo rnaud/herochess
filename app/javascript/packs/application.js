@@ -69,7 +69,6 @@ document.addEventListener("turbolinks:load", function() {
 // }, false);
 
 window.subscribe = function(id) {
-  console.log(1)
   window.gameChannel = consumer.subscriptions.create({channel: "GameChannel", id: id}, {
     connected() {
       // Called when the subscription is ready for use on the server
