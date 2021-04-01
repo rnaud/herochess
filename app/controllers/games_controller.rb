@@ -31,12 +31,7 @@ class GamesController < ApplicationController
       @game.save
     end
 
-    if params[:color]
-      @player = params[:color]
-      
-    else
-      @player = @game.color?(current_user)
-    end
+    @player = params[:color] || @game.color?(current_user)
     session[:games] ||= {}
     session[:games][@game.id] = @player
   end
