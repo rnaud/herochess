@@ -2,14 +2,14 @@
 
 module Fen
   class Parser
-    attr_accessor :pieces_attributes, :castling_priviledges, :turn, :turn_count, :half_moves_count,
+    attr_accessor :pieces_attributes, :castling_priviledges, :turn, :moves_count, :half_moves_count,
                   :en_passant
 
     def initialize(fen_str)
       @fen_str = fen_str
       @pieces_attributes = []
       @turn = :white
-      @turn_count = 0
+      @moves_count = 0
       @half_moves_count = 0
       @castling_priviledges = {
         black: {
@@ -31,7 +31,7 @@ module Fen
       parse_turn
       parse_castling
       parse_en_passant
-      parse_turn_count
+      parse_moves_count
       parse_half_moves_count
 
       self
@@ -70,8 +70,8 @@ module Fen
       @en_passant = @fen_split[3] unless @fen_split[3] == "-"
     end
 
-    def parse_turn_count
-      @turn_count = @fen_split[4].to_i
+    def parse_moves_count
+      @moves_count = @fen_split[4].to_i
     end
 
     def parse_half_moves_count

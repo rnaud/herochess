@@ -8,7 +8,7 @@ class Board
   LINE_INDEX = ("1".."8").to_a.reverse
 
   attr_reader :squares, :captured_pieces, :pieces
-  attr_accessor :castling_priviledges
+  attr_accessor :castling_priviledges, :moves
 
   def initialize
     @squares = Array.new(BOARD_SIZE)
@@ -16,6 +16,7 @@ class Board
       @squares[i] = Array.new(BOARD_SIZE)
     end
 
+    @moves = []
     @pieces = []
     @captured_pieces = []
     @castling_priviledges = {
@@ -67,6 +68,7 @@ class Board
                                                                                   end_coord)
 
     status = piece.move_to!(end_coord)
+    @moves << Move.new(piece, from, to, color_to_play, 0, status)
     [piece, status]
   end
 

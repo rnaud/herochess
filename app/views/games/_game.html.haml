@@ -4,16 +4,18 @@
       .row{"data-row": row}
         - 8.times do |square|
           .square{"data-row": row, "data-col": square, "data-square": Helper.pt([row, square])}
-            - piece = game.instance.board.squares[row][square]
+            - piece = game.board.squares[row][square]
             - if piece
               .piece= image_tag "pieces/#{piece.color}_#{piece.name}.png"
 
   #side
     #next
       .title State
-      #state= game.instance.state
-      #error= game.instance.last_error
+      #state= game.state
+      #errors
+        - game.errors.each do |e|
+          = e.message
     #moves
       %ul#moves_list
-        - game.instance.moves.each do |m|
+        - game.board.moves.each do |m|
           %li= m.to_s

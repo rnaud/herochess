@@ -13,8 +13,7 @@ class GamesController < ApplicationController
   end
 
   def update
-    @game.instance.move(params[:game][:from], params[:game][:to], params[:game][:color].to_sym)
-    @game.save
+    @game.update(game_params)
   end
 
   def new
@@ -39,5 +38,9 @@ class GamesController < ApplicationController
     @player = params[:color] || @game.color?(current_user)
     session[:games] ||= {}
     session[:games][@game.id] = @player
+  end
+
+  def game_params
+    params.require(:game).permit(:from, :to, :color)
   end
 end

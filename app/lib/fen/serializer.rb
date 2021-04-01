@@ -39,7 +39,7 @@ module Fen
       arr << (@game.turn == :white ? "w" : "b")
       arr << (castling.empty? ? "-" : castling.join)
       arr << (@game.en_passant || "-")
-      arr << @game.turn_count
+      arr << @game.moves_count
       arr << @game.half_moves_count
       arr.join(" ")
     end

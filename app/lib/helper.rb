@@ -16,10 +16,10 @@ class Helper
     end
 
     def invert_color(color)
-      if color == :white
-        :black
+      if color.to_s == "white"
+        "black"
       else
-        :white
+        "white"
       end
     end
 
