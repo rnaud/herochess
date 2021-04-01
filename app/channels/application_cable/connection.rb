@@ -9,8 +9,13 @@ module ApplicationCable
     end
 
     private
-      def find_verified_user
-        cookies[:user_id]
-      end
+
+    def find_verified_user
+      session["user_id"]
+    end
+
+    def session
+      cookies.encrypted[Rails.application.config.session_options[:key]]
+    end
   end
 end

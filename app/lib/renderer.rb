@@ -51,10 +51,10 @@ class Renderer
 
   def put_board_row(index, arr)
     line_index = " #{Board::LINE_INDEX[index]} "
-    puts line_index + arr.join + line_index
+    Rails.logger.info line_index + arr.join + line_index
   end
 
   def put_line(str)
-    puts str
+    Rails.logger.info str
   end
 end

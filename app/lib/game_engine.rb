@@ -64,7 +64,7 @@ class GameEngine
 
     state
   rescue StandardError => e
-    @last_error = e
+    @last_error = e.message
     # puts error.backtrace
     "#{state} - #{e}"
   end

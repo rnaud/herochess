@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class GamesController < ApplicationController
-  before_action :set_game, only: [:show, :destroy]
+  before_action :set_game, only: %i[show destroy]
   before_action :find_or_set_player, only: [:show]
 
   def index
@@ -25,7 +25,7 @@ class GamesController < ApplicationController
 
   def find_or_set_player
     return unless @game
-    
+
     if @game.white_user_id != current_user && @game.black_user_id.nil?
       @game.black_user_id = current_user
       @game.save
