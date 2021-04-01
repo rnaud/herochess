@@ -4,11 +4,12 @@ module Piece
   class Base
     class DirectionsUndefinedError < StandardError; end
     attr_reader :color, :moved, :captured, :was
-    attr_accessor :position, :original_position
+    attr_accessor :position, :original_position, :last_position
 
     def initialize(color:, position:, board:, was: nil)
       @color = color
       @position = position
+      @last_position = position
       @original_position = position
       @board = board
       @moved = false
@@ -21,6 +22,13 @@ module Piece
       @position = [nil, nil]
       @captured = true
       @board.piece_captured!(self)
+    end
+
+    def uncapture!
+      Rails.logger.info "uncaptured #{self.class} #{Helper.pt(last_position)}"
+      @position = last_position
+      @captured = false
+      @board.piece_uncaptured!(self)
     end
 
     def white?
@@ -69,6 +77,7 @@ module Piece
 
     def move_to!(end_position)
       # remove piece from current location
+      @last_position = position
       @board.remove_piece!(position)
 
       # capture end position piece

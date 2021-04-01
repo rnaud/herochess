@@ -108,6 +108,11 @@ class Board
     @captured_pieces.push(piece)
   end
 
+  def piece_uncaptured!(piece)
+    @captured_pieces.delete(piece)
+    @pieces.push(piece)
+  end
+
   def pieces_with(color: nil)
     return @pieces if color.nil?
 
@@ -126,6 +131,7 @@ class Board
     original_position = piece.position
     remove_piece!(piece.position)
     piece_on_end_position = remove_piece!(end_position)
+    # piece_on_end_position.capture! if piece_on_end_position
     place_piece!(piece, end_position)
     piece.position = end_position
 
@@ -135,7 +141,10 @@ class Board
     remove_piece!(end_position)
     place_piece!(piece, original_position)
     piece.position = original_position
-    place_piece!(piece_on_end_position, end_position) if piece_on_end_position
+    if piece_on_end_position
+      # piece_on_end_position.uncapture!
+      place_piece!(piece_on_end_position, end_position)
+    end
 
     result
   end
