@@ -1,9 +1,9 @@
 %h4 Current games
 
-%ul
-  - @games.each do |game|
-    %li
-      = link_to game.name, game_path(game)
+
+= turbo_stream_from "games"
+= turbo_frame_tag "games" do
+  = render partial: "games/game_list", collection: @games, as: :game
 
 .div Welcome, create a new game
 

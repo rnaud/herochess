@@ -24,6 +24,7 @@ gem "redis"
 gem "rubocop-rails"
 
 gem "haml-rails", "~> 2.0"
+gem "hotwire-rails"
 
 gem "pg"
 # Use Active Model has_secure_password

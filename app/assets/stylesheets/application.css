@@ -17,7 +17,6 @@
 body {color: #444;}
 
 #moves_form {display: none;}
-#board {width: 500px; float: left;}
 #side { 
   width: 400px; 
   background: #ccc; 
@@ -30,3 +29,12 @@ body {color: #444;}
 #side #next {margin-top: 10px;}
 #side #next #error {color: red;}
 #side #next .title {font-weight: bold;}
+
+#chessboard {width: 500px; float: left;}
+#chessboard .square {display: inline-block; width: 50px; height: 50px; background: #ecdab9;}
+#chessboard .square img {width: 100%; height: 100%;}
+
+#chessboard .row:nth-child(odd) .square:nth-child(even),
+#chessboard .row:nth-child(even) .square:nth-child(odd) {
+  background: #c5a076;
+}

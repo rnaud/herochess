@@ -8,6 +8,11 @@ class Game < ApplicationRecord
 
   validates :white_user_id, presence: true
 
+  # broadcasts
+  after_create_commit {broadcast_prepend_to "games"; puts "yo"}
+  after_update_commit {broadcast_replace_to "games"}
+  after_destroy_commit {broadcast_remove_to "games"}
+
   def name
     instance.inspect
   end
