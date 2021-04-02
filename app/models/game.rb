@@ -7,6 +7,8 @@ class Game < ApplicationRecord
   validate :move_board_and_validate
   before_save :serialize_game_instance
 
+  has_many :messages
+
   validates :white_user_id, presence: true
 
   after_create_commit do

@@ -14,26 +14,39 @@
  *= require_self
  */
 
+* {box-sizing: border-box;}
 body {color: #444;}
 
 #move_form {display: none;}
-#side { 
-  width: 400px; 
-  background: #ccc; 
-  padding: 20px; 
-  display: inline-block;
-  margin-left: 20px;
+
+h1 {text-align: center}
+
+#game {
+  margin: 0 auto;
+  max-width: 1024px;
+  padding-top: 10px;
+  padding-left: 450px; 
+  padding-right: 20px; 
+  padding-bottom: 10px;
+  position: relative;
 }
 
-#side #player {font-size: 18px; font-weight: bold;}
-#side #next {margin-top: 10px;}
-#side #next #error {color: red;}
-#side #next .title {font-weight: bold;}
-#side #errors {color: red;}
+.side-block {
+  background: #eee; 
+  padding: 20px;
+  margin-bottom: 20px;
+  border-radius: 5px;
+}
 
-#chessboard {width: 500px; float: left;}
+#player {font-size: 18px; font-weight: bold;}
+#next {margin-top: 10px;}
+#next #error {color: red;}
+#next .title {font-weight: bold;}
+#errors {color: red;}
+
+#chessboard {width: 500px; position: absolute; left: 10px; top: 10px;}
 #chessboard .square {display: inline-block; width: 50px; height: 50px; background: #ecdab9; border: 1px solid transparent;}
-#chessboard .square img {width: 100%; height: 100%;}
+#chessboard .square img {width: 50px; height: 50px;}
 
 #chessboard .row:nth-child(odd) .square:nth-child(even),
 #chessboard .row:nth-child(even) .square:nth-child(odd) {
@@ -42,3 +55,6 @@ body {color: #444;}
 
 #chessboard .square.drop-active {border: 1px solid green;}
 #chessboard .square.drop-target {border: 1px solid red;}
+
+.message .user {font-weight: bold; font-size: 10px;}
+.message .time {float: right; font-size: 10px;}

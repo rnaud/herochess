@@ -1,12 +1,25 @@
 #game
-  #game-header
+  #player-header.side-block
     #player You are the #{@player} player
     - if @player == :white
       #invite
         = link_to "Link to invite black to play", game_path(@game, color: :black)
 
-  = turbo_stream_from "game_#{@game.id}"
-  = render @game
+  #board_and_state
+    = turbo_stream_from "game_#{@game.id}"
+    = render @game
+
+  #messages-container.side-block
+    %h3 Messages
+    #messages
+      = turbo_stream_from "game_#{@game.id}_messages"
+      = turbo_frame_tag "game_#{@game.id}_messages" do
+        = render @game.messages.reverse
+
+    = form_with model: Message.new, id: "messages_form" do |form|
+      = form.hidden_field :game_id, value: @game.id
+      = form.text_field :message
+      = form.submit
 
 = form_with model: @game, id: "move_form" do |form|
   = form.hidden_field :color, value: @player
