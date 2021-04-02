@@ -16,7 +16,7 @@
       = turbo_frame_tag "game_#{@game.id}_messages" do
         = render @game.messages.reverse
 
-    = form_with model: Message.new, id: "messages_form" do |form|
+    = form_with model: Message.new, id: "messages_form", data: { controller: "reset-form", action: 'turbo:submit-end->reset-form#reset' } do |form|
       = form.hidden_field :game_id, value: @game.id
       = form.text_field :message
       = form.submit

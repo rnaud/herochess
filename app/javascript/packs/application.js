@@ -5,6 +5,7 @@
 
 import Rails from "@rails/ujs"
 import interact from 'interactjs'
+import 'controllers'
 import "@hotwired/turbo-rails"
 
 Rails.start()

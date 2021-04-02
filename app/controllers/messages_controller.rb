@@ -7,6 +7,8 @@ class MessagesController < ApplicationController
     @message = Message.new(user_id: current_user)
     @message.assign_attributes(message_params)
     @message.save!
+
+    head :ok
   end
 
   def destroy; end
