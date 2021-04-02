@@ -16,7 +16,7 @@
 
 body {color: #444;}
 
-#moves_form {display: none;}
+#move_form {display: none;}
 #side { 
   width: 400px; 
   background: #ccc; 
