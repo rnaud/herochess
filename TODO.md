@@ -1,13 +1,13 @@
 # TODO
 
 * fix uncapture
-* Add available moves
 * Add joined messages (make it more alive)
 * Add En passant rule
 * Add Double knight
 
 # DONE
 * Add Chat
+* Add available moves
 * Move state, last error stuff to game real model?
 * Add unit tests (make sure I don’t keep breaking shit)
 * Add black URL path
