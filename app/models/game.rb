@@ -1,13 +1,14 @@
 # frozen_string_literal: true
 
 class Game < ApplicationRecord
-  attr_accessor :board, :en_passant, :from, :to, :color, :fen_initial
+  attr_accessor :board, :en_passant, :from, :to, :fen_initial
+  attr_reader :color
 
   after_initialize :load_defaults
   validate :move_board_and_validate
   before_save :serialize_game_instance
 
-  has_many :messages
+  has_many :messages, dependent: :destroy
 
   validates :white_user_id, presence: true
 
@@ -45,8 +46,8 @@ class Game < ApplicationRecord
     super.to_sym
   end
 
-  def color
-    @color&.to_sym
+  def color=(color)
+    @color = color.to_sym
   end
 
   def update_state
@@ -71,10 +72,10 @@ class Game < ApplicationRecord
 
   def move(from, to, who_is_playing = nil)
     who_is_playing = turn if who_is_playing.nil?
-    piece, status = board.move(from, to, turn, who_is_playing)
+    _piece, status = board.move(from, to, turn, who_is_playing)
 
     increment_half_moves!(status)
-    en_passant = to if status == :pawn_moved
+    self.en_passant = to if status == :pawn_moved
 
     switch_turn!
     update_state

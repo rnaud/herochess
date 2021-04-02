@@ -27,7 +27,7 @@ Metrics/ClassLength:
 # (https://github.com/bbatsov/ruby-style-guide#80-character-limits)
 # Please aim for 80, but up to 100 is OK.
 Layout/LineLength:
-  Max: 120
+  Max: 150
 
 Metrics/MethodLength:
   Enabled: false

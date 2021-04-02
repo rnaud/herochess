@@ -18,9 +18,10 @@ class Helper
     end
 
     def invert_color(color)
-      if color == :white
+      case color
+      when :white
         :black
-      elsif color == :black
+      when :black
         :white
       else
         raise "should not get here"
