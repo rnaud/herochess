@@ -4,9 +4,8 @@
 // that code so it'll be compiled.
 
 import Rails from "@rails/ujs"
-import "channels"
-import "controllers"
 import interact from 'interactjs'
+import "@hotwired/turbo-rails"
 
 Rails.start()
 
@@ -100,7 +99,7 @@ interact('.piece')
 
 }
 
-document.addEventListener("turbolinks:load", function() {
+document.addEventListener("turbo:load", function() {
   setupPage()
 });
 
