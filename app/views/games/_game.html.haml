@@ -3,10 +3,12 @@
     - 8.times do |row|
       .row{"data-row": row}
         - 8.times do |square|
-          .square{"data-row": row, "data-col": square, "data-square": Helper.pt([row, square])}
+          - square_id = Helper.pt([row, square])
+          .square{data: {row: row, col: square, square: square_id}, id: "square_#{square_id}"}
             - piece = game.board.squares[row][square]
             - if piece
-              .piece= image_tag "pieces/#{piece.color}_#{piece.name}.png"
+              .piece{data: {moves: piece.possible_moves_str}}
+                = image_tag "pieces/#{piece.color}_#{piece.name}.png"
 
   #game-info.side-block
     #next

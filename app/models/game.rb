@@ -47,7 +47,7 @@ class Game < ApplicationRecord
   end
 
   def color=(color)
-    @color = color.to_sym
+    @color = color&.to_sym
   end
 
   def update_state

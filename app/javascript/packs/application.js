@@ -17,7 +17,10 @@ window.dragMoveListener = function dragMoveListener (event) {
   // keep the dragged position in the data-x/data-y attributes
   var x = (parseFloat(target.getAttribute('data-x')) || 0) + event.dx
   var y = (parseFloat(target.getAttribute('data-y')) || 0) + event.dy
+  dragTo(target, x, y)
+}
 
+window.dragTo = function dragTo(target, x,y) {
   // translate the element
   target.style.webkitTransform =
     target.style.transform =
@@ -49,7 +52,14 @@ interact('.square').dropzone({
 
   ondropactivate: function (event) {
     // add active dropzone feedback
-    event.target.classList.add('drop-active')
+    var target = event.target
+    var relatedTarget = event.relatedTarget
+    var possibleMoves = JSON.parse(relatedTarget.dataset.moves)
+    var currentSquare = target.dataset.square
+
+    if (possibleMoves.includes(currentSquare)) {
+      event.target.classList.add('drop-active')  
+    }
   },
   ondragenter: function (event) {
     var draggableElement = event.relatedTarget
@@ -67,12 +77,26 @@ interact('.square').dropzone({
     // event.relatedTarget.textContent = 'Dragged out'
   },
   ondrop: function (event) {
-    console.log(event)
     var toSquareElement = event.target
-    var fromSquareElement = event.relatedTarget.parentElement
+    var piece = event.relatedTarget
+    var fromSquareElement = piece.parentElement
     var from = fromSquareElement.dataset.square
     var to = toSquareElement.dataset.square
-    move(from, to)
+
+    console.log(event)
+    if (from != to) {
+      move(from, to)
+    } else {
+      console.log("drop at same spot, skipping move")
+    }
+
+    var fromRect = fromSquareElement.getBoundingClientRect()
+    var toRect = toSquareElement.getBoundingClientRect()
+
+    var x = toRect.x - fromRect.x
+    var y = toRect.y - fromRect.y
+
+    dragTo(piece, x, y)
   },
   ondropdeactivate: function (event) {
     // remove active dropzone feedback

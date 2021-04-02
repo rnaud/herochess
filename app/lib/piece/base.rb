@@ -57,6 +57,10 @@ module Piece
       moves
     end
 
+    def possible_moves_str
+      possible_moves.map { |m| Helper.pt(m) }
+    end
+
     def valid_options(vector)
       options = []
       exploring = [(@position[0] + vector[0]), (@position[1] + vector[1])]
