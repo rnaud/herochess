@@ -14,7 +14,7 @@
     #messages
       = turbo_stream_from "game_#{@game.id}_messages"
       = turbo_frame_tag "game_#{@game.id}_messages" do
-        = render @game.messages.reverse
+        = render @game.messages.last(20)
 
     = form_with model: Message.new, id: "messages_form", data: { controller: "reset-form", action: 'turbo:submit-end->reset-form#reset' } do |form|
       = form.hidden_field :game_id, value: @game.id
@@ -25,4 +25,4 @@
   = form.hidden_field :color, value: @player
   = form.text_field :from
   = form.text_field :to
-  = form.submit
+  = form.submit "Send"
