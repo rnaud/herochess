@@ -174,14 +174,18 @@ class Game < ApplicationRecord
     @board.possible_moves(turn)
   end
 
+  def explore_moves(depth)
+  end
+
   def best_move
     possible_moves.sample
   end
 
   def ai_move!
     move = best_move
-    from = Helper.pt(move[0])
-    to = Helper.pt(move[1])
+    piece = move[0]
+    from = Helper.pt(move[1])
+    to = Helper.pt(move[2])
     Rails.logger.warn("ai_move from: #{from} to #{to}")
     move(from: from, to: to)
   end

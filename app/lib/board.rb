@@ -113,9 +113,9 @@ class Board
     team_pieces = pieces_with(color: color)
     team_pieces.map do |piece|
       piece.possible_moves.map do |move|
-        [piece.position, move]
+        [piece, piece.position, move] unless in_check_after_move?(piece, move)
       end
-    end.flatten(1)
+    end.flatten(1).compact
   end
 
   def pawn_promoted!(pawn, new_piece)
@@ -181,6 +181,10 @@ class Board
 
   def drawn?(color)
     !in_check?(color) && cant_get_out?(color)
+  end
+
+  def score
+    @captured_pieces.map(&:color_score).sum
   end
 
   def spawn_pieces!

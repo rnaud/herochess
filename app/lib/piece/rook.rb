@@ -6,11 +6,11 @@ module Piece
     RIGHT_COL = 7
     CASTLE_LEFT_COL = 3
     CASTLE_RIGHT_COL = 5
-
     ICONS = {
       white: "♖",
       black: "♜"
     }.freeze
+    SCORE = 50
 
     def directions(type:)
       {

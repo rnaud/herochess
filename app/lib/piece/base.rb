@@ -50,6 +50,10 @@ module Piece
       @color == :white
     end
 
+    def black?
+      @color == :white
+    end
+
     def icon
       self.class::ICONS[@color]
     end
@@ -140,6 +144,10 @@ module Piece
 
     def col
       position[1]
+    end
+
+    def color_score
+      white? ? -self.class::SCORE : self.class::SCORE
     end
   end
 end

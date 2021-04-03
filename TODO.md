@@ -1,6 +1,7 @@
 # TODO
 
 * Add AI
+* Capture a piece and render
 * Remove marshal dump (replace with fen?)
 * Add joined messages (make it more alive)
 * Add En passant rule

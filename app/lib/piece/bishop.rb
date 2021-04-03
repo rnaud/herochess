@@ -6,6 +6,7 @@ module Piece
       white: "♗",
       black: "♝"
     }.freeze
+    SCORE = 30
 
     def directions(type:)
       {

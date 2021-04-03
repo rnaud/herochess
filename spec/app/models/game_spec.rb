@@ -32,6 +32,15 @@ describe Game do
     expect(game.turn).to eq :white
   end
 
+  it "capture with white pawn" do
+    game = Game.new
+    game.move(from: "d2", to: "d4")
+    game.move(from: "e7", to: "e5")
+    game.move(from: "d4", to: "e5")
+    expect(game.state).to be :play
+    game.render
+  end
+
   it "block the king from moving when in check" do
     game = Game.new
     game.move(from: "d2", to: "d4")
