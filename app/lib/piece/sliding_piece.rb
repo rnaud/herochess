@@ -2,7 +2,7 @@
 
 module Piece
   class SlidingPiece < Piece::Base
-    def valid_options(vector)
+    def valid_options(direction, vector)
       options = []
       exploring = [(@position[0] + vector[0]), (@position[1] + vector[1])]
 

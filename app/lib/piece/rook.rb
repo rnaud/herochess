@@ -22,11 +22,36 @@ module Piece
     def move_to!(end_position)
       status = super
 
-      @board.castling_priviledges[color][:left] = false if original_position[1] == LEFT_COL
+      original_position = position_histories[0]
+      
+      castling_that_changed = nil
 
-      @board.castling_priviledges[color][:left] = false if original_position[1] == RIGHT_COL
+      if original_position[1] == LEFT_COL && @board.castling_priviledges[color][:left]
+        @board.castling_priviledges[color][:left] = false 
+        castling_that_changed = :left
+      end
+
+      if original_position[1] == RIGHT_COL && @board.castling_priviledges[color][:right]
+        @board.castling_priviledges[color][:right] = false
+        castling_that_changed = :right
+      end
+
+      @castling_histories << castling_that_changed
 
       status
+    end
+
+    def undo_last_move!
+      super
+
+      case @castling_histories.last 
+      when :left
+        @board.castling_priviledges[color][:left] = true
+      when :right
+        @board.castling_priviledges[color][:right] = true
+      end
+
+      @castling_histories.pop
     end
   end
 end

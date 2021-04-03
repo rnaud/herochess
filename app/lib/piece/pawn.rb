@@ -26,11 +26,20 @@ module Piece
             }
           end
 
+      h.delete(:forward) unless can_move_to?(h[:forward])
+      h.delete(:double_forward) unless can_move_to?(h[:double_forward])
       h.delete(:double_forward) if moved?
+
       h.delete(:take_west) unless can_take?(h[:take_west])
       h.delete(:take_east) unless can_take?(h[:take_east])
 
       h
+    end
+
+    def can_move_to?(direction)
+      move_position = [@position[0] + direction[0], @position[1] + direction[1]]
+      other_piece = @board.find_piece(move_position)
+      other_piece ? false : true
     end
 
     def can_take?(direction)

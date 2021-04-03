@@ -7,18 +7,20 @@ class Board
   COLUMN_INDEX = ("a".."h").to_a
   LINE_INDEX = ("1".."8").to_a.reverse
 
-  attr_reader :squares, :captured_pieces, :pieces
-  attr_accessor :castling_priviledges, :moves
+  attr_reader :squares, :captured_pieces, :pieces, :game
+  attr_accessor :castling_priviledges, :moves, :debug
 
-  def initialize
+  def initialize(game:)
     @squares = Array.new(BOARD_SIZE)
     BOARD_SIZE.times do |i|
       @squares[i] = Array.new(BOARD_SIZE)
     end
 
+    @game = game
     @moves = []
     @pieces = []
     @captured_pieces = []
+    @debug = false
     @castling_priviledges = {
       black: {
         left: true,
@@ -73,18 +75,21 @@ class Board
     coord[0].between?(0, BOARD_SIZE - 1) && coord[1].between?(0, BOARD_SIZE - 1)
   end
 
-  def place_piece!(piece, coord)
-    return unless valid_coord?(coord)
-
-    @squares[coord[0]][coord[1]] = piece
-  end
-
   def remove_piece!(coord)
     return unless valid_coord?(coord)
 
     piece = @squares[coord[0]][coord[1]]
+
     @squares[coord[0]][coord[1]] = nil
     piece
+  end
+
+  def place_piece!(piece, coord)
+    return unless valid_coord?(coord)
+
+    Rails.logger.debug "placing piece : #{piece.inspect} at #{Helper.pt(coord)} from #{caller}"
+
+    @squares[coord[0]][coord[1]] = piece
   end
 
   def find_piece(coord)
@@ -128,44 +133,34 @@ class Board
   end
 
   def in_check_after_move?(piece, end_position)
-    original_position = piece.position
-    remove_piece!(piece.position)
-    piece_on_end_position = remove_piece!(end_position)
-    # piece_on_end_position.capture! if piece_on_end_position
-    place_piece!(piece, end_position)
-    piece.position = end_position
+    piece.move_to!(end_position)
 
     result = in_check?(piece.color)
-
-    # reset the piece
-    remove_piece!(end_position)
-    place_piece!(piece, original_position)
-    piece.position = original_position
-    if piece_on_end_position
-      # piece_on_end_position.uncapture!
-      place_piece!(piece_on_end_position, end_position)
-    end
+    
+    piece.undo_last_move!
 
     result
   end
 
-  def cant_get_out(color)
+  def cant_get_out?(color)
     team_pieces = pieces_with(color: color)
     cant_get_out = true
     team_pieces.each do |p|
       p.possible_moves(type: :attack).each do |coord|
-        cant_get_out = false unless in_check_after_move?(p, coord)
+        unless in_check_after_move?(p, coord)
+          cant_get_out = false 
+        end
       end
     end
     cant_get_out
   end
 
   def checkmate?(color)
-    in_check?(color) && cant_get_out(color)
+    in_check?(color) && cant_get_out?(color)
   end
 
   def drawn?(color)
-    !in_check?(color) && cant_get_out(color)
+    !in_check?(color) && cant_get_out?(color)
   end
 
   def spawn_pieces!

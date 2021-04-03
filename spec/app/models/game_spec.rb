@@ -14,10 +14,10 @@ describe Game do
 
   it "block the king from moving when in check" do
     game = Game.create(white_user_id: 1)
-    game.update(from: "d2", to: "d4")
-    game.update(from: "e7", to: "e5")
-    game.update(from: "e1", to: "d2")
-    game.update(from: "d8", to: "g5")
+    game.move(from: "d2", to: "d4")
+    game.move(from: "e7", to: "e5")
+    game.move(from: "e1", to: "d2")
+    game.move(from: "d8", to: "g5")
     expect(game.board.in_check?(:white)).to be true
     # expect(game.move("d2", "e3")).to eq "in check, white to play - You are still in check"
     # expect(game.board.in_check?(:white)).to be true
@@ -25,10 +25,10 @@ describe Game do
 
   it "returns checkmates when king is stuck" do
     game = Game.create(white_user_id: 1)
-    game.update(from: "f2", to: "f4")
-    game.update(from: "e7", to: "e5")
-    game.update(from: "g2", to: "g4")
-    game.update(from: "d8", to: "h4")
+    game.move(from: "f2", to: "f4")
+    game.move(from: "e7", to: "e5")
+    game.move(from: "g2", to: "g4")
+    game.move(from: "d8", to: "h4")
     expect(game.board.in_check?(:white)).to be true
     expect(game.board.checkmate?(:white)).to be true
     # expect(game.move("c2", "c3")).to eq "black wins by checkmate - Checkmate! black wins"
@@ -40,10 +40,9 @@ describe Game do
   end
 
   it "can move the black queen" do
-    game = Game.create(fen_initial: "rnb1kbnr/pp2q1pp/5p2/3P4/8/5N2/PPP1QPPP/RNB1KB1R b KQkq - 6 1", white_user_id: 1)
+    game = Game.new(fen_initial: "rnb1kbnr/pp2q1pp/5p2/3P4/8/5N2/PPP1QPPP/RNB1KB1R b KQkq - 6 1", white_user_id: 1)
     expect(game.state).to eq "black to play"
-    game.update(from: "e7", to: "e2")
-    expect(game.valid?).to be true
+    expect(game.move(from: "e7", to: "e2")).to eq "in check, white to play"
   end
 
   it "can parse fen" do

@@ -70,7 +70,7 @@ class Game < ApplicationRecord
     end
   end
 
-  def move(from, to, who_is_playing = nil)
+  def move(from:, to:, who_is_playing: nil)
     who_is_playing = turn if who_is_playing.nil?
     _piece, status = board.move(from, to, turn, who_is_playing)
 
@@ -106,7 +106,7 @@ class Game < ApplicationRecord
     if persisted?
       self.board = Marshal.load(Base64.decode64(serialized_board))
     else
-      self.board = Board.new
+      self.board = Board.new(game: self)
       if fen_initial
         parse_fen(fen_initial)
       else
@@ -119,7 +119,7 @@ class Game < ApplicationRecord
   def move_board_and_validate
     return unless from && to
 
-    move(from, to, color)
+    move(from: from, to: to, who_is_playing: color)
 
     self.from = nil
     self.to = nil
