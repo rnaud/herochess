@@ -44,19 +44,16 @@ module Piece
     end
 
     def move_to!(end_position)
-      original_position = position
       status = super(end_position)
 
-      line = original_position[0]
-      # the king moved to 2 squares to the left, move the rook as well
-      case original_position[1] - end_position[1]
-      when 2
-        left_rook = @board.find_piece([line, Rook::LEFT_COL])
-        left_rook.move_to!([line, 3])
-      # the king moved to 2 squares to the right, move the rook as well
-      when -2
-        right_rook = @board.find_piece([line, Rook::RIGHT_COL])
-        right_rook.move_to!([line, 5])
+      castling_direction = recently_castled?
+      case castling_direction
+      when :left
+        left_rook = @board.find_piece([position[0], Rook::LEFT_COL])
+        left_rook.move_to!([row, Rook::CASTLE_LEFT_COL])
+      when :right
+        right_rook = @board.find_piece([position[0], Rook::RIGHT_COL])
+        right_rook.move_to!([row, Rook::CASTLE_RIGHT_COL])
       end
 
       current_castling = [@board.castling_priviledges[color][:left], @board.castling_priviledges[color][:right]]
@@ -79,7 +76,22 @@ module Piece
       status
     end
 
+    def recently_castled?
+      return false unless moved?
+
+      previous_position = @position_histories[-2]
+      case previous_position[1] - position[1]
+      when 2
+        :left
+      when -2
+        :right
+      end
+    end
+
     def undo_last_move!
+      # check for recent castle before undoing the last move, since we need to undo the rook as well
+      castling_direction = recently_castled?
+
       super
 
       case @castling_histories.last
@@ -93,6 +105,15 @@ module Piece
       end
 
       @castling_histories.pop
+      binding.pry if @board.debug
+      case castling_direction
+      when :left
+        left_rook = @board.find_piece([position[0], Rook::CASTLE_LEFT_COL])
+        left_rook.undo_last_move!
+      when :right
+        right_rook = @board.find_piece([position[0], Rook::CASTLE_RIGHT_COL])
+        right_rook.undo_last_move!
+      end
     end
   end
 end

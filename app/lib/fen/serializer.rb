@@ -30,8 +30,8 @@ module Fen
 
       castling = []
       castling << "K" if @game.board.castling_priviledges[:white][:right]
-      castling << "Q" if @game.board.castling_priviledges[:black][:left]
-      castling << "k" if @game.board.castling_priviledges[:white][:right]
+      castling << "Q" if @game.board.castling_priviledges[:white][:left]
+      castling << "k" if @game.board.castling_priviledges[:black][:right]
       castling << "q" if @game.board.castling_priviledges[:black][:left]
 
       arr = []

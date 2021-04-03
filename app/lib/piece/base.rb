@@ -139,5 +139,14 @@ module Piece
     def id
       "#{name}-#{object_id}"
     end
+
+    def row
+      position[0]
+    end
+
+    def col
+      position[1]
+    end
+
   end
 end

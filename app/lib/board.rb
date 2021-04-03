@@ -54,6 +54,8 @@ class Board
     raise MoveInvalidError, "You are still in check" if in_check?(color_to_play) && in_check_after_move?(piece, end_coord)
     raise MoveInvalidError, "This would put you in check" if in_check_after_move?(piece, end_coord)
 
+    binding.pry if @debug
+
     status = piece.move_to!(end_coord)
     @moves << Move.new(piece, from, to, color_to_play, 0, status)
     [piece, status]

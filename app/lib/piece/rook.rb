@@ -4,6 +4,8 @@ module Piece
   class Rook < Piece::SlidingPiece
     LEFT_COL = 0
     RIGHT_COL = 7
+    CASTLE_LEFT_COL = 3
+    CASTLE_RIGHT_COL = 5
 
     ICONS = {
       white: "♖",
@@ -43,6 +45,8 @@ module Piece
 
     def undo_last_move!
       super
+
+      binding.pry if @debug
 
       case @castling_histories.last
       when :left
