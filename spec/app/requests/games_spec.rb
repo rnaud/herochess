@@ -3,7 +3,8 @@
 require "rails_helper"
 
 RSpec.describe "Games", type: :request do
-  let(:game) { Game.create(white_user_id: 1) }
+  let(:game) { Game.create(white_user_id: 1, black_user_id: 2) }
+  let(:game_without_black) { Game.create(white_user_id: 1) }
 
   describe "GET /games" do
     it "returns games" do
@@ -26,6 +27,14 @@ RSpec.describe "Games", type: :request do
     end
   end
 
+  describe "GET /games/:id" do
+    it "assigns black user if there is none" do
+      get game_path(game_without_black), params: {test_user_id: 2}
+      expect(response).to have_http_status(:ok)
+      expect(game_without_black.reload.black_user_id).to eq 2
+    end
+  end
+
   describe "PATCH /games" do
     it "moves the board properly" do
       params = {}
@@ -36,6 +45,20 @@ RSpec.describe "Games", type: :request do
       }
       patch game_path(game), params: params
       expect(response).to have_http_status(:no_content)
+    end
+  end
+
+  describe "PATCH /games" do
+    it "cannot move when not your turn" do
+      new_game = Game.create(white_user_id: 1, black_user_id: 2)
+      params = {}
+      params[:game] = {
+        from: "e7",
+        to: "e5",
+        color: "black"
+      }
+      patch game_path(new_game), params: params
+      expect(response).to have_http_status(:unprocessable_entity)
     end
   end
 

@@ -29,10 +29,6 @@ class Game < ApplicationRecord
     broadcast_replace_to "game_#{id}" if errors.any?
   end
 
-  def name
-    board.inspect
-  end
-
   def switch_turn!
     self.moves_count += 1 if turn == :black
     self.turn = Helper.invert_color(turn)
@@ -146,14 +142,5 @@ class Game < ApplicationRecord
     else
       :viewer
     end
-  end
-
-  def as_json(*)
-    {
-      moves: board.moves.reverse.map(&:to_s),
-      state: state,
-      fen: fen,
-      id: id
-    }
   end
 end

@@ -12,6 +12,11 @@ describe Game do
     expect(game.board.captured_pieces).to eq []
   end
 
+  it "can render a board" do
+    game = Game.new
+    game.render
+  end
+
   it "block the king from moving when in check" do
     game = Game.new
     game.move(from: "d2", to: "d4")

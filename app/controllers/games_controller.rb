@@ -13,7 +13,11 @@ class GamesController < ApplicationController
   end
 
   def update
-    @game.update(game_params)
+    if @game.update(game_params)
+      head :no_content
+    else
+      head :unprocessable_entity
+    end
   end
 
   def new
