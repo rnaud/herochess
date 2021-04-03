@@ -1,5 +1,5 @@
 = turbo_frame_tag dom_id(game) do
-  #chessboard
+  #chessboard{data: {fen: game.fen}}
     - 8.times do |row|
       .row{"data-row": row}
         - 8.times do |square|
