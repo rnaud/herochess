@@ -1,11 +1,13 @@
 # TODO
 
-* fix uncapture
+* Add AI
+* Remove marshal dump (replace with fen?)
 * Add joined messages (make it more alive)
 * Add En passant rule
 * Add Double knight
 
 # DONE
+* fix uncapture
 * Add Chat
 * Add available moves
 * Move state, last error stuff to game real model?

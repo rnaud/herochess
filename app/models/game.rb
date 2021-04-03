@@ -1,8 +1,7 @@
 # frozen_string_literal: true
 
 class Game < ApplicationRecord
-  attr_accessor :board, :en_passant, :from, :to, :fen_initial, :last_piece_moved
-  attr_reader :color
+  attr_accessor :board, :en_passant, :from, :to, :fen_initial, :last_piece_moved, :color
 
   after_initialize :load_defaults
   validate :move_board_and_validate
@@ -11,6 +10,9 @@ class Game < ApplicationRecord
   has_many :messages, dependent: :destroy
 
   validates :white_user_id, presence: true
+  validates :versus, presence: true
+  validates :turn, presence: true
+  validates :state, presence: true
 
   after_create_commit do
     broadcast_prepend_to :games, partial: "games/game_list"
@@ -42,20 +44,32 @@ class Game < ApplicationRecord
     super.to_sym
   end
 
-  def color=(color)
-    @color = color&.to_sym
+  def versus
+    super.to_sym
+  end
+
+  def state
+    super.to_sym
+  end
+
+  def color
+    @color&.to_sym
   end
 
   def update_state
     self.state = if board.checkmate?(turn)
-                   "#{Helper.invert_color(turn)} wins by checkmate"
+                  :checkmate
                  elsif board.drawn?(turn)
-                   "drawn game"
+                  :drawn
                  elsif board.in_check?(turn)
-                   "in check, #{turn} to play"
+                   :check
                  else
-                   "#{turn} to play"
+                   :play
                  end
+  end
+
+  def gameover?
+    state == :checkmate || state == :drawn
   end
 
   def increment_half_moves!(status)
@@ -73,13 +87,15 @@ class Game < ApplicationRecord
     increment_half_moves!(status)
     self.en_passant = to if status == :pawn_moved
 
-    switch_turn!
+    switch_turn!    
     update_state
-  rescue StandardError => e
+
+    ai_move! if ai_turn?
+  rescue Board::MoveInvalidError => e
     errors.add(:turn, e.message)
     Rails.logger.error e.message
     Rails.logger.error e.backtrace
-    "#{state} - #{e}"
+    state
   end
 
   def undo_last_move!
@@ -142,5 +158,31 @@ class Game < ApplicationRecord
     else
       :viewer
     end
+  end
+
+  # AI
+
+  def ai_game?
+    versus == :ai
+  end
+
+  def ai_turn?
+    ai_game? && turn == :black && !gameover?
+  end
+
+  def possible_moves
+    @board.possible_moves(turn)
+  end
+
+  def best_move
+    possible_moves.sample
+  end
+
+  def ai_move!
+    move = best_move
+    from = Helper.pt(move[0])
+    to = Helper.pt(move[1])
+    Rails.logger.warn("ai_move from: #{from} to #{to}")
+    move(from: from, to: to)
   end
 end

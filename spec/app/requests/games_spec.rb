@@ -15,7 +15,7 @@ RSpec.describe "Games", type: :request do
 
   describe "GET /games/new" do
     it "returns games" do
-      get new_game_path
+      get new_game_path(versus: "human")
       expect(response).to have_http_status(:found)
     end
   end

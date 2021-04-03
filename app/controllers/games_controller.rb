@@ -14,11 +14,14 @@ class GamesController < ApplicationController
 
   def update
     status = @game.update(game_params) ? :ok : :unprocessable_entity
+    @color = params[:color]
     render :show, status: status
   end
 
   def new
-    @game = Game.create(white_user_id: current_user)
+    @game = Game.new(white_user_id: current_user)
+    @game.versus = params[:versus] if params[:versus].present?
+    @game.save!
     redirect_to game_path(@game)
   end
 

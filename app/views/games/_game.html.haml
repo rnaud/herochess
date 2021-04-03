@@ -12,7 +12,7 @@
 
   #game-info.side-block
     #next
-      .title State
+      #versus= game.versus
       #state= game.state
       #errors
         - game.errors.each do |e|

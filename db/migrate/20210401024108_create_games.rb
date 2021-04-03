@@ -5,6 +5,7 @@ class CreateGames < ActiveRecord::Migration[6.1]
     create_table :games do |t|
       t.text :serialized_board
       t.string :state
+      t.string :versus, default: "human"
       t.string :turn, default: "white"
       t.integer :moves_count, default: 0
       t.integer :half_moves_count, default: 0

@@ -109,6 +109,15 @@ class Board
     end
   end
 
+  def possible_moves(color)
+    team_pieces = pieces_with(color: color)
+    team_pieces.map do |piece|
+      piece.possible_moves.map do |move|
+        [piece.position, move]
+      end
+    end.flatten(1)
+  end
+
   def pawn_promoted!(pawn, new_piece)
     @pieces.push(new_piece)
     @pieces.delete(pawn)

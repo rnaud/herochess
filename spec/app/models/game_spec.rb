@@ -5,7 +5,7 @@ require "spec_helper"
 describe Game do
   it "can create a new board" do
     game = Game.new
-    expect(game.state).to eq "white to play"
+    expect(game.state).to eq :play
     expect(game.turn).to eq :white
     expect(game.moves_count).to eq 0
     expect(game.board.pieces.size).to eq 32
@@ -25,6 +25,13 @@ describe Game do
     game.render
   end
 
+  it "can play with an AI" do
+    game = Game.new(versus: :ai)
+    game.move(from: "d2", to: "d4")
+    # black moved already
+    expect(game.turn).to eq :white 
+  end
+
   it "block the king from moving when in check" do
     game = Game.new
     game.move(from: "d2", to: "d4")
@@ -32,8 +39,6 @@ describe Game do
     game.move(from: "e1", to: "d2")
     game.move(from: "d8", to: "g5")
     expect(game.board.in_check?(:white)).to be true
-    # expect(game.move("d2", "e3")).to eq "in check, white to play - You are still in check"
-    # expect(game.board.in_check?(:white)).to be true
   end
 
   it "returns checkmates when king is stuck" do
@@ -44,18 +49,21 @@ describe Game do
     game.move(from: "d8", to: "h4")
     expect(game.board.in_check?(:white)).to be true
     expect(game.board.checkmate?(:white)).to be true
-    # expect(game.move("c2", "c3")).to eq "black wins by checkmate - Checkmate! black wins"
+    expect(game.state).to eq :checkmate
   end
 
   it "returns checkmate" do
     game = Game.new(fen_initial: "7k/8/8/8/8/8/r2q4/3K4 w KQkq - 0 0")
-    expect(game.state).to eq "black wins by checkmate"
+    expect(game.state).to eq :checkmate
   end
 
   it "can move the black queen" do
     game = Game.new(fen_initial: "rnb1kbnr/pp2q1pp/5p2/3P4/8/5N2/PPP1QPPP/RNB1KB1R b KQkq - 6 1", white_user_id: 1)
-    expect(game.state).to eq "black to play"
-    expect(game.move(from: "e7", to: "e2")).to eq "in check, white to play"
+    expect(game.state).to eq :play
+    expect(game.turn).to eq :black
+    
+    game.move(from: "e7", to: "e2")
+    expect(game.state).to eq :check
   end
 
   it "can left castle" do
@@ -75,7 +83,7 @@ describe Game do
   end
 
   it "can right castle" do
-    game = Game.new
+    game = Game.new(white_user_id: 1)
     game.move(from: "e2", to: "e4") # move a white pawn
     game.move(from: "e7", to: "e5") # move a black pawn
     game.move(from: "d2", to: "d4") # move a white pawn
@@ -88,8 +96,16 @@ describe Game do
     game.move(from: "d8", to: "d7") # move a black pawn
     # still has castling priviledges
     expect(game.fen).to eq "rnb1kbnr/p1pq1ppp/8/1p1p4/3pPB2/N7/PPPQ1PPP/R3KBNR w KQkq b5 5 2"
-    expect(game.move(from: "e1", to: "b1")).to eq "white to play - This piece cannot go here"
-    expect(game.move(from: "e1", to: "c1")).to eq "black to play" # move the white king to castle
+    
+    # move too far, king cannot go to b1
+    game.move(from: "e1", to: "b1")
+    expect(game.state).to eq :play
+    expect(game.turn).to eq :white
+
+    # move the white king to castle
+    game.move(from: "e1", to: "c1")
+    expect(game.state).to eq :play
+    expect(game.turn).to eq :black
 
     # white side no longer has castling priviledges
     expect(game.fen).to eq "rnb1kbnr/p1pq1ppp/8/1p1p4/3pPB2/N7/PPPQ1PPP/2KR1BNR b kq b5 5 3"
@@ -99,19 +115,19 @@ describe Game do
     game = Game.new(fen_initial: "k7/4P3/8/8/8/8/8/K7 w - - 10 0")
     game.move(from: "e7", to: "e8")
     expect(game.fen).to eq "k3Q3/8/8/8/8/8/8/K7 b - e8 10 0" # the pawn is now a queen
-    expect(game.state).to eq "in check, black to play"
+    expect(game.state).to eq :check
 
     game.undo_last_move!
 
     expect(game.fen).to eq "k7/4P3/8/8/8/8/8/K7 w - e8 10 0" # pawn is back, white to play
     game.move(from: "e7", to: "e8")
     expect(game.fen).to eq "k3Q3/8/8/8/8/8/8/K7 b - e8 10 0" # the pawn is now a queen
-    expect(game.state).to eq "in check, black to play"
+    expect(game.state).to eq :check
   end
 
-  it "can drawn" do
+it "can drawn" do
     game = Game.new(fen_initial: "8/5KBk/8/8/8/8/8/8 b - - 10 0")
-    expect(game.state).to eq "drawn game"
+    expect(game.state).to eq :drawn
   end
 
   it "can parse fen" do

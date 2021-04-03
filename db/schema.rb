@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 # This file is auto-generated from the current state of the database. Instead
 # of editing this file, please use the migrations feature of Active Record to
 # incrementally modify your database, and then regenerate this schema definition.
@@ -12,13 +10,15 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20_210_402_162_218) do
+ActiveRecord::Schema.define(version: 2021_04_02_162218) do
+
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
   create_table "games", force: :cascade do |t|
     t.text "serialized_board"
     t.string "state"
+    t.string "versus", default: "human"
     t.string "turn", default: "white"
     t.integer "moves_count", default: 0
     t.integer "half_moves_count", default: 0
@@ -36,4 +36,5 @@ ActiveRecord::Schema.define(version: 20_210_402_162_218) do
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
   end
+
 end
