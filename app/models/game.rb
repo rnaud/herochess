@@ -58,9 +58,9 @@ class Game < ApplicationRecord
 
   def update_state
     self.state = if board.checkmate?(turn)
-                  :checkmate
+                   :checkmate
                  elsif board.drawn?(turn)
-                  :drawn
+                   :drawn
                  elsif board.in_check?(turn)
                    :check
                  else
@@ -87,7 +87,7 @@ class Game < ApplicationRecord
     increment_half_moves!(status)
     self.en_passant = to if status == :pawn_moved
 
-    switch_turn!    
+    switch_turn!
     update_state
 
     ai_move! if ai_turn?

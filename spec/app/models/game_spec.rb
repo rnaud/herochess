@@ -29,7 +29,7 @@ describe Game do
     game = Game.new(versus: :ai)
     game.move(from: "d2", to: "d4")
     # black moved already
-    expect(game.turn).to eq :white 
+    expect(game.turn).to eq :white
   end
 
   it "block the king from moving when in check" do
@@ -61,7 +61,7 @@ describe Game do
     game = Game.new(fen_initial: "rnb1kbnr/pp2q1pp/5p2/3P4/8/5N2/PPP1QPPP/RNB1KB1R b KQkq - 6 1", white_user_id: 1)
     expect(game.state).to eq :play
     expect(game.turn).to eq :black
-    
+
     game.move(from: "e7", to: "e2")
     expect(game.state).to eq :check
   end
@@ -96,7 +96,7 @@ describe Game do
     game.move(from: "d8", to: "d7") # move a black pawn
     # still has castling priviledges
     expect(game.fen).to eq "rnb1kbnr/p1pq1ppp/8/1p1p4/3pPB2/N7/PPPQ1PPP/R3KBNR w KQkq b5 5 2"
-    
+
     # move too far, king cannot go to b1
     game.move(from: "e1", to: "b1")
     expect(game.state).to eq :play
@@ -125,7 +125,7 @@ describe Game do
     expect(game.state).to eq :check
   end
 
-it "can drawn" do
+  it "can drawn" do
     game = Game.new(fen_initial: "8/5KBk/8/8/8/8/8/8 b - - 10 0")
     expect(game.state).to eq :drawn
   end
