@@ -18,6 +18,8 @@ describe Game do
     last_piece = game.board.squares[7][7]
     expect(last_piece.col).to eq 7
     expect(last_piece.row).to eq 7
+
+    expect(game.board.score).to eq 0
   end
 
   it "can render a board" do
@@ -38,6 +40,7 @@ describe Game do
     game.move(from: "e7", to: "e5")
     game.move(from: "d4", to: "e5")
     expect(game.state).to be :play
+    expect(game.board.score).to eq 10
     game.render
   end
 
