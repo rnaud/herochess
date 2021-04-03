@@ -83,6 +83,8 @@ interact('.square').dropzone({
     var from = fromSquareElement.dataset.square
     var to = toSquareElement.dataset.square
 
+    piece.style.zIndex = "";
+
     console.log(event)
     if (from != to) {
       move(from, to)
@@ -111,6 +113,7 @@ interact('.piece')
      listeners: {
       start: function(event) {
         console.log(event.type, event.target)
+        event.target.style.zIndex = 200;
       },
       move: dragMoveListener
     },
