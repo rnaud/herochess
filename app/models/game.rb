@@ -84,7 +84,7 @@ class Game < ApplicationRecord
 
   def undo_last_move!
     last_piece_moved.undo_last_move!
-    #TODO undo half moves
+    # TODO: undo half moves
     self.turn = Helper.invert_color(turn)
     self.moves_count -= 1 if turn == :black
     update_state

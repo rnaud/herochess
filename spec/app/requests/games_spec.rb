@@ -29,7 +29,7 @@ RSpec.describe "Games", type: :request do
 
   describe "GET /games/:id" do
     it "assigns black user if there is none" do
-      get game_path(game_without_black), params: {test_user_id: 2}
+      get game_path(game_without_black), params: { test_user_id: 2 }
       expect(response).to have_http_status(:ok)
       expect(game_without_black.reload.black_user_id).to eq 2
     end
@@ -37,7 +37,7 @@ RSpec.describe "Games", type: :request do
 
   describe "PATCH /games" do
     it "moves the board properly" do
-      params = {test_user_id: 1}
+      params = { test_user_id: 1 }
       params[:game] = {
         from: "d2",
         to: "d4"

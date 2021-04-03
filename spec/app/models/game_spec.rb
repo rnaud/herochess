@@ -98,14 +98,14 @@ describe Game do
   it "can promote a pawn" do
     game = Game.new(fen_initial: "k7/4P3/8/8/8/8/8/K7 w - - 10 0")
     game.move(from: "e7", to: "e8")
-    expect(game.fen).to eq "k3Q3/8/8/8/8/8/8/K7 b - e8 10 0" #the pawn is now a queen
+    expect(game.fen).to eq "k3Q3/8/8/8/8/8/8/K7 b - e8 10 0" # the pawn is now a queen
     expect(game.state).to eq "in check, black to play"
 
     game.undo_last_move!
 
-    expect(game.fen).to eq "k7/4P3/8/8/8/8/8/K7 w - e8 10 0" #pawn is back, white to play
+    expect(game.fen).to eq "k7/4P3/8/8/8/8/8/K7 w - e8 10 0" # pawn is back, white to play
     game.move(from: "e7", to: "e8")
-    expect(game.fen).to eq "k3Q3/8/8/8/8/8/8/K7 b - e8 10 0" #the pawn is now a queen
+    expect(game.fen).to eq "k3Q3/8/8/8/8/8/8/K7 b - e8 10 0" # the pawn is now a queen
     expect(game.state).to eq "in check, black to play"
   end
 
