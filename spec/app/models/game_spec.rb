@@ -10,6 +10,14 @@ describe Game do
     expect(game.moves_count).to eq 0
     expect(game.board.pieces.size).to eq 32
     expect(game.board.captured_pieces).to eq []
+
+    first_piece = game.board.squares[0][0]
+    expect(first_piece.col).to eq 0
+    expect(first_piece.row).to eq 0
+
+    last_piece = game.board.squares[7][7]
+    expect(last_piece.col).to eq 7
+    expect(last_piece.row).to eq 7
   end
 
   it "can render a board" do
@@ -99,6 +107,11 @@ describe Game do
     game.move(from: "e7", to: "e8")
     expect(game.fen).to eq "k3Q3/8/8/8/8/8/8/K7 b - e8 10 0" #the pawn is now a queen
     expect(game.state).to eq "in check, black to play"
+  end
+
+  it "can drawn" do
+    game = Game.new(fen_initial: "8/5KBk/8/8/8/8/8/8 b - - 10 0")
+    expect(game.state).to eq "drawn game"
   end
 
   it "can parse fen" do

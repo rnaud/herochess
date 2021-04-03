@@ -37,11 +37,10 @@ RSpec.describe "Games", type: :request do
 
   describe "PATCH /games" do
     it "moves the board properly" do
-      params = {}
+      params = {test_user_id: 1}
       params[:game] = {
         from: "d2",
-        to: "d4",
-        color: "white"
+        to: "d4"
       }
       patch game_path(game), params: params
       expect(response).to have_http_status(:no_content)

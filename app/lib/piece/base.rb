@@ -50,17 +50,15 @@ module Piece
       @color == :white
     end
 
-    def black?
-      @color == :black
-    end
-
     def icon
       self.class::ICONS[@color]
     end
 
+    # :nocov:
     def directions(type: :all)
       raise DirectionsUndefinedError
     end
+    # :nocov:
 
     def possible_moves(type: :all)
       moves = []
@@ -134,10 +132,6 @@ module Piece
 
     def name
       self.class.name.downcase.demodulize
-    end
-
-    def id
-      "#{name}-#{object_id}"
     end
 
     def row

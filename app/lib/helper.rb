@@ -24,7 +24,9 @@ class Helper
       when :black
         :white
       else
+        # :nocov:
         raise "should not get here"
+        # :nocov:
       end
     end
   end
