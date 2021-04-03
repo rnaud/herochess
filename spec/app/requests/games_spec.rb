@@ -43,7 +43,7 @@ RSpec.describe "Games", type: :request do
         to: "d4"
       }
       patch game_path(game), params: params
-      expect(response).to have_http_status(:no_content)
+      expect(response).to have_http_status(:ok)
     end
   end
 

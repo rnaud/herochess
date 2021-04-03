@@ -4,7 +4,7 @@
       .row{"data-row": row}
         - 8.times do |square|
           - square_id = Helper.pt([row, square])
-          .square{data: {row: row, col: square, square: square_id}, id: "square_#{square_id}"}
+          .square{data: {row: row, row_str: square_id[1], col: square, col_str: square_id[0], square: square_id}, id: "square_#{square_id}"}
             - piece = game.board.squares[row][square]
             - if piece
               .piece{data: {moves: piece.possible_moves_str}}

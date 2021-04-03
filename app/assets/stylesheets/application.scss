@@ -14,8 +14,12 @@
  *= require_self
  */
 
+$primary_color: #c5a076;
+$secondary_color: #ecdab9;
+$text_color: #444;
+
 * {box-sizing: border-box;}
-body {color: #444;}
+body {color: $text_color;}
 
 #move_form {display: none;}
 
@@ -44,13 +48,44 @@ h1 {text-align: center}
 #next .title {font-weight: bold;}
 #errors {color: red;}
 
-#chessboard {width: 500px; position: absolute; left: 10px; top: 10px;}
-#chessboard .square {display: inline-block; width: 50px; height: 50px; background: #ecdab9; border: 1px solid transparent;}
-#chessboard .square img {width: 50px; height: 50px;}
+#chessboard {width: 400px; position: absolute; left: 10px; top: 10px;}
+#chessboard .row {height: 50px; display: flex;}
+#chessboard .square {width: 50px; height: 50px; background: $secondary_color; border: 1px solid transparent; position: relative;}
+#chessboard .square .piece {width: 48px; height: 48px;}
+#chessboard .square img {width: 48px; height: 48px;}
 
 #chessboard .row:nth-child(odd) .square:nth-child(even),
 #chessboard .row:nth-child(even) .square:nth-child(odd) {
-  background: #c5a076;
+  background: $primary_color;
+}
+
+#chessboard .row[data-row="7"] .square:after,
+#chessboard .square[data-col="0"]:before {
+  font-weight: bold;
+  font-size: 12px;
+  position: absolute;
+} 
+#chessboard .row[data-row="7"] .square:after {
+  content: attr(data-col-str);
+  right: 0;
+  bottom: 0;
+  color: $primary_color;
+}
+
+#chessboard .square[data-col="0"]:before {
+  content: attr(data-row-str);
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: $secondary_color;
+}
+
+#chessboard .row:nth-child(odd) .square[data-col="0"]:before {
+  color: $primary_color;
+}
+
+#chessboard .square[data-row="7"]:nth-child(odd):after {
+  color: $secondary_color;
 }
 
 #chessboard .square.drop-active {border: 1px solid green;}
