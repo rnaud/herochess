@@ -23,11 +23,11 @@ module Piece
       status = super
 
       original_position = position_histories[0]
-      
+
       castling_that_changed = nil
 
       if original_position[1] == LEFT_COL && @board.castling_priviledges[color][:left]
-        @board.castling_priviledges[color][:left] = false 
+        @board.castling_priviledges[color][:left] = false
         castling_that_changed = :left
       end
 
@@ -44,7 +44,7 @@ module Piece
     def undo_last_move!
       super
 
-      case @castling_histories.last 
+      case @castling_histories.last
       when :left
         @board.castling_priviledges[color][:left] = true
       when :right

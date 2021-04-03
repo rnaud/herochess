@@ -2,7 +2,7 @@
 
 module Piece
   class King < Piece::Base
-    attr_reader:capture_histories
+
     ICONS = {
       white: "♔",
       black: "♚"
@@ -61,28 +61,28 @@ module Piece
 
       current_castling = [@board.castling_priviledges[color][:left], @board.castling_priviledges[color][:right]]
 
-      case current_castling
-      when [true, true]
-        castling_that_changed = :both
-      when [true, false]
-        castling_that_changed = :left
-      when [false, true]
-        castling_that_changed = :right
-      else
-        castling_that_changed = :neither
-      end
+      castling_that_changed = case current_castling
+                              when [true, true]
+                                :both
+                              when [true, false]
+                                :left
+                              when [false, true]
+                                :right
+                              else
+                                :neither
+                              end
       @castling_histories << castling_that_changed
 
       @board.castling_priviledges[color][:left] = false
       @board.castling_priviledges[color][:right] = false
-      
+
       status
     end
 
     def undo_last_move!
       super
-      
-      case @castling_histories.last 
+
+      case @castling_histories.last
       when :both
         @board.castling_priviledges[color][:left] = true
         @board.castling_priviledges[color][:right] = true

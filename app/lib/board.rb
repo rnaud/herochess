@@ -136,7 +136,7 @@ class Board
     piece.move_to!(end_position)
 
     result = in_check?(piece.color)
-    
+
     piece.undo_last_move!
 
     result
@@ -147,9 +147,7 @@ class Board
     cant_get_out = true
     team_pieces.each do |p|
       p.possible_moves(type: :attack).each do |coord|
-        unless in_check_after_move?(p, coord)
-          cant_get_out = false 
-        end
+        cant_get_out = false unless in_check_after_move?(p, coord)
       end
     end
     cant_get_out
