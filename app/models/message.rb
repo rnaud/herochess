@@ -6,9 +6,6 @@ class Message < ApplicationRecord
   after_create_commit do
     broadcast_append_to "game_#{game.id}_messages"
   end
-  after_update_commit do
-    broadcast_replace_to "game_#{game.id}_messages"
-  end
   after_destroy_commit do
     broadcast_remove_to "game_#{game.id}_messages"
   end

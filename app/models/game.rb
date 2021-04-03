@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class Game < ApplicationRecord
-  attr_accessor :board, :en_passant, :from, :to, :fen_initial
+  attr_accessor :board, :en_passant, :from, :to, :fen_initial, :last_piece_moved
   attr_reader :color
 
   after_initialize :load_defaults
@@ -72,7 +72,7 @@ class Game < ApplicationRecord
 
   def move(from:, to:, who_is_playing: nil)
     who_is_playing = turn if who_is_playing.nil?
-    _piece, status = board.move(from, to, turn, who_is_playing)
+    @last_piece_moved, status = board.move(from, to, turn, who_is_playing)
 
     increment_half_moves!(status)
     self.en_passant = to if status == :pawn_moved
@@ -84,6 +84,14 @@ class Game < ApplicationRecord
     Rails.logger.error e.message
     Rails.logger.error e.backtrace
     "#{state} - #{e}"
+  end
+
+  def undo_last_move!
+    last_piece_moved.undo_last_move!
+    #TODO undo half moves
+    self.turn = Helper.invert_color(turn)
+    self.moves_count -= 1 if turn == :black
+    update_state
   end
 
   def parse_fen(fen_str)

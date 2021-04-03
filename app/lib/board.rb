@@ -7,7 +7,7 @@ class Board
   COLUMN_INDEX = ("a".."h").to_a
   LINE_INDEX = ("1".."8").to_a.reverse
 
-  attr_reader :squares, :captured_pieces, :pieces, :game
+  attr_reader :squares, :captured_pieces, :pieces, :game, :promoted_pieces
   attr_accessor :castling_priviledges, :moves, :debug
 
   def initialize(game:)
@@ -20,6 +20,7 @@ class Board
     @moves = []
     @pieces = []
     @captured_pieces = []
+    @promoted_pieces = []
     @debug = false
     @castling_priviledges = {
       black: {
@@ -106,6 +107,18 @@ class Board
     pieces.any? do |p|
       p.color == color && p.possible_moves(type: :attack).include?(coord)
     end
+  end
+
+  def pawn_promoted!(pawn, new_piece)
+    @pieces.push(new_piece)
+    @pieces.delete(pawn)
+    @promoted_pieces.push(pawn)
+  end
+
+  def pawn_unpromoted!(pawn, new_piece)
+    @promoted_pieces.delete(pawn)
+    @pieces.delete(new_piece)
+    @pieces.push(pawn)
   end
 
   def piece_captured!(piece)

@@ -7,6 +7,9 @@ module Piece
       black: "♟︎"
     }.freeze
 
+    BLACK_PROMOTION = 7
+    WHITE_PROMOTION = 0
+
     attr_accessor :promoted_to
 
     def directions(type:)
@@ -57,14 +60,25 @@ module Piece
     end
 
     def can_be_promoted?
-      color == :white && @position[0] == 7 ||
-        color == :black && (@position[0]).zero?
+      color == :white && row == WHITE_PROMOTION ||
+        color == :black && row == BLACK_PROMOTION
     end
 
     def promote!(_klass = Queen)
       new_piece = Queen.new(color: @color, position: @position, board: @board, was: self)
-      self.promoted_to = new_piece
+      @promoted_to = new_piece
       new_piece.move_to!(@position)
+      @board.pawn_promoted!(self, new_piece)
+    end
+
+    def unpromote!
+      @board.pawn_unpromoted!(self, @promoted_to)
+      @promoted_to = nil
+    end
+
+    def undo_last_move!
+      super
+      unpromote! if promoted_to
     end
   end
 end

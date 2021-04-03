@@ -21,6 +21,9 @@
       = form.text_field :message
       = form.submit
 
+  .side-block
+    = link_to "Destroy", @game, method: :delete, data: { confirm: "Are you sure?" }
+
 = form_with model: @game, id: "move_form" do |form|
   = form.hidden_field :color, value: @player
   = form.text_field :from

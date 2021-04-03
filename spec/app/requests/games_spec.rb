@@ -8,14 +8,21 @@ RSpec.describe "Games", type: :request do
   describe "GET /games" do
     it "returns games" do
       get games_path
-      expect(response).to have_http_status(200)
+      expect(response).to have_http_status(:ok)
     end
   end
 
   describe "GET /games/new" do
     it "returns games" do
       get new_game_path
-      expect(response).to have_http_status(302)
+      expect(response).to have_http_status(:found)
+    end
+  end
+
+  describe "GET /games/:id" do
+    it "returns the right game" do
+      get game_path(game)
+      expect(response).to have_http_status(:ok)
     end
   end
 
@@ -29,6 +36,13 @@ RSpec.describe "Games", type: :request do
       }
       patch game_path(game), params: params
       expect(response).to have_http_status(:no_content)
+    end
+  end
+
+  describe "DELETE /games/:id" do
+    it "can delete a game" do
+      delete game_path(game)
+      expect(response).to have_http_status(:found)
     end
   end
 end

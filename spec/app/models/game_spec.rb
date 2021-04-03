@@ -45,7 +45,7 @@ describe Game do
     expect(game.move(from: "e7", to: "e2")).to eq "in check, white to play"
   end
 
-  it "can castle when time to do so" do
+  it "can left castle" do
     game = Game.new
     game.move(from: "e2", to: "e4") # move a white pawn
     game.move(from: "e7", to: "e5") # move a black pawn
@@ -59,6 +59,41 @@ describe Game do
 
     # white side no longer has castling priviledges
     expect(game.fen).to eq "rnbqkbnr/2pp1ppp/8/pp2p3/2B1P3/5N2/PPPP1PPP/RNBQ1RK1 b kq b5 3 1"
+  end
+
+  it "can right castle" do
+    game = Game.new
+    game.move(from: "e2", to: "e4") # move a white pawn
+    game.move(from: "e7", to: "e5") # move a black pawn
+    game.move(from: "d2", to: "d4") # move a white pawn
+    game.move(from: "e5", to: "d4") # take with black pawn
+    game.move(from: "c1", to: "f4") # move the white bishop
+    game.move(from: "d7", to: "d5") # move a black pawn
+    game.move(from: "b1", to: "a3") # move the white knight
+    game.move(from: "b7", to: "b5") # move a black pawn
+    game.move(from: "d1", to: "d2") # move the white queen
+    game.move(from: "d8", to: "d7") # move a black pawn
+    # still has castling priviledges
+    expect(game.fen).to eq "rnb1kbnr/p1pq1ppp/8/1p1p4/3pPB2/N7/PPPQ1PPP/R3KBNR w KQkq b5 5 2"
+    expect(game.move(from: "e1", to: "b1")).to eq "white to play - This piece cannot go here"
+    expect(game.move(from: "e1", to: "c1")).to eq "black to play" # move the white king to castle
+
+    # white side no longer has castling priviledges
+    expect(game.fen).to eq "rnb1kbnr/p1pq1ppp/8/1p1p4/3pPB2/N7/PPPQ1PPP/2KR1BNR b kq b5 5 3"
+  end
+
+  it "can promote a pawn" do
+    game = Game.new(fen_initial: "k7/4P3/8/8/8/8/8/K7 w - - 10 0")
+    game.move(from: "e7", to: "e8")
+    expect(game.fen).to eq "k3Q3/8/8/8/8/8/8/K7 b - e8 10 0" #the pawn is now a queen
+    expect(game.state).to eq "in check, black to play"
+
+    game.undo_last_move!
+
+    expect(game.fen).to eq "k7/4P3/8/8/8/8/8/K7 w - e8 10 0" #pawn is back, white to play
+    game.move(from: "e7", to: "e8")
+    expect(game.fen).to eq "k3Q3/8/8/8/8/8/8/K7 b - e8 10 0" #the pawn is now a queen
+    expect(game.state).to eq "in check, black to play"
   end
 
   it "can parse fen" do
