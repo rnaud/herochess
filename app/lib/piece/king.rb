@@ -2,7 +2,6 @@
 
 module Piece
   class King < Piece::Base
-
     ICONS = {
       white: "♔",
       black: "♚"
@@ -105,7 +104,7 @@ module Piece
       end
 
       @castling_histories.pop
-      binding.pry if @board.debug
+
       case castling_direction
       when :left
         left_rook = @board.find_piece([position[0], Rook::CASTLE_LEFT_COL])

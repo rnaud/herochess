@@ -46,8 +46,6 @@ module Piece
     def undo_last_move!
       super
 
-      binding.pry if @debug
-
       case @castling_histories.last
       when :left
         @board.castling_priviledges[color][:left] = true

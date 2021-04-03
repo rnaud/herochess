@@ -54,7 +54,7 @@ describe Game do
     game.move(from: "g1", to: "f3") # move the white knight
     game.move(from: "b7", to: "b5") # move a black pawn
     # still has castling priviledges
-    expect(game.fen).to eq "rnbqkbnr/2pp1ppp/8/pp2p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq b5 3 0" 
+    expect(game.fen).to eq "rnbqkbnr/2pp1ppp/8/pp2p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq b5 3 0"
     game.move(from: "e1", to: "g1") # move the white king to castle
 
     # white side no longer has castling priviledges

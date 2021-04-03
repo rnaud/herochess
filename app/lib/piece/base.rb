@@ -116,7 +116,7 @@ module Piece
 
     def undo_last_move!
       @board.remove_piece!(position)
-      if last_captured_piece = capture_histories.last
+      if (last_captured_piece = capture_histories.last)
         last_captured_piece.uncapture!
         @board.place_piece!(last_captured_piece, position)
       end
@@ -147,6 +147,5 @@ module Piece
     def col
       position[1]
     end
-
   end
 end
