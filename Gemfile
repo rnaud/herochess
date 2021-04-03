@@ -22,6 +22,7 @@ gem "colorize"
 gem "pry"
 gem "redis"
 gem "rubocop-rails"
+gem "ruby-prof"
 
 gem "haml-rails", "~> 2.0"
 gem "hotwire-rails"

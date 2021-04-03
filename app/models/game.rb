@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class Game < ApplicationRecord
-  attr_accessor :board, :en_passant, :from, :to, :fen_initial, :last_piece_moved, :color
+  attr_accessor :board, :en_passant, :from, :to, :fen_initial, :color, :pieces_moved
 
   after_initialize :load_defaults
   validate :move_board_and_validate
@@ -82,7 +82,8 @@ class Game < ApplicationRecord
 
   def move(from:, to:, who_is_playing: nil)
     who_is_playing = turn if who_is_playing.nil?
-    @last_piece_moved, status = board.move(from, to, turn, who_is_playing)
+    piece_moved, status = board.move(from, to, turn, who_is_playing)
+    self.pieces_moved << piece_moved
 
     increment_half_moves!(status)
     self.en_passant = to if status == :pawn_moved
@@ -99,6 +100,7 @@ class Game < ApplicationRecord
   end
 
   def undo_last_move!
+    last_piece_moved = pieces_moved.pop
     last_piece_moved.undo_last_move!
     # TODO: undo half moves
     self.turn = Helper.invert_color(turn)
@@ -123,6 +125,8 @@ class Game < ApplicationRecord
   end
 
   def load_defaults
+    self.pieces_moved = []
+    
     if persisted?
       self.board = Marshal.load(Base64.decode64(serialized_board))
     else
@@ -174,7 +178,20 @@ class Game < ApplicationRecord
     @board.possible_moves(turn)
   end
 
-  def explore_moves(depth)
+  def explore_moves(depth = 0)
+    return if depth > 1
+    
+    possible_moves.each do |move|
+      from = Helper.pt(move[1])
+      to = Helper.pt(move[2])
+      
+      move(from: from, to: to)
+      score = board.score
+      # puts "turn #{turn} depth #{depth}"
+      # puts "move: #{move[0].inspect} - #{from} - #{to} score: #{score}"
+      explore_moves(depth + 1)
+      undo_last_move!
+    end
   end
 
   def best_move
