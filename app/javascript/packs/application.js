@@ -125,10 +125,34 @@ interact('.piece')
         endOnly: true
       })
     ]
-  })
+  }).actionChecker(function (pointer, event, action) {
+    if (event.button !== 0 || event.ctrlKey == true) {
+      return null;
+    }
 
+    return action;
+  });
+
+  moveLastPiece()
+}
+
+window.moveLastPiece = function moveLastPiece() {
+  // remove translate from last moved to make it move to the right place
+  var lastMoved = document.getElementById('last-moved')
+  if (lastMoved) {
+    lastMoved.style = ""
+    setTimeout(function(){
+      lastMoved.classList.remove('transition')
+    },500)  
+  }
 }
 
 document.addEventListener("turbo:load", function() {
-  setupPage()
+  console.log("turbo:load")
+  setupPage();
+});
+
+document.addEventListener("turbo:render", function() {
+  console.log("turbo:render")
+  moveLastPiece();
 });

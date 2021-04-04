@@ -24,7 +24,7 @@
   .block
     = link_to "Destroy", @game, method: :delete, data: { confirm: "Are you sure?" }
 
-= form_with model: @game, id: "move_form" do |form|
+= form_with model: @game, id: "move_form", data: { controller: "chessboard", action: 'turbo:submit-end->chessboard#move' } do |form|
   = form.hidden_field :color, value: @player
   = form.text_field :from
   = form.text_field :to

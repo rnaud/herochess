@@ -1,11 +1,24 @@
 $primary_color: #c5a076;
 $secondary_color: #ecdab9;
+$square_size: 60px;
+$board_size: $square_size * 8;
 
-#chessboard {width: 452px; position: absolute; left: 10px; top: 10px; border: 10px solid rgba(255,255,255, 0.5);}
-#chessboard .row {height: 50px; display: flex;}
-#chessboard .square {width: 54px; height: 54px; background: $secondary_color; border: 2px solid transparent; position: relative;}
-#chessboard .square .piece {width: 50px; height: 50px; z-index: 100; position: relative; touch-action: none;}
-#chessboard .square img {width: 50px; height: 50px;}
+#game {padding-left: $board_size + 60; }
+
+#chessboard {width: $board_size; position: absolute; left: 10px; top: 10px; border: 10px solid rgba(255,255,255, 0.5); box-sizing: content-box;}
+#chessboard .row {height: $square_size; display: flex;}
+#chessboard .square {width: $square_size; height: $square_size; background: $secondary_color; position: relative;}
+#chessboard .square .piece {width: $square_size; height: $square_size; z-index: 100; position: relative; touch-action: none;}
+#chessboard .square img {width: $square_size; height: $square_size;}
+
+#chessboard #last-moved {
+  transform: translate(0,0);
+}
+
+#chessboard #last-moved.transition {
+  transition: all 0.3s ease-in;
+  transition-delay: 0.2s;
+}
 
 #chessboard .row:nth-child(odd) .square:nth-child(even),
 #chessboard .row:nth-child(even) .square:nth-child(odd) {
@@ -41,6 +54,6 @@ $secondary_color: #ecdab9;
   color: $secondary_color;
 }
 
-#chessboard .square.drop-active {border: 2px solid green;}
-#chessboard .square.drop-target {border: 2px solid gray;}
+#chessboard .square.drop-active {background: green !important; }
+#chessboard .square.drop-target {background: gray !important;}
 
