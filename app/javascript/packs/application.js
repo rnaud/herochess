@@ -133,26 +133,28 @@ interact('.piece')
     return action;
   });
 
-  moveLastPiece()
+  
 }
 
 window.moveLastPiece = function moveLastPiece() {
   // remove translate from last moved to make it move to the right place
   var lastMoved = document.getElementById('last-moved')
+  console.log(lastMoved)
   if (lastMoved) {
+    console.log(lastMoved.style)
     lastMoved.style = ""
     setTimeout(function(){
       lastMoved.classList.remove('transition')
-    },500)  
+    }, 500)  
   }
 }
 
-document.addEventListener("turbo:load", function() {
-  console.log("turbo:load")
+document.addEventListener("DOMContentLoaded", function() {
+  console.log("DOMContentLoaded")
   setupPage();
 });
 
-document.addEventListener("turbo:render", function() {
-  console.log("turbo:render")
+document.addEventListener("turbo:load", function() {
+  console.log("turbo:load")
   moveLastPiece();
 });

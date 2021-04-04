@@ -1,2 +1,4 @@
 = turbo_frame_tag dom_id(game), target: "_top" do
-  %li.game-list-item= link_to "#{game.state} - #{game.turn}".capitalize, game_path(game)
+  %li.game-list-item
+    = link_to "#{game.state} - #{game.turn}".capitalize, game_path(game)
+    %span.time= time_ago_in_words(game.updated_at)
