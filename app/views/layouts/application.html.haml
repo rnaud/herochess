@@ -6,9 +6,10 @@
     %meta{:content => "width=device-width,initial-scale=1", :name => "viewport"}/
     = csrf_meta_tags
     = csp_meta_tag
-    %link{rel: "stylesheet", href: "/css/chessboard.css"}
     = stylesheet_link_tag 'application', media: 'all', 'data-turbolinks-track': 'reload'
     = javascript_pack_tag 'application', 'data-turbolinks-track': 'reload'
+    %link{rel:"stylesheet", href: "https://fonts.googleapis.com/css2?family=Train+One&display=swap"}
   %body
-    %h1= link_to "Hero Chess", root_path
-    = yield
+    %h1= link_to "HEROCHESS", root_path
+    #main
+      = yield

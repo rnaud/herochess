@@ -14,82 +14,60 @@
  *= require_self
  */
 
-$primary_color: #c5a076;
-$secondary_color: #ecdab9;
+ @import url('https://fonts.googleapis.com/css2?family=Train+One&display=swap');
+
+
 $text_color: #444;
 
-* {box-sizing: border-box;}
-body {color: $text_color;}
-
-#move_form {display: none;}
-
-h1 {text-align: center}
-
-#game {
-  margin: 0 auto;
-  max-width: 1024px;
-  padding-top: 10px;
-  padding-left: 450px; 
-  padding-right: 20px; 
-  padding-bottom: 10px;
-  position: relative;
+* {box-sizing: border-box; font-family: Helvetica;}
+body h1 {
+  text-align: center;
 }
 
-.side-block {
-  background: #eee; 
+h2, h3, h4 {text-transform: uppercase;}
+
+body h1 a {
+  font-family: 'Train One', cursive;
+  color: white;
+  text-decoration: none;
+  font-size: 40px;
+  text-shadow: 1px 1px 2px rgba(0,0,0, 0.5)
+}
+
+body {
+  color: $text_color;
+  min-height: 100vh;
+  background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+  background-size: 400% 400%;
+  animation: gradient 15s ease infinite;
+  padding-top: 20px;
+}
+
+@keyframes gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+
+h4 {margin: 0 0 10px 0;}
+
+.block {
+  max-width: 500px;
+  background: rgba(255,255,255, 0.2);
   padding: 20px;
   margin-bottom: 20px;
   border-radius: 5px;
+  box-shadow: 0 0 2px rgba(255, 255, 255, 0.2);
 }
 
-#player {font-size: 18px; font-weight: bold;}
-#next {margin-top: 10px;}
-#next #error {color: red;}
-#next .title {font-weight: bold;}
-#errors {color: red;}
-
-#chessboard {width: 400px; position: absolute; left: 10px; top: 10px;}
-#chessboard .row {height: 50px; display: flex;}
-#chessboard .square {width: 50px; height: 50px; background: $secondary_color; border: 1px solid transparent; position: relative;}
-#chessboard .square .piece {width: 48px; height: 48px; z-index: 100; position: relative;}
-#chessboard .square img {width: 48px; height: 48px;}
-
-#chessboard .row:nth-child(odd) .square:nth-child(even),
-#chessboard .row:nth-child(even) .square:nth-child(odd) {
-  background: $primary_color;
+#index {
+  margin: 20px auto 0;
+  width: 500px;
 }
-
-#chessboard .row[data-row="7"] .square:after,
-#chessboard .square[data-col="0"]:before {
-  font-weight: bold;
-  font-size: 12px;
-  position: absolute;
-} 
-#chessboard .row[data-row="7"] .square:after {
-  content: attr(data-col-str);
-  right: 0;
-  bottom: 0;
-  color: $primary_color;
-}
-
-#chessboard .square[data-col="0"]:before {
-  content: attr(data-row-str);
-  position: absolute;
-  left: 0;
-  top: 0;
-  color: $secondary_color;
-}
-
-#chessboard .row:nth-child(odd) .square[data-col="0"]:before {
-  color: $primary_color;
-}
-
-#chessboard .square[data-row="7"]:nth-child(odd):after {
-  color: $secondary_color;
-}
-
-#chessboard .square.drop-active {border: 1px solid green;}
-#chessboard .square.drop-target {border: 1px solid red;}
-
-.message .user {font-weight: bold; font-size: 10px;}
-.message .time {float: right; font-size: 10px;}

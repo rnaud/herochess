@@ -1,10 +1,15 @@
-%h4 Current games
+#index
+  .block
+    %h4 Current games
 
-= turbo_stream_from "games"
-= turbo_frame_tag "games" do
-  = render partial: "games/game_list", collection: @games, as: :game
+    = turbo_stream_from "games"
+    %ul
+      = turbo_frame_tag "games" do
+        = render partial: "games/game_list", collection: @games, as: :game
 
-.div Welcome, create a new game
 
-= link_to "Start Game (vs Human)", new_game_path
-= link_to "Start Game (vs Computer)", new_game_path(versus: :ai)
+  .block.new-game
+    %h4 Start a new game
+
+    = link_to "vs Human", new_game_path, class: "button2"
+    = link_to "vs Computer", new_game_path(versus: :ai), class: "button2"

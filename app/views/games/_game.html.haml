@@ -10,13 +10,13 @@
               .piece{data: {moves: piece.possible_moves_str}}
                 = image_tag "pieces/#{piece.color}_#{piece.name}.png"
 
-  #game-info.side-block
-    #next
-      #versus= game.versus
-      #state= game.state
-      #errors
-        - game.errors.each do |e|
-          = e.message
+  #game-info.block
+    %h4 State
+    #versus= "versus: #{game.versus}"
+    #state= "status: #{game.state}"
+    #errors
+      - game.errors.each do |e|
+        = e.message
     #moves
       %ul#moves_list
         - game.board.moves.each do |m|

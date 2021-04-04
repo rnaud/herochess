@@ -1,6 +1,6 @@
 #game
-  #player-header.side-block
-    #player You are the #{@player} player
+  #player-header.block
+    %h4#player #{@player} player
     - if @player == :white
       #invite
         = link_to "Link to invite black to play", game_path(@game, color: :black)
@@ -9,7 +9,7 @@
     = turbo_stream_from "game_#{@game.id}"
     = render @game
 
-  #messages-container.side-block
+  #messages-container.block
     %h3 Messages
     #messages
       = turbo_stream_from "game_#{@game.id}_messages"
@@ -21,7 +21,7 @@
       = form.text_field :message
       = form.submit
 
-  .side-block
+  .block
     = link_to "Destroy", @game, method: :delete, data: { confirm: "Are you sure?" }
 
 = form_with model: @game, id: "move_form" do |form|
