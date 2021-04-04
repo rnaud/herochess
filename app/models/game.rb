@@ -83,7 +83,7 @@ class Game < ApplicationRecord
   def move(from:, to:, who_is_playing: nil)
     who_is_playing = turn if who_is_playing.nil?
     piece_moved, status = board.move(from, to, turn, who_is_playing)
-    self.pieces_moved << piece_moved
+    pieces_moved << piece_moved
 
     increment_half_moves!(status)
     self.en_passant = to if status == :pawn_moved
@@ -126,7 +126,7 @@ class Game < ApplicationRecord
 
   def load_defaults
     self.pieces_moved = []
-    
+
     if persisted?
       self.board = Marshal.load(Base64.decode64(serialized_board))
     else
@@ -180,15 +180,15 @@ class Game < ApplicationRecord
 
   def explore_moves(depth = 0)
     return if depth > 1
-    
+
     possible_moves.each do |move|
       from = Helper.pt(move[1])
       to = Helper.pt(move[2])
-      
+
       move(from: from, to: to)
       score = board.score
-      # puts "turn #{turn} depth #{depth}"
-      # puts "move: #{move[0].inspect} - #{from} - #{to} score: #{score}"
+      Rails.logger.debug "turn #{turn} depth #{depth}"
+      Rails.logger.debug "move: #{move[0].inspect} - #{from} - #{to} score: #{score}"
       explore_moves(depth + 1)
       undo_last_move!
     end
@@ -203,7 +203,7 @@ class Game < ApplicationRecord
     piece = move[0]
     from = Helper.pt(move[1])
     to = Helper.pt(move[2])
-    Rails.logger.warn("ai_move from: #{from} to #{to}")
+    Rails.logger.debug("ai_move piece: #{piece.inspect} from: #{from} to #{to}")
     move(from: from, to: to)
   end
 end
