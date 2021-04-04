@@ -12,13 +12,15 @@ module Piece
     }.freeze
     SCORE = 50
 
+    DIRECTIONS = {
+      up: [-1, 0],
+      down: [1, 0],
+      left: [0, -1],
+      right: [0, 1]
+    }.freeze
+
     def directions(type:)
-      {
-        up: [-1, 0],
-        down: [1, 0],
-        left: [0, -1],
-        right: [0, 1]
-      }
+      DIRECTIONS
     end
 
     def move_to!(end_position)

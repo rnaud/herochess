@@ -7,7 +7,7 @@ class Board
   COLUMN_INDEX = ("a".."h").to_a
   LINE_INDEX = ("1".."8").to_a.reverse
 
-  attr_reader :squares, :captured_pieces, :pieces, :game, :promoted_pieces
+  attr_reader :squares, :captured_pieces, :pieces, :game, :promoted_pieces, :white_king, :black_king
   attr_accessor :castling_priviledges, :moves, :debug
 
   def initialize(game:)
@@ -91,7 +91,7 @@ class Board
   end
 
   def find_king(color)
-    @pieces.find { |p| p.is_a?(Piece::King) && p.color == color }
+    color == :white ? white_king : black_king
   end
 
   def square_attacked?(color, coord)
@@ -101,8 +101,7 @@ class Board
   end
 
   def possible_moves(color)
-    team_pieces = pieces_with(color: color)
-    team_pieces.map do |piece|
+    pieces_with(color: color).map do |piece|
       piece.possible_moves.map do |move|
         [piece, piece.position, move] unless in_check_after_move?(piece, move)
       end
@@ -133,14 +132,12 @@ class Board
 
   def pieces_with(color: nil)
     return @pieces if color.nil?
-
     @pieces.select { |p| p.color == color }
   end
 
   def in_check?(color)
     king = find_king(color)
-    other_team_pieces = pieces_with(color: Helper.invert_color(color))
-    other_team_pieces.any? do |piece|
+    pieces_with(color: Helper.invert_color(color)).any? do |piece|
       piece.possible_moves(type: :attack).include?(king.position)
     end
   end
@@ -156,11 +153,14 @@ class Board
   end
 
   def cant_get_out?(color)
-    team_pieces = pieces_with(color: color)
     cant_get_out = true
-    team_pieces.each do |p|
+    pieces_with(color: color).each do |p|
       p.possible_moves(type: :attack).each do |coord|
-        cant_get_out = false unless in_check_after_move?(p, coord)
+        unless in_check_after_move?(p, coord)
+          cant_get_out = false 
+          break
+        end
+        break if cant_get_out == false 
       end
     end
     cant_get_out
@@ -202,8 +202,18 @@ class Board
     coords = [coords] if coords.is_a?(String)
     coords.each do |coord|
       coord = Helper.pt(coord) if coord.is_a?(String)
-      @pieces << @squares[coord[0]][coord[1]] =
+      new_piece = @squares[coord[0]][coord[1]] =
                    klass.new(color: color, position: coord, board: self)
+
+      @pieces << new_piece
+      
+      if new_piece.class == Piece::King
+        if new_piece.color == :white
+          @white_king = new_piece
+        else
+          @black_king = new_piece
+        end
+      end
     end
   end
 end

@@ -91,7 +91,7 @@ describe Game do
     game.move(from: "e1", to: "g1") # move the white king to castle
 
     # white side no longer has castling priviledges
-    expect(game.fen).to eq "rnbqkbnr/2pp1ppp/8/pp2p3/2B1P3/5N2/PPPP1PPP/RNBQ1RK1 b kq b5 3 1"
+    expect(game.fen).to eq "rnbqkbnr/2pp1ppp/8/pp2p3/2B1P3/5N2/PPPP1PPP/RNBQ1RK1 b kq - 3 1"
   end
 
   it "can right castle" do
@@ -107,7 +107,7 @@ describe Game do
     game.move(from: "d1", to: "d2") # move the white queen
     game.move(from: "d8", to: "d7") # move a black pawn
     # still has castling priviledges
-    expect(game.fen).to eq "rnb1kbnr/p1pq1ppp/8/1p1p4/3pPB2/N7/PPPQ1PPP/R3KBNR w KQkq b5 5 2"
+    expect(game.fen).to eq "rnb1kbnr/p1pq1ppp/8/1p1p4/3pPB2/N7/PPPQ1PPP/R3KBNR w KQkq - 5 2"
 
     # move too far, king cannot go to b1
     game.move(from: "e1", to: "b1")
@@ -120,7 +120,7 @@ describe Game do
     expect(game.turn).to eq :black
 
     # white side no longer has castling priviledges
-    expect(game.fen).to eq "rnb1kbnr/p1pq1ppp/8/1p1p4/3pPB2/N7/PPPQ1PPP/2KR1BNR b kq b5 5 3"
+    expect(game.fen).to eq "rnb1kbnr/p1pq1ppp/8/1p1p4/3pPB2/N7/PPPQ1PPP/2KR1BNR b kq - 5 3"
   end
 
   it "can promote a pawn" do

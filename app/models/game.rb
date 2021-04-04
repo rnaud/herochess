@@ -83,9 +83,10 @@ class Game < ApplicationRecord
   end
 
   def move(from:, to:, who_is_playing: nil)
+    self.en_passant = nil
     who_is_playing = turn if who_is_playing.nil?
     piece_moved, status = board.move(from, to, turn, who_is_playing)
-    pieces_moved << piece_moved
+    pieces_moved << [status, piece_moved]
 
     increment_half_moves!(status)
     self.en_passant = to if status == :pawn_moved
@@ -102,8 +103,10 @@ class Game < ApplicationRecord
   end
 
   def undo_last_move!
-    last_piece_moved = pieces_moved.pop
-    last_piece_moved.undo_last_move!
+    status, piece = pieces_moved.pop
+    # self.en_passant = Helper.pt(piece.position) if status = :pawn_moved
+    piece.undo_last_move!
+    
     # TODO: undo half moves
     self.turn = Helper.invert_color(turn)
     self.moves_count -= 1 if turn == :black

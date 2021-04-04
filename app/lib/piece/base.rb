@@ -133,7 +133,7 @@ module Piece
     end
 
     def name
-      self.class.name.downcase.demodulize
+      @name ||= self.class.name.downcase.demodulize
     end
 
     def row

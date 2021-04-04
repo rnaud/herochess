@@ -7,14 +7,15 @@ module Piece
       black: "♝"
     }.freeze
     SCORE = 30
+    DIRECTIONS = {
+      nw: [-1, -1],
+      ne: [-1, 1],
+      sw: [1, -1],
+      se: [1, 1]
+    }.freeze
 
     def directions(type:)
-      {
-        nw: [-1, -1],
-        ne: [-1, 1],
-        sw: [1, -1],
-        se: [1, 1]
-      }
+      DIRECTIONS
     end
   end
 end
