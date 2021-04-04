@@ -106,6 +106,7 @@ class Game < ApplicationRecord
     _status, piece = pieces_moved.pop
     # self.en_passant = Helper.pt(piece.position) if status = :pawn_moved
     piece.undo_last_move!
+    @board.moves.pop
 
     # TODO: undo half moves
     self.turn = Helper.invert_color(turn)
