@@ -103,10 +103,10 @@ class Game < ApplicationRecord
   end
 
   def undo_last_move!
-    status, piece = pieces_moved.pop
+    _status, piece = pieces_moved.pop
     # self.en_passant = Helper.pt(piece.position) if status = :pawn_moved
     piece.undo_last_move!
-    
+
     # TODO: undo half moves
     self.turn = Helper.invert_color(turn)
     self.moves_count -= 1 if turn == :black

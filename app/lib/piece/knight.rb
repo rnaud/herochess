@@ -19,7 +19,7 @@ module Piece
     SCORE = 30
 
     def directions(type:)
-      DIRECTIONS      
+      DIRECTIONS
     end
   end
 end

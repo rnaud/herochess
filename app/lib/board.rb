@@ -132,6 +132,7 @@ class Board
 
   def pieces_with(color: nil)
     return @pieces if color.nil?
+
     @pieces.select { |p| p.color == color }
   end
 
@@ -157,10 +158,10 @@ class Board
     pieces_with(color: color).each do |p|
       p.possible_moves(type: :attack).each do |coord|
         unless in_check_after_move?(p, coord)
-          cant_get_out = false 
+          cant_get_out = false
           break
         end
-        break if cant_get_out == false 
+        break if cant_get_out == false
       end
     end
     cant_get_out
@@ -203,11 +204,11 @@ class Board
     coords.each do |coord|
       coord = Helper.pt(coord) if coord.is_a?(String)
       new_piece = @squares[coord[0]][coord[1]] =
-                   klass.new(color: color, position: coord, board: self)
+        klass.new(color: color, position: coord, board: self)
 
       @pieces << new_piece
-      
-      if new_piece.class == Piece::King
+
+      if new_piece.instance_of?(Piece::King)
         if new_piece.color == :white
           @white_king = new_piece
         else
