@@ -29,7 +29,7 @@ module Piece
     ]
 
     def directions(type:)
-      DIRECTIONS
+      self.class::DIRECTIONS
     end
 
     def move_to!(end_position)

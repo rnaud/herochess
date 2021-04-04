@@ -40,7 +40,7 @@ describe Game do
     game.move(from: "e7", to: "e5")
     game.move(from: "d4", to: "e5")
     expect(game.state).to be :play
-    expect(game.board.score).to eq 10
+    expect(game.board.score).to eq 8
     game.render
   end
 

@@ -29,7 +29,7 @@ module Piece
     ]
 
     def directions(type:)
-      DIRECTIONS
+      self.class::DIRECTIONS
     end
   end
 end

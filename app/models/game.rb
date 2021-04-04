@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class Game < ApplicationRecord
-  attr_accessor :board, :en_passant, :from, :to, :fen_initial, :color, :pieces_moved
+  attr_accessor :board, :en_passant, :from, :to, :fen_initial, :color, :pieces_moved, :heroes
 
   after_initialize :load_defaults
   validate :move_board_and_validate
@@ -140,7 +140,7 @@ class Game < ApplicationRecord
       if fen_initial
         parse_fen(fen_initial)
       else
-        board.spawn_pieces!
+        board.spawn_pieces!(heroes: heroes)
       end
       update_state
     end

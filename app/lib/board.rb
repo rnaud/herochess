@@ -183,7 +183,7 @@ class Board
     @captured_pieces.map(&:score).sum + @pieces.map(&:positional_score).sum
   end
 
-  def spawn_pieces!
+  def spawn_pieces!(heroes: false)
     spawn(Piece::Pawn, :black, (0..7).to_a.map { |i| [1, i] })
     spawn(Piece::Pawn, :white, (0..7).to_a.map { |i| [6, i] })
 
@@ -196,8 +196,13 @@ class Board
     spawn(Piece::Bishop, :black, [[0, 2], [0, 5]])
     spawn(Piece::Bishop, :white, [[7, 2], [7, 5]])
 
-    spawn(Piece::Queen, :black, [[0, 3]])
-    spawn(Piece::Queen, :white, [[7, 3]])
+    if heroes
+      spawn(Piece::Hero::DoubleKnight, :black, [[0, 3]])
+      spawn(Piece::Hero::DoubleKnight, :white, [[7, 3]])
+    else
+      spawn(Piece::Queen, :black, [[0, 3]])
+      spawn(Piece::Queen, :white, [[7, 3]])
+    end
 
     spawn(Piece::King, :black, [[0, 4]])
     spawn(Piece::King, :white, [[7, 4]])
