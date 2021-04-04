@@ -52,9 +52,11 @@ class Game < ApplicationRecord
     super.to_sym
   end
 
+  # rubocop:disable Lint/DuplicateMethods
   def color
     @color&.to_sym
   end
+  # rubocop:enable Lint/DuplicateMethods
 
   def update_state
     self.state = if board.checkmate?(turn)
