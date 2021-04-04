@@ -32,6 +32,9 @@ Rails.application.configure do
     config.cache_store = :null_store
   end
 
+  # add ngrok
+  config.hosts << "d81830cb0914.ngrok.io"
+
   # Print deprecation notices to the Rails logger.
   config.active_support.deprecation = :log
 

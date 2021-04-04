@@ -183,8 +183,8 @@ class Game < ApplicationRecord
     @board.possible_moves(turn)
   end
 
-  def explore_moves(depth = 0)
-    return if depth > 1
+  def explore_moves(depth: 0, max_depth: 1)
+    return if depth > max_depth
 
     possible_moves.each do |move|
       from = Helper.pt(move[1])
@@ -192,7 +192,7 @@ class Game < ApplicationRecord
 
       move(from: from, to: to)
       _score = board.score
-      explore_moves(depth + 1)
+      explore_moves(depth: depth + 1, max_depth: max_depth)
       undo_last_move!
     end
   end

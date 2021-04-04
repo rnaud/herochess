@@ -14,8 +14,6 @@ class GamesController < ApplicationController
 
   def update
     status = @game.update(game_params) ? :ok : :unprocessable_entity
-    @color = params[:color]
-    render :show, status: status
   end
 
   def new
