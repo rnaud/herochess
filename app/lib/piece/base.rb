@@ -19,14 +19,12 @@ module Piece
     end
 
     def capture!
-      Rails.logger.debug "captured #{self.class} #{Helper.pt(position)}"
       @captured = true
       push_histories!(position: [nil, nil], capture: nil)
       @board.piece_captured!(self)
     end
 
     def uncapture!
-      Rails.logger.debug "uncaptured #{self.class} #{Helper.pt(position)}"
       @captured = false
       pop_histories!
       @board.piece_uncaptured!(self)
@@ -70,7 +68,6 @@ module Piece
         moves << valid_options(direction, vector)
       end
       moves.flatten!(1)
-      Rails.logger.debug "possible_moves - #{inspect} - #{moves.map { |a| Helper.pt(a) }.join(', ')}"
       moves
     end
 
@@ -95,12 +92,10 @@ module Piece
     end
 
     def valid_move?(end_position)
-      Rails.logger.debug "end_position: #{Helper.pt(end_position)}"
       possible_moves.include?(end_position)
     end
 
     def move_to!(end_position)
-      Rails.logger.debug "moving - #{inspect} - to #{Helper.pt(end_position)}"
       # remove piece from current location
       @board.remove_piece!(position)
 

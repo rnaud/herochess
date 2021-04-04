@@ -189,8 +189,6 @@ class Game < ApplicationRecord
 
       move(from: from, to: to)
       score = board.score
-      Rails.logger.debug "turn #{turn} depth #{depth}"
-      Rails.logger.debug "move: #{move[0].inspect} - #{from} - #{to} score: #{score}"
       explore_moves(depth + 1)
       undo_last_move!
     end
@@ -205,7 +203,6 @@ class Game < ApplicationRecord
     piece = move[0]
     from = Helper.pt(move[1])
     to = Helper.pt(move[2])
-    Rails.logger.debug("ai_move piece: #{piece.inspect} from: #{from} to #{to}")
     move(from: from, to: to)
   end
 end

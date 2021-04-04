@@ -73,7 +73,7 @@ class Board
   end
 
   def valid_coord?(coord)
-    coord[0].between?(0, BOARD_SIZE - 1) && coord[1].between?(0, BOARD_SIZE - 1)
+    coord[0] >= 0 && coord[0] < BOARD_SIZE && coord[1] >= 0 && coord[1] < BOARD_SIZE
   end
 
   def remove_piece!(coord)
@@ -83,7 +83,6 @@ class Board
   end
 
   def place_piece!(piece, coord)
-    Rails.logger.debug "placing piece : #{piece.inspect} at #{Helper.pt(coord)} from #{caller}"
     @squares[coord[0]][coord[1]] = piece
   end
 
