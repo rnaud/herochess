@@ -37,8 +37,6 @@ window.move = function move(from, to) {
   document.getElementById('game_from').value = from;
   document.getElementById('game_to').value = to;
 
-  console.log(`move ${from} ${to}`)
-
   var form = document.getElementById("move_form")
   form.requestSubmit();
   form.reset();
@@ -87,7 +85,6 @@ interact('.square').dropzone({
 
     piece.style.zIndex = "";
 
-    console.log(event)
     if (from != to) {
       move(from, to)
     } else {
@@ -114,7 +111,6 @@ interact('.piece')
     inertia: true,
      listeners: {
       start: function(event) {
-        console.log(event.type, event.target)
         event.target.style.zIndex = 200;
       },
       move: dragMoveListener
@@ -139,9 +135,7 @@ interact('.piece')
 window.moveLastPiece = function moveLastPiece() {
   // remove translate from last moved to make it move to the right place
   var lastMoved = document.getElementById('last-moved')
-  console.log(lastMoved)
   if (lastMoved) {
-    console.log(lastMoved.style)
     lastMoved.style = ""
     setTimeout(function(){
       lastMoved.classList.remove('transition')
@@ -157,4 +151,11 @@ document.addEventListener("DOMContentLoaded", function() {
 document.addEventListener("turbo:load", function() {
   console.log("turbo:load")
   moveLastPiece();
+});
+
+document.addEventListener("turbo:before-stream-render", function() {
+  console.log("turbo:before-stream-render")
+  setTimeout(function(){
+    window.moveLastPiece()
+  }, 100)
 });
