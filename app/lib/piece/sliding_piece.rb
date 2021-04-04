@@ -8,11 +8,12 @@ module Piece
 
       # keep exploring until we get off board or hit an ennemy piece
       loop do
+        valid_coord = @board.valid_coord?(exploring)
+        break unless valid_coord
+
         other_piece = @board.find_piece(exploring)
         ennemy_piece = other_piece && other_piece.color != color
-        valid_coord = @board.valid_coord?(exploring)
-
-        break unless valid_coord
+        
         break if other_piece && !ennemy_piece
 
         options << exploring

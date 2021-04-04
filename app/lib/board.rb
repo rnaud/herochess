@@ -77,25 +77,17 @@ class Board
   end
 
   def remove_piece!(coord)
-    return unless valid_coord?(coord)
-
     piece = @squares[coord[0]][coord[1]]
-
     @squares[coord[0]][coord[1]] = nil
     piece
   end
 
   def place_piece!(piece, coord)
-    return unless valid_coord?(coord)
-
     Rails.logger.debug "placing piece : #{piece.inspect} at #{Helper.pt(coord)} from #{caller}"
-
     @squares[coord[0]][coord[1]] = piece
   end
 
   def find_piece(coord)
-    return unless valid_coord?(coord)
-
     @squares[coord[0]][coord[1]]
   end
 

@@ -82,11 +82,14 @@ module Piece
       options = []
       exploring = [(@position[0] + vector[0]), (@position[1] + vector[1])]
 
-      other_piece = @board.find_piece(exploring)
-      ennemy_piece = other_piece && other_piece.color != color
       valid_coord = @board.valid_coord?(exploring)
+      if valid_coord
 
-      options << exploring if valid_coord && (other_piece.nil? || ennemy_piece)
+        other_piece = @board.find_piece(exploring)
+        ennemy_piece = other_piece && other_piece.color != color
+
+        options << exploring if (other_piece.nil? || ennemy_piece)
+      end
 
       options
     end
