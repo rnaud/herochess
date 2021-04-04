@@ -6,6 +6,7 @@
     "@rails/actioncable": "^6.0.0",
     "@rails/ujs": "^6.0.0",
     "@rails/webpacker": "5.2.1",
+    "form-request-submit-polyfill": "^2.0.0",
     "interactjs": "^1.10.11",
     "stimulus": "^2.0.0"
   },

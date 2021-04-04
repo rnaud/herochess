@@ -7,6 +7,7 @@ import Rails from "@rails/ujs"
 import interact from 'interactjs'
 import 'controllers'
 import "@hotwired/turbo-rails"
+import "form-request-submit-polyfill"
 
 Rails.start()
 
@@ -32,13 +33,14 @@ window.dragTo = function dragTo(target, x,y) {
 }
 
 window.move = function move(from, to) {
-  console.log(from)
-  console.log(to)
+  
   document.getElementById('game_from').value = from;
   document.getElementById('game_to').value = to;
 
+  console.log(`move ${from} ${to}`)
+
   var form = document.getElementById("move_form")
-  form.submit();
+  form.requestSubmit();
   form.reset();
 }
 
@@ -128,10 +130,5 @@ interact('.piece')
 }
 
 document.addEventListener("turbo:load", function() {
-  setupPage()
-});
-
-document.addEventListener("DOMContentLoaded", function() {
-  console.log("page load")
   setupPage()
 });

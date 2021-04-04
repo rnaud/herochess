@@ -14,6 +14,11 @@ class GamesController < ApplicationController
 
   def update
     status = @game.update(game_params) ? :ok : :unprocessable_entity
+    
+    respond_to do |format|
+      format.turbo_stream { render turbo_stream: turbo_stream.update(@game) }
+      format.html         { render :show, status: status }
+    end
   end
 
   def new
