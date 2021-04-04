@@ -180,7 +180,7 @@ class Board
   end
 
   def score
-    @captured_pieces.map(&:score).sum# + @pieces.map(&:positional_score).sum
+    @captured_pieces.map(&:score).sum + @pieces.map(&:positional_score).sum
   end
 
   def spawn_pieces!

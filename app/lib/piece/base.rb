@@ -149,8 +149,8 @@ module Piece
     end
 
     def positional_score
-      position_score = self.class::POSITIONAL_SCORE[position[0]][position[1]]
-      white? ? -position_score : position_score
+      score = self.class::POSITIONAL_SCORE[position[0]][position[1]]
+      white? ? -score : score
     end
   end
 end

@@ -202,7 +202,7 @@ class Game < ApplicationRecord
   end
 
   def best_move
-    return explore_moves(max_depth: 0).sample #override for now
+    # return explore_moves(max_depth: 0).sample #override for now
     if turn == :white
       explore_moves(max_depth: 0).max { |m| m[:score] }
     else

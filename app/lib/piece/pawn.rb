@@ -11,8 +11,19 @@ module Piece
     SCORE = 10
 
     POSITIONAL_SCORE = [
-      []
+      [0, 0, 0, 0, 0, 0, 0, 0],
+      [5, 5, 5, 5, 5, 5, 5, 5],
+      [1, 2, 2, 3, 3, 2, 1, 1],
+      [0, 0, 1, 2, 2, 1, 0, 0],
+      [0, 0, 0, 2, 2, 0, 0, 0],
+      [0, 0, 0,-1,-1, 0, 0, 0],
+      [0, 1, 1,-2,-2, 1, 1, 0],
+      [0, 0, 0, 0, 0, 0, 0, 0]
     ]
+    COLOR_POSITIONAL_SCORE = {
+      white: POSITIONAL_SCORE,
+      black: POSITIONAL_SCORE.reverse
+    }
 
     attr_accessor :promoted_to
 
@@ -85,6 +96,11 @@ module Piece
     def undo_last_move!
       super
       unpromote! if promoted_to
+    end
+
+    def positional_score
+      score = self.class::COLOR_POSITIONAL_SCORE[color][position[0]][position[1]]
+      white? ? -score : score
     end
   end
 end

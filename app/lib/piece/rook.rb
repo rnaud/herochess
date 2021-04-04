@@ -11,13 +11,22 @@ module Piece
       black: "♜"
     }.freeze
     SCORE = 50
-
     DIRECTIONS = {
       up: [-1, 0],
       down: [1, 0],
       left: [0, -1],
       right: [0, 1]
     }.freeze
+    POSITIONAL_SCORE = [
+      [0, 0, 0, 0, 0, 0, 0, 0],
+      [0, 0, 0, 0, 0, 0, 0, 0],
+      [0, 0, 0, 0, 0, 0, 0, 0],
+      [0, 0, 0, 0, 0, 0, 0, 0],
+      [0, 0, 0, 0, 0, 0, 0, 0],
+      [0, 0, 0, 0, 0, 0, 0, 0],
+      [0, 0, 0, 0, 0, 0, 0, 0],
+      [0, 0, 0, 0, 0, 0, 0, 0]
+    ]
 
     def directions(type:)
       DIRECTIONS
