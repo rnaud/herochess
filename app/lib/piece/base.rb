@@ -85,7 +85,7 @@ module Piece
         other_piece = @board.find_piece(exploring)
         ennemy_piece = other_piece && other_piece.color != color
 
-        options << exploring if (other_piece.nil? || ennemy_piece)
+        options << exploring if other_piece.nil? || ennemy_piece
       end
 
       options

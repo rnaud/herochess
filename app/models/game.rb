@@ -188,7 +188,7 @@ class Game < ApplicationRecord
       to = Helper.pt(move[2])
 
       move(from: from, to: to)
-      score = board.score
+      _score = board.score
       explore_moves(depth + 1)
       undo_last_move!
     end
@@ -200,7 +200,7 @@ class Game < ApplicationRecord
 
   def ai_move!
     move = best_move
-    piece = move[0]
+    _piece = move[0]
     from = Helper.pt(move[1])
     to = Helper.pt(move[2])
     move(from: from, to: to)

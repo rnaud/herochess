@@ -44,6 +44,7 @@ module Piece
     def can_move_to?(direction)
       move_position = [@position[0] + direction[0], @position[1] + direction[1]]
       return false unless @board.valid_coord?(move_position)
+
       other_piece = @board.find_piece(move_position)
       other_piece ? false : true
     end

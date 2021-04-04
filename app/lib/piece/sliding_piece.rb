@@ -13,7 +13,7 @@ module Piece
 
         other_piece = @board.find_piece(exploring)
         ennemy_piece = other_piece && other_piece.color != color
-        
+
         break if other_piece && !ennemy_piece
 
         options << exploring
