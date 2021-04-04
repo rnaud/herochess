@@ -34,10 +34,12 @@ class Board
     }
   end
 
-  def move(from, to, color_to_play, who_is_playing)
-    raise MoveInvalidError, "Not your turn to play" if color_to_play != who_is_playing
-    raise MoveInvalidError, "Invalid from" unless valid_input?(from)
-    raise MoveInvalidError, "Invalid to" unless valid_input?(to)
+  def move(from, to, color_to_play, who_is_playing, validates: true)
+    if validates
+      raise MoveInvalidError, "Not your turn to play" if color_to_play != who_is_playing
+      raise MoveInvalidError, "Invalid from" unless valid_input?(from)
+      raise MoveInvalidError, "Invalid to" unless valid_input?(to)
+    end
 
     start_coord = Helper.pt(from)
     end_coord = Helper.pt(to)
@@ -46,14 +48,16 @@ class Board
     piece = find_piece(start_coord)
     other_piece = find_piece(end_coord)
 
-    raise MoveInvalidError, "Could not find a piece here" if piece.nil?
-    raise MoveInvalidError, "This piece does not belong to you" if piece.color != color_to_play
-    raise MoveInvalidError, "You already have a piece there" if other_piece && other_piece.color == piece.color
-    raise MoveInvalidError, "This piece cannot go here" unless piece.valid_move?(end_coord)
-    raise MoveInvalidError, "Checkmate! #{Helper.invert_color(color_to_play)} wins" if checkmate?(color_to_play)
-    raise MoveInvalidError, "Drawn game" if drawn?(color_to_play)
-    raise MoveInvalidError, "You are still in check" if in_check?(color_to_play) && in_check_after_move?(piece, end_coord)
-    raise MoveInvalidError, "This would put you in check" if in_check_after_move?(piece, end_coord)
+    if validates
+      raise MoveInvalidError, "Could not find a piece here" if piece.nil?
+      raise MoveInvalidError, "This piece does not belong to you" if piece.color != color_to_play
+      raise MoveInvalidError, "You already have a piece there" if other_piece && other_piece.color == piece.color
+      raise MoveInvalidError, "This piece cannot go here" unless piece.valid_move?(end_coord)
+      raise MoveInvalidError, "Checkmate! #{Helper.invert_color(color_to_play)} wins" if checkmate?(color_to_play)
+      raise MoveInvalidError, "Drawn game" if drawn?(color_to_play)
+      raise MoveInvalidError, "You are still in check" if in_check?(color_to_play) && in_check_after_move?(piece, end_coord)
+      raise MoveInvalidError, "This would put you in check" if in_check_after_move?(piece, end_coord)
+    end
 
     status = piece.move_to!(end_coord)
     @moves << Move.new(piece, from, to, color_to_play, 0, status)
@@ -176,7 +180,7 @@ class Board
   end
 
   def score
-    @captured_pieces.map(&:color_score).sum
+    @captured_pieces.map(&:score).sum# + @pieces.map(&:positional_score).sum
   end
 
   def spawn_pieces!

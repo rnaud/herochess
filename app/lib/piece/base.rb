@@ -144,8 +144,13 @@ module Piece
       position[1]
     end
 
-    def color_score
+    def score
       white? ? -self.class::SCORE : self.class::SCORE
+    end
+
+    def positional_score
+      position_score = self.class::POSITIONAL_SCORE[position[0]][position[1]]
+      white? ? -position_score : position_score
     end
   end
 end

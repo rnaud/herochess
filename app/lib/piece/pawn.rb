@@ -10,6 +10,10 @@ module Piece
     WHITE_PROMOTION = 0
     SCORE = 10
 
+    POSITIONAL_SCORE = [
+      []
+    ]
+
     attr_accessor :promoted_to
 
     def directions(type:)

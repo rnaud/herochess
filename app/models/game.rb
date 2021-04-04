@@ -82,10 +82,10 @@ class Game < ApplicationRecord
     end
   end
 
-  def move(from:, to:, who_is_playing: nil)
+  def move(from:, to:, who_is_playing: nil, validates: true)
     self.en_passant = nil
     who_is_playing = turn if who_is_playing.nil?
-    piece_moved, status = board.move(from, to, turn, who_is_playing)
+    piece_moved, status = board.move(from, to, turn, who_is_playing, validates: validates)
     pieces_moved << [status, piece_moved]
 
     increment_half_moves!(status)
@@ -186,26 +186,31 @@ class Game < ApplicationRecord
   def explore_moves(depth: 0, max_depth: 1)
     return if depth > max_depth
 
-    possible_moves.each do |move|
+    possible_moves.map do |move|
       from = Helper.pt(move[1])
       to = Helper.pt(move[2])
 
-      move(from: from, to: to)
-      _score = board.score
-      explore_moves(depth: depth + 1, max_depth: max_depth)
+      move(from: from, to: to, validates: false)
+      score = board.score
+      move = {from: from, to: to, score: score}
+      children = explore_moves(depth: depth + 1, max_depth: max_depth)
+      move[:children] = children
       undo_last_move!
+      move
     end
   end
 
   def best_move
-    possible_moves.sample
+    return explore_moves(max_depth: 0).sample #override for now
+    if turn == :white
+      explore_moves(max_depth: 0).max { |m| m[:score] }
+    else
+      explore_moves(max_depth: 0).min { |m| m[:score] }
+    end
   end
 
   def ai_move!
     move = best_move
-    _piece = move[0]
-    from = Helper.pt(move[1])
-    to = Helper.pt(move[2])
-    move(from: from, to: to)
+    move(from: move[:from], to: move[:to])
   end
 end
