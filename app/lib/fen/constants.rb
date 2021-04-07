@@ -14,7 +14,9 @@ module Fen
       q: [Piece::Queen, :black],
       Q: [Piece::Queen, :white],
       k: [Piece::King, :black],
-      K: [Piece::King, :white]
+      K: [Piece::King, :white],
+      y: [Piece::Hero::DoubleKnight, :black],
+      Y: [Piece::Hero::DoubleKnight, :white]
     }.freeze
     INVERT_MATCH = MATCH.invert
   end

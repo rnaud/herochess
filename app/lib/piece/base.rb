@@ -152,5 +152,9 @@ module Piece
       score = self.class::POSITIONAL_SCORE[position[0]][position[1]]
       white? ? -score : score
     end
+
+    def prefix
+      Fen::Constants::INVERT_MATCH[[self.class, self.color]]
+    end
   end
 end

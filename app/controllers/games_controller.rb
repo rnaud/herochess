@@ -22,7 +22,7 @@ class GamesController < ApplicationController
   end
 
   def new
-    @game = Game.new(white_user_id: current_user, heroes: true)
+    @game = Game.new(white_user_id: current_user, heroes: false)
     @game.versus = params[:versus] if params[:versus].present?
     @game.save!
     redirect_to game_path(@game)

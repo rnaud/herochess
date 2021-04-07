@@ -201,8 +201,19 @@ class Game < ApplicationRecord
     end
   end
 
+  def pgn
+    pgn_str = ""
+    @board.moves.each_slice(2).each_with_index do |arr, index|
+      pgn_str += "#{index + 1}. "
+      pgn_str += "#{arr[0].pgn} "
+      pgn_str += "#{arr[1].pgn} " if arr[1]
+    end
+    pgn_str
+  end
+
   def best_move
-    # return explore_moves(max_depth: 0).sample #override for now
+    puts ChessHistory.best_options(pgn).first
+    return explore_moves(max_depth: 0).sample #override for now
     if turn == :white
       explore_moves(max_depth: 0).max { |m| m[:score] }
     else

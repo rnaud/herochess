@@ -14,6 +14,24 @@ class Move
     @status = status
   end
 
+  def pgn
+    captured = ""
+    prefix = ""
+    
+    if piece.class != Piece::Pawn
+      prefix = piece.prefix.upcase
+    end
+
+    if status == :captured
+      captured = "x"
+      if piece.class == Piece::Pawn
+        prefix = from[0]
+      end
+    end
+
+    "#{prefix}#{captured}#{to}"
+  end
+
   def to_s
     "#{moves_count} - #{turn} - #{piece.icon} - #{from} - #{to} - #{status}"
   end
