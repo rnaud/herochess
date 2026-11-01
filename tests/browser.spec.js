@@ -1,6 +1,6 @@
 import {test,expect} from '@playwright/test';
 async function normalMove(page,from=12,to=28){await page.locator('[data-square="'+from+'"]').click();await page.locator('[data-square="'+to+'"]').click();}
-async function fixture(page,card,pieces){await page.goto('/');await page.evaluate(async({card,pieces})=>{const {initialState,positionKey}=await import('/src/engine.js');const s=initialState('cards',42);s.board=Array(64).fill(null);for(const [i,type,color] of [[0,'k','w'],[63,'k','b'],...pieces])s.board[i]={type,color};s.rights='';s.hands.w=[card,'ward','frost'];s.hands.b=['step','retreat','flank'];s.history=[positionKey(s)];localStorage.setItem('herochess-cards-v2',JSON.stringify({version:2,state:s,human:'w',snapshots:[],journal:[],level:'1'}));},{card,pieces});await page.reload();}
+async function fixture(page,card,pieces){await page.goto('/');await page.evaluate(async({card,pieces})=>{const {initialState,positionKey}=await import('/src/engine.js');const s=initialState('cards',42);s.board=Array(64).fill(null);for(const [i,type,color] of [[0,'k','w'],[63,'k','b'],...pieces])s.board[i]={type,color};s.rights='';s.hands.w=[card,'ward','frost'];s.hands.b=['step','retreat','flank'];s.history=[positionKey(s)];localStorage.setItem('herochess-cards-v2',JSON.stringify({version:3,state:s,human:'w',snapshots:[],journal:[],level:'1'}));},{card,pieces});await page.reload();}
 test('three-card hand, 18-card library, CPU reply, exact undo and reload',async({page})=>{
  const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto('/');await expect(page.locator('#board-view canvas')).toBeVisible();await expect(page.locator('.spell-card')).toHaveCount(3);await expect(page.locator('.cpu-card')).toHaveCount(3);await page.locator('.cpu-card summary').first().click();await expect(page.locator('.cpu-card p').first()).toBeVisible();await page.locator('.cpu-card summary').first().click();await page.screenshot({path:'/tmp/herochess-cards-desktop.png',fullPage:true});
  await page.locator('#library-button').click();await expect(page.locator('.library-card')).toHaveCount(18);await page.locator('.library-art').evaluateAll(images=>images.forEach(img=>{img.loading='eager';}));await expect.poll(()=>page.locator('.library-art').evaluateAll(images=>images.every(img=>img.complete&&img.naturalWidth>0))).toBe(true);await page.screenshot({path:'/tmp/herochess-illustrated-library.png'});await page.locator('#library-dialog .close-dialog').click();const hand=await page.locator('.spell-card strong').allTextContents();
@@ -12,7 +12,7 @@ test('card power is temporary; leap capture animates and cycles the selected slo
 });
 test('shield and freeze are target actions, not self-captures',async({page})=>{
  await fixture(page,'ward',[[27,'q','w'],[59,'r','b']]);await page.locator('#difficulty').selectOption('3');await page.locator('#view-2d').click();await page.locator('[data-slot="0"]').click();await page.locator('[data-square="27"]').click();await expect(page.locator('#effects')).toContainText('shielded');await expect(page.locator('[data-square="27"]')).toHaveClass(/shielded/);await page.screenshot({path:'/tmp/herochess-cards-shield.png',fullPage:true});await expect(page.locator('#move-count')).toHaveText('02',{timeout:15000});await expect(page.locator('#effects')).toHaveText('No lasting effects.');await expect(page.locator('#white-captured')).toHaveText('');
- await fixture(page,'frost',[[27,'r','b'],[9,'q','w']]);await page.locator('#view-2d').click();await page.locator('[data-slot="0"]').click();await page.locator('[data-square="27"]').click();await expect(page.locator('#move-count')).toHaveText('02',{timeout:15000});await expect(page.locator('[data-square="27"]')).toHaveAttribute('aria-label',/Black Rook/);await expect(page.locator('#white-captured')).toHaveText('');
+ await fixture(page,'frost',[[27,'r','b'],[9,'q','w']]);await page.locator('#view-2d').click();await page.locator('[data-slot="0"]').click();await page.locator('[data-square="27"]').click();await expect(page.locator('#move-count')).toHaveText('00');await page.locator('[data-square="9"]').click();await page.locator('[data-square="17"]').click();await expect(page.locator('#move-count')).toHaveText('02',{timeout:15000});await expect(page.locator('[data-square="27"]')).toHaveAttribute('aria-label',/Black Rook/);await expect(page.locator('#white-captured')).toHaveText('');
 });
 test('swap animates both friendly pieces and preserves material',async({page})=>{
  await fixture(page,'relay',[[18,'r','w'],[27,'b','w']]);await page.locator('[data-slot="0"]').click();await page.locator('#view-2d').click();await page.locator('[data-square="18"]').click();await page.locator('[data-square="27"]').click();await expect(page.locator('#move-count')).toHaveText('02',{timeout:15000});await expect(page.locator('[data-square="18"]')).toHaveAttribute('aria-label',/White Bishop/);await expect(page.locator('[data-square="27"]')).toHaveAttribute('aria-label',/White Rook/);await expect(page.locator('#white-captured')).toHaveText('');
@@ -26,7 +26,7 @@ test('WebGL fallback and old hero saves are preserved separately',async({page})=
 
 test('families and power tiers are explicit and library filters compose',async({page})=>{
  await page.goto('/');await expect(page.locator('.spell-card .family-badge')).toHaveCount(3);await expect(page.locator('.spell-card .tier-badge')).toHaveCount(3);
- await page.locator('#card-key-button').click();await expect(page.locator('#card-legend')).toHaveAttribute('open','');await expect(page.locator('#card-legend')).toContainText('Gold cards are rarer');
+ await page.locator('#card-key-button').click();await expect(page.locator('#card-legend')).toHaveAttribute('open','');await expect(page.locator('#card-legend')).toContainText('Frame colors show power, not rarity');
  await page.locator('#family-filter').selectOption('offense');await expect(page.locator('.library-card')).toHaveCount(4);await expect(page.locator('.library-card .family-badge')).toHaveText(['⚔ Offense','⚔ Offense','⚔ Offense','⚔ Offense']);
  await page.locator('#tier-filter').selectOption('3');await expect(page.locator('.library-card')).toHaveCount(3);await expect(page.locator('#library-count')).toHaveText('3 of 18 spells');
  await page.locator('#family-filter').selectOption('defense');await expect(page.locator('.library-card')).toHaveCount(0);await expect(page.locator('#library-empty')).toBeVisible();
@@ -72,10 +72,10 @@ test('fresh matches deal three cards in order, without replaying on selection or
 
 test('old card saves are preserved separately when balance rules change',async({page})=>{
  await page.addInitScript(()=>localStorage.setItem('herochess-cards-v1','previous-card-match'));
- await page.goto('/');await expect(page.locator('#save-notice')).toBeVisible();await expect(page.locator('#deck-count')).toContainText('34 in deck');
+ await page.goto('/');await expect(page.locator('#save-notice')).toBeVisible();await expect(page.locator('#deck-count')).toContainText('12 in deck');
  await page.locator('#new-button').click();await page.getByRole('button',{name:'Deal & play'}).click();
  expect(await page.evaluate(()=>localStorage.getItem('herochess-cards-v1'))).toBe('previous-card-match');
- expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('herochess-cards-v2')).version)).toBe(2);
+ expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('herochess-cards-v2')).version)).toBe(3);
 });
 
 test('ordinary moves keep the entire hand through CPU reply, reload and undo',async({page})=>{
@@ -98,19 +98,19 @@ test('choosing another card after cancelling activates its power immediately',as
 
 test('card burn and board frost animate together and undo cleans up presentation',async({page})=>{
  await fixture(page,'frost',[[27,'r','b'],[9,'q','w']]);await page.locator('#view-2d').click();await page.locator('[data-slot="0"]').click();
- await page.locator('[data-square="27"]').click();await expect(page.locator('.game-fx .card-burn')).toBeVisible();await expect(page.locator('.fx-burn-edge')).toHaveCount(1);await expect(page.locator('.fx-frost')).toHaveCount(1);await expect(page.locator('.fx-crystal')).toHaveCount(12);
+ await page.locator('[data-square="27"]').click();await page.locator('[data-square="9"]').click();await page.locator('[data-square="17"]').click();await expect(page.locator('.game-fx .card-burn')).toBeVisible();await expect(page.locator('.fx-burn-edge')).toHaveCount(1);await expect(page.locator('.fx-frost')).toHaveCount(1);await expect(page.locator('.fx-crystal')).toHaveCount(16);
  await page.locator('.game-fx').evaluate(layer=>layer.getAnimations({subtree:true}).forEach(a=>{a.pause();a.currentTime=300;}));
  await page.screenshot({path:'/tmp/herochess-burn-and-frost.png',fullPage:true});
- await page.locator('#undo-button').click();await expect(page.locator('.game-fx')).toHaveCount(0);await expect(page.locator('#move-count')).toHaveText('00');
+ await page.locator('#undo-button').click();await expect(page.locator('.game-fx:not(.rewind-fx)')).toHaveCount(0);await expect(page.locator('#move-count')).toHaveText('00');
  await expect(page.locator('[data-slot="0"]')).toBeVisible();await expect(page.locator('[data-square="27"]')).toHaveAttribute('aria-label',/Black Rook/);
 });
 test('3D spell capture has board feedback and reduced motion skips all transient effects',async({page})=>{
  await fixture(page,'comet',[[18,'n','w'],[44,'q','b']]);await page.locator('[data-slot="0"]').click();await page.locator('#view-2d').click();await page.locator('[data-square="18"]').click();await page.locator('#view-3d').click();
  await page.locator('[data-square="44"]').evaluate(b=>b.click());await expect(page.locator('.fx-impact')).toHaveCount(1);await expect(page.locator('.fx-trail')).toHaveCount(1);await expect(page.locator('#board-view')).toHaveAttribute('data-animating','capture');
  const impact=await page.locator('.fx-impact').boundingBox(),board=await page.locator('#board-view').boundingBox();expect(impact.x+impact.width/2).toBeGreaterThan(board.x);expect(impact.x+impact.width/2).toBeLessThan(board.x+board.width);
- await page.locator('#undo-button').click();await expect(page.locator('.game-fx')).toHaveCount(0);
+ await page.locator('#undo-button').click();await expect(page.locator('.game-fx:not(.rewind-fx)')).toHaveCount(0);
  await page.emulateMedia({reducedMotion:'reduce'});await page.locator('#view-2d').click();await page.locator('[data-slot="0"]').click();await page.locator('[data-square="18"]').click();await page.locator('[data-square="44"]').click();
- await expect(page.locator('#move-count')).toHaveText('02',{timeout:15000});await expect(page.locator('.game-fx')).toHaveCount(0);await expect(page.locator('body > .flat-piece')).toHaveCount(0);
+ await expect(page.locator('#move-count')).toHaveText('02',{timeout:15000});await expect(page.locator('.game-fx:not(.rewind-fx)')).toHaveCount(0);await expect(page.locator('body > .flat-piece')).toHaveCount(0);
 });
 
 test('clicking affected pieces explains their status and does not spend a card',async({page})=>{
@@ -141,7 +141,7 @@ test('piece selection survives choosing, switching and cancelling powers',async(
  await expect(page.locator('[data-square="26"]')).not.toHaveClass(/legal/);
  await page.locator('[data-slot="0"]').click();await expect(piece).toHaveAttribute('aria-pressed','true');await expect(page.locator('[data-square="26"]')).toHaveClass(/power-move/);
  await page.locator('[data-slot="1"]').click();await expect(piece).toHaveAttribute('aria-pressed','true');await expect(piece).toHaveClass(/legal/);
- await page.locator('[data-slot="2"]').click();await expect(piece).toHaveAttribute('aria-pressed','true');await expect(page.locator('[data-square="44"]')).toHaveClass(/legal/);await expect(page.locator('#card-instruction')).toContainText('Click a highlighted target');
+ await page.locator('[data-slot="2"]').click();await expect(piece).toHaveAttribute('aria-pressed','true');await expect(page.locator('[data-square="44"]')).toHaveClass(/legal/);await expect(page.locator('#card-instruction')).toContainText('Click a highlighted enemy');
  await page.locator('[data-slot="0"]').click();await page.locator('[data-slot="0"]').click();await expect(piece).toHaveAttribute('aria-pressed','true');await expect(page.locator('[data-square="26"]')).not.toHaveClass(/legal/);await expect(page.locator('[data-square="27"]')).toHaveClass(/legal/);
  await page.locator('[data-slot="0"]').click();await page.locator('#normal-mode').click();await expect(piece).toHaveAttribute('aria-pressed','true');await expect(page.locator('[data-square="27"]')).toHaveClass(/legal/);
  await page.locator('[data-slot="0"]').click();await page.locator('[data-square="26"]').click();await expect(page.locator('#move-count')).toHaveText('02',{timeout:15000});await expect(page.locator('#journal')).toContainText('Tower Road');
@@ -150,4 +150,56 @@ test('an incompatible card keeps the piece selected with no invented destination
  await fixture(page,'charge',[[18,'b','w'],[44,'q','b']]);await page.locator('#view-2d').click();await page.locator('[data-square="18"]').click();await page.locator('[data-slot="0"]').click();
  await expect(page.locator('[data-square="18"]')).toHaveAttribute('aria-pressed','true');await expect(page.locator('.flat-square.legal')).toHaveCount(0);await expect(page.locator('#move-count')).toHaveText('00');
  await page.locator('#normal-mode').click();await expect(page.locator('.flat-square.legal')).not.toHaveCount(0);
+});
+
+test('check stays prominent through selection, flip and view changes and clears after escape',async({page})=>{
+ await fixture(page,'tower',[[56,'r','b'],[18,'n','w']]);await page.addInitScript(()=>{window.Worker=class{postMessage(){}terminate(){}};});await page.reload();
+ await expect(page.locator('#check-banner')).toBeVisible();await expect(page.locator('#check-heading')).toHaveText('CHECK');await expect(page.locator('#status-title')).toHaveText('You are in check!');await expect(page.locator('#turn-chip')).toHaveText('YOU ARE IN CHECK');await expect(page.locator('#check-marker')).toBeVisible();
+ const marker=await page.locator('#check-marker').boundingBox(),board=await page.locator('.board-shell').boundingBox();expect(marker.x).toBeGreaterThan(board.x);expect(marker.y).toBeGreaterThan(board.y);
+ await page.locator('#flip-button').click();expect((await page.locator('#check-marker').boundingBox()).x).not.toBe(marker.x);await page.locator('#flip-button').click();
+ await page.locator('#view-2d').click();await page.locator('[data-square="18"]').click();await page.locator('[data-slot="0"]').click();await expect(page.locator('#status-title')).toHaveText('You are in check!');await expect(page.locator('[data-square="0"]')).toHaveClass(/king-in-check/);await expect(page.locator('[data-square="0"]')).toHaveAttribute('aria-label',/in check/);
+ await page.locator('#normal-mode').click();await page.locator('[data-square="0"]').click();await page.locator('[data-square="1"]').click();await expect(page.locator('#check-banner')).toBeHidden();await expect(page.locator('#check-marker')).toBeHidden();
+ await page.locator('#undo-button').click();await expect(page.locator('#check-banner')).toBeVisible();await page.emulateMedia({reducedMotion:'reduce'});expect(await page.locator('#check-marker').evaluate(e=>getComputedStyle(e).animationName)).toBe('none');
+ await page.setViewportSize({width:390,height:844});await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.screenshot({path:'/tmp/herochess-check-mobile.png',fullPage:true});
+});
+test('CPU check and checkmate identify the correct side',async({page})=>{
+ await fixture(page,'ward',[[7,'r','w']]);await page.evaluate(()=>{const saved=JSON.parse(localStorage.getItem('herochess-cards-v2'));saved.state.turn='b';localStorage.setItem('herochess-cards-v2',JSON.stringify(saved));});
+ await page.addInitScript(()=>{window.Worker=class{postMessage(){}terminate(){}};});await page.reload();await expect(page.locator('#status-title')).toHaveText('The Automaton is in check.');await expect(page.locator('#check-message')).toContainText('Automaton’s king');
+ await page.evaluate(()=>{const saved=JSON.parse(localStorage.getItem('herochess-cards-v2'));saved.state.board=Array(64).fill(null);saved.state.board[63]={type:'k',color:'b'};saved.state.board[45]={type:'k',color:'w'};saved.state.board[54]={type:'q',color:'w'};localStorage.setItem('herochess-cards-v2',JSON.stringify(saved));});await page.reload();await expect(page.locator('#check-heading')).toHaveText('CHECKMATE');await expect(page.locator('#check-message')).toContainText('You win.');
+});
+
+test('sound plays only after interaction and mute persists across reloads',async({page})=>{
+ await page.addInitScript(()=>{window.audioStarts=0;const original=AudioContext.prototype.createOscillator;AudioContext.prototype.createOscillator=function(...args){const node=original.apply(this,args),start=node.start;node.start=function(...a){window.audioStarts++;return start.apply(this,a);};return node;};});
+ await page.goto('/');expect(await page.evaluate(()=>window.audioStarts)).toBe(0);
+ await page.locator('[data-slot="0"]').click();await expect.poll(()=>page.evaluate(()=>window.audioStarts)).toBeGreaterThan(0);
+ await page.locator('#sound-button').click();await expect(page.locator('#sound-button')).toHaveAttribute('aria-pressed','false');const starts=await page.evaluate(()=>window.audioStarts);
+ await page.locator('[data-slot="1"]').click();expect(await page.evaluate(()=>window.audioStarts)).toBe(starts);
+ await page.reload();await expect(page.locator('#sound-button')).toHaveAttribute('aria-pressed','false');await page.locator('[data-slot="0"]').click();expect(await page.evaluate(()=>window.audioStarts)).toBe(0);
+ await page.locator('#sound-button').click();await expect(page.locator('#sound-button')).toHaveAttribute('aria-pressed','true');await expect.poll(()=>page.evaluate(()=>window.audioStarts)).toBeGreaterThan(0);
+});
+test('saved duplicate cards upgrade without losing the position or unique held cards',async({page})=>{
+ await fixture(page,'tower',[[18,'b','w'],[44,'q','b']]);
+ await page.evaluate(()=>{const saved=JSON.parse(localStorage.getItem('herochess-cards-v2'));saved.version=2;saved.state.hands.w=['ward','ward','frost'];saved.state.hands.b=['ward','tower','tower'];saved.state.deck.push(...saved.state.deck);localStorage.setItem('herochess-cards-v2',JSON.stringify(saved));});await page.reload();
+ const hand=await page.locator('#hand .spell-card').evaluateAll(cards=>cards.map(c=>c.dataset.card));expect(new Set(hand).size).toBe(3);expect(hand[0]).toBe('ward');expect(hand[2]).toBe('frost');
+ await page.locator('#difficulty').selectOption('1');const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('herochess-cards-v2'))),pool=[...saved.state.hands.w,...saved.state.hands.b,...saved.state.deck,...saved.state.discard];expect(saved.version).toBe(3);expect(pool).toHaveLength(18);expect(new Set(pool).size).toBe(18);expect(saved.state.board[18]).toEqual({type:'b',color:'w'});
+});
+
+test('rewind has three charges, requires a new turn, and cannot be refilled by reload',async({page})=>{
+ await page.addInitScript(()=>{window.Worker=class{
+  postMessage(data){import('/src/engine.js').then(({legalMoves})=>{const move=legalMoves(data.state).find(m=>!m.usePower);setTimeout(()=>{if(!this.dead)this.onmessage?.({data:{id:data.id,move,depth:1}});},30);});}
+  terminate(){this.dead=true;}
+ };});
+ await page.goto('/');await page.locator('#view-2d').click();await normalMove(page);await expect(page.locator('#move-count')).toHaveText('02');await normalMove(page,6,21);await expect(page.locator('#move-count')).toHaveText('04');
+ const rewind=page.locator('#undo-button');await rewind.click();await expect(page.locator('#move-count')).toHaveText('02');await expect(page.locator('#rewind-count')).toHaveText('2');await expect(rewind).toBeDisabled();
+ await page.reload();await expect(page.locator('#rewind-count')).toHaveText('2');await expect(rewind).toBeDisabled();await page.locator('#view-2d').click();
+ for(const left of [1,0]){await normalMove(page,6,21);await expect(page.locator('#move-count')).toHaveText('04');await expect(rewind).toBeEnabled();await rewind.click();await expect(page.locator('#move-count')).toHaveText('02');await expect(page.locator('#rewind-count')).toHaveText(String(left));await expect(rewind).toBeDisabled();}
+ await normalMove(page,6,21);await expect(page.locator('#move-count')).toHaveText('04');await expect(rewind).toBeDisabled();
+ await page.locator('#new-button').click();await page.getByRole('button',{name:'Deal & play'}).click();await expect(page.locator('#rewind-count')).toHaveText('3');
+});
+
+test('Winter Seal waits for your normal move and can be cancelled without spending the card',async({page})=>{
+ await fixture(page,'frost',[[27,'r','b'],[9,'q','w']]);await page.locator('#view-2d').click();await page.locator('[data-square="9"]').click();await page.locator('[data-slot="0"]').click();await page.locator('[data-square="27"]').click();
+ await expect(page.locator('[data-square="9"]')).toHaveAttribute('aria-pressed','true');await expect(page.locator('#card-instruction')).toContainText('then move one of your pieces normally');await expect(page.locator('#move-count')).toHaveText('00');await expect(page.locator('#hand [data-card="frost"]')).toHaveCount(2);
+ await page.locator('#normal-mode').click();await expect(page.locator('[data-square="27"]')).not.toHaveClass(/frozen/);await expect(page.locator('#move-count')).toHaveText('00');
+ await page.locator('[data-slot="0"]').click();await page.locator('[data-square="27"]').click();await page.locator('[data-square="17"]').click();await expect(page.locator('#move-count')).toHaveText('02',{timeout:15000});await expect(page.locator('#journal')).toContainText('Winter Seal · freeze d4 + b2–b3');
 });

@@ -69,9 +69,12 @@ function pseudoMoves(state) {
 }
 function cardMoves(state,id){
  const card=CARDS[id],result=[];
+ if(card.effect==='freeze'){
+  const targets=state.board.flatMap((p,square)=>p&&p.color!==state.turn&&p.type!=='k'?[square]:[]);
+  return pseudoMoves(state).flatMap(move=>targets.map(freezeTarget=>({...move,freezeTarget})));
+ }
  for(let from=0;from<64;from++){
   const p=state.board[from];if(!p||p.type==='k')continue;
-  if(card.effect==='freeze'){if(p.color!==state.turn)result.push({from,to:from,special:'freeze'});continue;}
   if(p.color!==state.turn||(card.pawn&&p.type!=='p'))continue;
   if(card.effect==='shield'){result.push({from,to:from,special:'shield'});continue;}
   if(state.freeze?.square===from)continue;
@@ -121,10 +124,10 @@ export function applyMove(state,move,record=true){
   for(const [square,right] of [[0,'Q'],[7,'K'],[56,'q'],[63,'k']])if(move.from===square||move.to===square)rights=rights.replace(right,'');
  }
  const cycled=record&&move.usePower?cycleCard(state,move.slot):state;
- const doublePawn=!effect&&!swap&&p.type==='p'&&move.to%8===move.from%8&&Math.abs(move.to-move.from)===16&&(!move.usePower||move.card==='charge');
+ const doublePawn=!effect&&!swap&&p.type==='p'&&move.to%8===move.from%8&&Math.abs(move.to-move.from)===16&&(!move.usePower||move.card==='charge'||move.freezeTarget!==undefined);
  const next={...cycled,board,turn:opposite(state.turn),rights,ep:doublePawn?(move.to+move.from)/2:null,
   shield:move.special==='shield'?{square:move.from,color:state.turn}:null,
-  freeze:move.special==='freeze'?{square:move.from,color:p.color}:null,
+  freeze:move.freezeTarget!==undefined&&board[move.freezeTarget]?.color===opposite(state.turn)?{square:move.freezeTarget,color:opposite(state.turn)}:move.special==='freeze'?{square:move.from,color:p.color}:null,
   halfmove:(!effect&&p.type==='p')||captured||move.special==='ep'?0:state.halfmove+1,
   fullmove:state.fullmove+(state.turn==='b'?1:0),lastMove:move};
  if(record)next.history=[...state.history,positionKey(next)];return next;
@@ -150,7 +153,7 @@ export function outcome(state,moves=legalMoves(state)) {
  return {over:false,winner:null,reason:inCheck(state)?'Check':null};
 }
 export function moveLabel(state,move){
- const prefix=state.mode==='cards'&&move.usePower?`${CARDS[move.card].name} · `:'';
+ const prefix=state.mode==='cards'&&move.usePower?`${CARDS[move.card].name} · ${move.freezeTarget!==undefined?'freeze '+squareName(move.freezeTarget)+' + ':''}`:'';
  if(move.special==='shield')return prefix+'shield '+squareName(move.from);
  if(move.special==='freeze')return prefix+'freeze '+squareName(move.from);
  if(move.special==='castle')return prefix+(move.to>move.from?'O-O':'O-O-O');

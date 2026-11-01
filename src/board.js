@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { PIECES } from './engine.js';
+import { PIECES,inCheck } from './engine.js';
 import {CARDS} from './cards.js';
 const isHeroPowerMove=(_state,move)=>!!move.usePower;
 const world = i => [i%8-3.5,0,3.5-(i>>3)];
@@ -122,7 +122,7 @@ export class ChessBoard {
   const rook=move.special==='castle'?this.pieceMeshes.find(mesh=>mesh.userData.square===(move.to>move.from?move.from+3:move.from-4)):null;
   const start=new THREE.Vector3(...world(move.from)),end=new THREE.Vector3(...world(move.to));
   const rookStart=rook?.position.clone(),rookEnd=rook?new THREE.Vector3(...world(move.to>move.from?move.from+1:move.from-1)):null;
-  const jump=move.usePower?['Leap','Travel'].includes(CARDS[move.card]?.kind):piece.type==='n';
+  const jump=move.usePower&&move.freezeTarget===undefined?['Leap','Travel'].includes(CARDS[move.card]?.kind):piece.type==='n';
   const originals=[];
   victim?.traverse(object=>{if(object.isMesh){const original=object.material;object.material=original.clone();object.material.transparent=true;originals.push([object,original]);}});
   const burst=new THREE.Group();burst.position.set(...world(capturedSquare));burst.position.y=.12;
@@ -158,6 +158,7 @@ export class ChessBoard {
   const tile=(i,color,opacity)=>{const m=new THREE.Mesh(new THREE.PlaneGeometry(.96,.96),new THREE.MeshBasicMaterial({color,transparent:true,opacity,depthWrite:false}));m.rotation.x=-Math.PI/2;m.position.set(...world(i));m.position.y=.01;this.marks.add(m);};
   if(state.lastMove){tile(state.lastMove.from,0xd7bc71,.25);tile(state.lastMove.to,0xd7bc71,.32);}
   if(selected!==null)tile(selected,0xe6bd64,.65);
+  if(inCheck(state)){const king=state.board.findIndex(p=>p?.type==='k'&&p.color===state.turn);if(king>=0)tile(king,0xe73836,.65);}
   for(const to of new Set(moves.map(m=>m.to))){
    const capture=!!state.board[to],power=moves.some(move=>move.to===to&&isHeroPowerMove(state,move));const m=new THREE.Mesh(capture?new THREE.RingGeometry(.36,.42,48):power?new THREE.RingGeometry(.12,.2,32):new THREE.CircleGeometry(.105,32),new THREE.MeshBasicMaterial({color:power?0x27a8ff:capture?0xf0d48d:0x234c37,transparent:true,opacity:.82,depthWrite:false}));m.rotation.x=-Math.PI/2;m.position.set(...world(to));m.position.y=.025;this.marks.add(m);
   }

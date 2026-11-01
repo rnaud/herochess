@@ -1,7 +1,7 @@
 export const ORTH=[[1,0],[-1,0],[0,1],[0,-1]];
 export const DIAG=[[1,1],[1,-1],[-1,1],[-1,-1]];
 export const KNIGHT=[[1,2],[2,1],[-1,2],[-2,1],[1,-2],[2,-1],[-1,-2],[-2,-1]];
-// Families describe the primary purpose; tiers rate potential and determine copies in a new deck.
+// Families describe the primary purpose; tiers rate potential; every spell has one copy in the deck.
 export const FAMILIES={
  offense:{name:'Offense',icon:'⚔',text:'Create attacks and capture opportunities.'},
  defense:{name:'Defense',icon:'◇',text:'Protect a piece or retreat to safety.'},
@@ -9,8 +9,8 @@ export const FAMILIES={
  tactics:{name:'Tactics',icon:'✥',text:'Swap allies or disrupt an enemy.'},
 };
 export const POWER_TIERS={
- 1:{copies:3,name:'Standard',stars:'★',text:'Focused tools with specific uses.'},
- 2:{copies:2,name:'Powerful',stars:'★★',text:'Flexible movement or a major tactical effect.'},
+ 1:{copies:1,name:'Standard',stars:'★',text:'Focused tools with specific uses.'},
+ 2:{copies:1,name:'Powerful',stars:'★★',text:'Flexible movement or a major tactical effect.'},
  3:{copies:1,name:'Exceptional',stars:'★★★',text:'Long-range reach or a unique capture breakthrough.'},
 };
 export const CARDS={
@@ -30,12 +30,12 @@ export const CARDS={
  relay:{summary:"Swap two of your pieces on neighboring squares.",family:'tactics',tier:2,name:'Close Quarters',icon:'⇄',kind:'Tactic',text:"Choose two of your pieces on neighboring squares, including diagonals. Exchange their positions. Neither piece may be a king or frozen. A pawn cannot be swapped onto either edge row where the armies started.",swap:true},
  recall:{summary:"Teleport your piece to an empty square on your starting edge.",family:'defense',tier:2,name:'Homeward',icon:'⌂',kind:'Travel',text:"Choose one of your pieces except your king. Place it on any empty square of your back row: row 1 for White, row 8 for Black. Ignore pieces in the way. You cannot capture.",recall:true,empty:true},
  ward:{summary:"Protect your piece from capture until the opponent finishes their turn.",family:'defense',tier:2,name:'Glass Aegis',icon:'◈',kind:'Ward',text:"Choose one of your pieces except your king. Protect it without moving it. It cannot be captured during the opponent’s next turn. It still attacks and blocks paths. Protection ends when that turn finishes.",effect:'shield'},
- frost:{summary:"Stop an enemy piece from moving for its next turn. It still attacks.",family:'tactics',tier:2,name:'Winter Seal',icon:'❄',kind:'Hex',text:"Choose an enemy piece except their king. Freeze it without moving any of your pieces. It cannot move or swap on its next turn, even with a card. It still attacks and blocks paths, so freezing a piece does not stop it giving check.",effect:'freeze'},
+ frost:{summary:"Freeze an enemy for its next turn, then make a normal move.",family:'tactics',tier:2,name:'Winter Seal',icon:'❄',kind:'Hex',text:"Choose an enemy piece except their king, then make a normal chess move with one of your pieces. The chosen enemy cannot move or swap on its next turn. It still attacks and blocks paths, so your move must still get you out of check.",effect:'freeze'},
  pierce:{summary:"Your bishop, rook, or queen jumps one piece to capture an enemy beyond it.",family:'offense',tier:3,name:'Through the Veil',icon:'✧',kind:'Capture',text:"Choose your bishop, rook, or queen. Move in a direction it normally moves, but jump over exactly one piece to capture an enemy beyond it. Your attacker lands on the enemy’s square; the jumped piece stays. All other squares between them must be empty.",pierce:true},
 };
 export const CARD_IDS=Object.keys(CARDS);
-export const DECK_LIST=CARD_IDS.flatMap(id=>Array(POWER_TIERS[CARDS[id].tier].copies).fill(id));
-// A reproducible weighted deck; game state stores the sequence for undo.
+export const DECK_LIST=CARD_IDS.slice();
+// A reproducible singleton deck; game state stores the sequence for undo.
 export function shuffle(cards,seed){const a=cards.slice();let n=seed>>>0||1;for(let i=a.length-1;i>0;i--){n^=n<<13;n^=n>>>17;n^=n<<5;const j=(n>>>0)%(i+1);[a[i],a[j]]=[a[j],a[i]];}return {cards:a,seed:n>>>0};}
 export function deal(seed){const shuffled=shuffle(DECK_LIST,seed);return {hands:{w:shuffled.cards.slice(0,3),b:shuffled.cards.slice(3,6)},deck:shuffled.cards.slice(6),discard:[],rng:shuffled.seed};}
 export function cycleCard(state,slot){
@@ -45,4 +45,15 @@ export function cycleCard(state,slot){
  const [used]=hand.splice(slot,1);let deck=state.deck.slice(),discard=[...state.discard,used],rng=state.rng;
  if(!state.simulation){if(!deck.length){const next=shuffle(discard,rng);deck=next.cards;discard=[];rng=next.seed;}hand.push(deck.shift());}
  return {...state,hands,deck,discard,rng};
+}
+
+// Upgrade old multi-copy saves without replacing their board or unique held cards.
+export function uniqueDeck(state,priority='w'){
+ const used=new Set(),hands={w:[],b:[]},sides=[priority,priority==='w'?'b':'w'];
+ for(const side of sides)hands[side]=state.hands[side].map(id=>{if(used.has(id))return null;used.add(id);return id;});
+ const pool=[...new Set([...state.deck,...state.discard,...CARD_IDS])].filter(id=>!used.has(id));
+ for(const side of sides)hands[side]=hands[side].map(id=>{if(id)return id;const next=pool.shift();used.add(next);return next;});
+ const deck=[],discard=[];
+ for(const [source,target] of [[state.deck,deck],[state.discard,discard],[CARD_IDS,deck]])for(const id of source)if(!used.has(id)){used.add(id);target.push(id);}
+ return {...state,hands,deck,discard};
 }

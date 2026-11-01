@@ -18,12 +18,12 @@ export function evaluate(state) {
  if(state.freeze){const p=state.board[state.freeze.square];if(p)score+=(p.color===state.turn?-1:1)*Math.min(PIECES[p.type].value*.1,60);}
  return score;
 }
-const sameMove=(a,b)=>a&&b&&a.from===b.from&&a.to===b.to&&a.special===b.special&&a.promotion===b.promotion&&a.slot===b.slot&&a.usePower===b.usePower;
+const sameMove=(a,b)=>a&&b&&a.from===b.from&&a.to===b.to&&a.special===b.special&&a.promotion===b.promotion&&a.slot===b.slot&&a.usePower===b.usePower&&a.freezeTarget===b.freezeTarget;
 function priority(s,m){
  if(m.special==='freeze')return 30;
  if(m.special==='swap')return 0;
  if(m.special==='shield')return isAttacked(s,m.from,opposite(s.turn))?PIECES[s.board[m.from].type].value: -100;
- return (s.board[m.to]?10*PIECES[s.board[m.to].type].value-PIECES[s.board[m.from].type].value:0)+(m.promotion?900:0)+(m.special==='ep'?100:0);
+ return (m.freezeTarget!==undefined?PIECES[s.board[m.freezeTarget].type].value*.15:0)+(s.board[m.to]?10*PIECES[s.board[m.to].type].value-PIECES[s.board[m.from].type].value:0)+(m.promotion?900:0)+(m.special==='ep'?100:0);
 }
 export function chooseMove(state,{maxDepth=3,timeMs=1600,quiescence=true}={}) {
  // Search only public hands; never inspect the shuffled draw pile or predict draws.

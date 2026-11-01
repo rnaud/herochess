@@ -8,10 +8,10 @@ A JavaScript + Three.js card-chess game: standard pieces, a three-card hand, and
 
 1. Select a piece to move normally, or click a card to activate its power directly.
 2. Normal moves keep your entire hand. Click a selected card again, or use **Cancel power**, to return to a normal move.
-3. Select a piece and a legal destination. Shield and freeze cards need just one target; swaps need two friendly pieces.
+3. Select a piece and a legal destination. Shield needs one target. Winter Seal needs an enemy target followed by a normal move; swaps need two friendly pieces.
 4. Only a used power card goes into the shared discard pile. Draw a replacement immediately, so you always hold three; that replacement is available on your next turn.
 
-Both players start with three cards and see each other's hands. There is no extra opening draw. The shared shuffled deck contains three copies of each Standard card, two of each Powerful card, and one of each Exceptional card (40 total). When it empties, the discard pile is shuffled back into the draw pile. Undo restores the exact cards, pile order, and position. The draw order is hidden from both players, including the CPU.
+Both players start with three cards and see each other's hands. There is no extra opening draw. The shared shuffled deck contains one copy of each of the 18 cards. When it empties, the discard pile is shuffled back into the draw pile. Undo restores the exact cards, pile order, and position. The draw order is hidden from both players, including the CPU.
 
 ## The 18 cards
 
@@ -33,7 +33,7 @@ Both players start with three cards and see each other's hands. There is no extr
 | Close Quarters | Swap adjacent friendly non-kings; neither may be frozen, and pawns cannot swap onto either back rank. |
 | Homeward | Teleport a non-king piece to an empty square on its own back rank. |
 | Glass Aegis | Shield a friendly non-king against capture for one opposing turn. |
-| Winter Seal | Freeze an enemy non-king for its next turn. It still attacks and blocks paths. |
+| Winter Seal | Freeze an enemy non-king, then make a normal move. The enemy cannot move next turn, but still attacks. |
 | Through the Veil | A bishop, rook, or queen captures along its normal line through exactly one intervening piece, leaving that piece intact. |
 
 Unless a card restricts its target type, it applies to any friendly non-king piece. Leaps ignore intervening pieces. Slides stop at blockers. Travel cards marked “no capture” require empty destinations. All exact rules are also available in the in-game card library.
@@ -105,7 +105,7 @@ See [art direction](art-direction/README.md), [full-screen reference](art-direct
 
 Each card has a primary family badge: **Offense** (attack/capture opportunities), **Defense** (protection and retreat), **Mobility** (reach and repositioning), or **Tactics** (swapping allies and disrupting enemies). The existing movement kind remains visible separately.
 
-The outer frame and labeled stars show a design rating: **silver ★ Standard**, **blue ★★ Powerful**, or **gold ★★★ Exceptional**. These indicate general potential, not a position-specific recommendation or statistical win-rate measurement. New decks have 3 copies of each Standard card, 2 of each Powerful card, and 1 of each Exceptional card. Card-specific illustration colors remain intact.
+The outer frame and labeled stars show a design rating: **silver ★ Standard**, **blue ★★ Powerful**, or **gold ★★★ Exceptional**. These indicate general potential, not a position-specific recommendation or statistical win-rate measurement. Every card has one copy; tiers indicate power rather than rarity. Card-specific illustration colors remain intact.
 
 Families and tiers are declared in `src/cards.js` and appear in both hands and the library. The library supports combined family/tier filters, with a legend linked directly from the player's hand.
 
@@ -124,3 +124,11 @@ Normal moves require no card selection and keep all cards. Clicking a card activ
 Played powers burn their card with a glowing edge and embers; normal moves leave the hand untouched. Board feedback follows the action: family-colored trails and departure rings, capture shockwaves, a piercing beam, shield pulses, and frost crystals. Frozen 3D pieces use a faceted ice shell. Effects work for both players and in both board views. Reduced-motion preference skips transient effects, and undo/new match cancels and cleans them up immediately.
 
 Click a shielded or frozen piece to inspect its status on the board, including the restriction and exact expiry turn. This works for either side, during CPU thinking, and with 2D keyboard controls. Close the panel with × or Escape. Through the Veil includes a labeled capture example in the selected-card panel and atlas.
+
+Check now has a persistent board banner, a highlighted king square and red king ring, and matching status/turn labels. These distinguish your king from the CPU's king and check from checkmate. The warning stays visible while selecting pieces/cards, clears after escape, and returns on undo. Reduced motion keeps a static warning. Ordinary moves have landing pulses; captures and spells have stronger impact rings and actor-labeled callouts.
+
+Sound effects use short synthesized cues for moves, captures, powers, dealing, check and checkmate. The board’s sound button toggles them and remembers your preference. Audio starts only after a user interaction. Existing version-2 saves are upgraded to a singleton deck while preserving the board and unique cards in your hand; duplicate copies are replaced.
+
+Rewind Time replaces unlimited Undo: three charges per match, restoring your last action and the CPU reply (including cards and deck). You must complete another action before rewinding again. Charges and the cooldown persist in saved games and cannot be restored by rewinding or reloading. New Match resets them.
+
+Winter Seal is a combined action: select an enemy to freeze, then make a normal chess move (including normal king moves, castling, captures, en passant or promotion when legal). The card is consumed once, after the move is chosen. The preview can be cancelled for free. The CPU searches the same combined actions.

@@ -4,11 +4,19 @@ import {CARDS} from './cards.js';
 export class GameEffects {
  constructor(){this.active=new Set();}
  cancel(){for(const cleanup of [...this.active])cleanup();}
- play(state,move,source,point){
+ rewind(rect,remaining){
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  const layer=document.createElement('div');layer.className='game-fx rewind-fx';layer.setAttribute('aria-hidden','true');layer.innerHTML='<span class="fx-time-ring"></span><span class="fx-callout fx-time-label"></span>';layer.style.setProperty('--fx-color','#b4e9ec');
+  const x=rect.left+rect.width/2,y=rect.top+rect.height/2;for(const child of layer.children){child.style.left=x+'px';child.style.top=y+'px';}
+  layer.lastChild.textContent=`TIME REWOUND · ${remaining} LEFT`;document.body.append(layer);
+  const a=layer.firstChild.animate([{opacity:0,transform:'translate(-50%,-50%) scale(2.5) rotate(100deg)'},{opacity:.9,offset:.35},{opacity:0,transform:'translate(-50%,-50%) scale(.1) rotate(-80deg)'}],{duration:850,fill:'both'}),b=layer.lastChild.animate([{opacity:0,transform:'translate(-50%,-50%) scale(.8)'},{opacity:1,transform:'translate(-50%,-50%) scale(1)',offset:.2},{opacity:1,offset:.7},{opacity:0,transform:'translate(-50%,-50%) scale(1.1)'}],{duration:1100,fill:'both'});
+  let done=false;const cleanup=()=>{if(done)return;done=true;a.cancel();b.cancel();layer.remove();this.active.delete(cleanup);};this.active.add(cleanup);Promise.allSettled([a.finished,b.finished]).then(cleanup);
+ }
+ play(state,move,source,point,human){
   if(matchMedia('(prefers-reduced-motion: reduce)').matches)return Promise.resolve();
   const layer=document.createElement('div');layer.className='game-fx';layer.setAttribute('aria-hidden','true');
   layer.dataset.effect=move.usePower?(move.special||CARDS[move.card]?.kind.toLowerCase()||'power'):'move';
-  const color=move.special==='freeze'?'#b5eeff':move.special==='shield'?'#8acfff':({offense:'#ffba6a',defense:'#8acfff',mobility:'#94efba',tactics:'#d5acff'}[CARDS[move.card]?.family]||'#edcf94');
+  const color=move.special==='freeze'||move.freezeTarget!==undefined?'#b5eeff':move.special==='shield'?'#8acfff':({offense:'#ffba6a',defense:'#8acfff',mobility:'#94efba',tactics:'#d5acff'}[CARDS[move.card]?.family]||'#edcf94');
   layer.style.setProperty('--fx-color',color);document.body.append(layer);
   const animations=[];let hiddenSource=false,finished=false;
   const animate=(element,frames,options)=>{const a=element.animate(frames,{fill:'both',easing:'ease-out',...options});animations.push(a);return a;};
@@ -32,22 +40,28 @@ export class GameEffects {
     }
    }
   }
-  const from=point(move.from),to=point(move.to),effect=['shield','freeze'].includes(move.special),capture=!effect&&move.special!=='swap'&&(state.board[move.to]||move.special==='ep');
-  if(from&&to&&(move.usePower||capture)){
-   const delay=effect?100:capture?350:280;
+  const from=point(move.from),to=point(move.to),effect=['shield','freeze'].includes(move.special)||move.freezeTarget!==undefined,capture=!['shield','freeze'].includes(move.special)&&move.special!=='swap'&&(state.board[move.to]||move.special==='ep');
+  if(from&&to){
+   if(move.usePower||capture||move.promotion||move.special==='castle'){
+    const label=node('fx-callout',Math.max(130,Math.min(innerWidth-130,to.x)),Math.max(65,to.y-75));
+    label.textContent=`${state.turn===human?'YOU':'CPU'} · ${move.promotion?'PROMOTION':move.usePower?CARDS[move.card].name:capture?'CAPTURE':'CASTLE'}`;
+    animate(label,[{opacity:0,transform:'translate(-50%,10px) scale(.8)'},{opacity:1,transform:'translate(-50%,0) scale(1)',offset:.2},{opacity:1,offset:.7},{opacity:0,transform:'translate(-50%,-16px) scale(1)'}],{duration:900});
+   }
+   const delay=effect?100:capture?350:280,impact=move.freezeTarget!==undefined?point(move.freezeTarget):to;
    if(move.usePower&&move.from!==move.to){
     const trail=node('fx-trail',from.x,from.y),dx=to.x-from.x,dy=to.y-from.y;
     if(CARDS[move.card]?.kind==='Capture'){trail.classList.add('fx-beam');trail.style.width=Math.hypot(dx,dy)+'px';trail.style.transform=`rotate(${Math.atan2(dy,dx)}rad)`;animate(trail,[{opacity:0},{opacity:1,offset:.35},{opacity:0}],{duration:460});}
     else animate(trail,[{opacity:0,transform:'translate(-50%,-50%) scale(.4)'},{opacity:1,offset:.2},{opacity:0,transform:`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px)) scale(1.5)`}],{duration:520});
     const portal=node('fx-ring',from.x,from.y);animate(portal,[{opacity:.8,transform:'translate(-50%,-50%) scale(.2)'},{opacity:0,transform:'translate(-50%,-50%) scale(1.3)'}],{duration:480});
    }
-   const ring=node('fx-ring',to.x,to.y);if(capture)ring.classList.add('fx-impact');
-   animate(ring,[{opacity:0,transform:'translate(-50%,-50%) scale(.2)'},{opacity:.95,offset:.15},{opacity:0,transform:`translate(-50%,-50%) scale(${capture?2:1.5})`}],{duration:550,delay});
+   const ring=node('fx-ring',impact.x,impact.y);if(capture)ring.classList.add('fx-impact');else if(!move.usePower)ring.classList.add('fx-step');
+   animate(ring,[{opacity:0,transform:'translate(-50%,-50%) scale(.2)'},{opacity:.95,offset:.15},{opacity:0,transform:`translate(-50%,-50%) scale(${capture?2:1.5})`}],{duration:move.usePower||capture?550:350,delay});
+   if(capture){const shock=node('fx-shock',to.x,to.y);animate(shock,[{opacity:0,transform:'translate(-50%,-50%) scale(.2)'},{opacity:.8,offset:.1},{opacity:0,transform:'translate(-50%,-50%) scale(2.5)'}],{duration:480,delay:delay+70});}
    if(effect){
-    const shell=node(move.special==='freeze'?'fx-frost':'fx-shield',to.x,to.y);shell.textContent=move.special==='freeze'?'❄':'◇';
+    const shell=node(move.special==='freeze'||move.freezeTarget!==undefined?'fx-frost':'fx-shield',impact.x,impact.y);shell.textContent=move.special==='freeze'||move.freezeTarget!==undefined?'❄':'◇';
     animate(shell,[{opacity:0,transform:'translate(-50%,-50%) scale(.3)'},{opacity:.9,transform:'translate(-50%,-50%) scale(1.1)',offset:.4},{opacity:0,transform:'translate(-50%,-70%) scale(1.2)'}],{duration:800});
    }
-   sparks(to.x,to.y,capture?18:12,delay,move.special==='freeze');
+   if(move.usePower||capture)sparks(impact.x,impact.y,capture?28:16,delay,move.special==='freeze'||move.freezeTarget!==undefined);
   }
   const cleanup=()=>{if(finished)return;finished=true;animations.forEach(a=>a.cancel());layer.remove();if(hiddenSource)source.style.visibility='';this.active.delete(cleanup);};
   this.active.add(cleanup);
