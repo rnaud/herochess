@@ -1,0 +1,102 @@
+{
+  "generator": "Midjourney website",
+  "style": "Original fantasy trading card painting for Herochess Living Grimoire, expressive playful magical storytelling, rich hand painted oil brushwork, antique ivory and brass objects, midnight teal atmosphere, luminous spell effects, warm gold rim lighting, one strong central action, landscape illustration only, no lettering or borders --ar 3:2 --sref https://cdn.midjourney.com/4bcdce07-5895-4210-a3ad-cf6789530984/0_0.png",
+  "scenes": {
+    "saddle": "Borrowed Saddle: a tiny ivory chess pawn joyfully riding a rearing spectral golden horse across a chessboard",
+    "comet": "Comet Leap: an ivory chess knight soaring through a starry sky on the blazing tail of a golden comet",
+    "rift": "Diagonal Rift: an ivory chess bishop leaping over a diagonal violet crack in the fabric of a stone chessboard",
+    "vault": "Stone Vault: a sturdy ivory chess rook vaulting over a crumbling stone wall on a burst of amber magic",
+    "prism": "Prism Path: an ivory chess bishop surfing a brilliant diagonal rainbow beam through a floating crystal prism",
+    "tower": "Tower Road: an ivory chess rook racing down a perfectly straight golden road between towering teal castle walls",
+    "crown": "Lesser Crown: a little ivory pawn wearing a comically oversized floating golden crown surrounded by eight radiant paths",
+    "blink": "Pocket Portal: an ivory chess knight halfway through a small swirling violet portal, another portal sparkling nearby",
+    "retreat": "Safe Retreat: an ivory chess pawn gliding backwards into a warmly glowing sanctuary while golden arrows stream behind it",
+    "flank": "Sidewinder: a sinuous emerald serpent carrying an ivory chess pawn sideways across a tiled board",
+    "charge": "Marching Orders: a determined ivory chess pawn marching forward with a fluttering gold banner and three glowing stepping stones",
+    "lunge": "Spearpoint: an ivory chess pawn wielding a glowing golden spear charging straight at an obsidian chess rook",
+    "step": "Kings Footwork: an ivory chess bishop wearing enchanted golden dancing slippers stepping lightly across a chess tile",
+    "relay": "Close Quarters: an ivory chess knight and rook swirling around each other and trading places in a golden magical dance",
+    "recall": "Homeward: an ivory chess knight stepping through a violet doorway into the cozy golden light of its home castle",
+    "ward": "Glass Aegis: an ivory chess rook inside a luminous turquoise glass dome, harmless golden sparks bouncing off the protective shield",
+    "frost": "Winter Seal: a dark teal chess knight trapped in translucent blue ice, a mischievous tiny frost spirit painting snowflakes around it",
+    "pierce": "Through the Veil: an ivory chess bishop firing a thin golden beam through a ghostly translucent chess pawn at a distant obsidian rook"
+  },
+  "assets": [
+    {
+      "id": "pierce",
+      "url": "https://www.midjourney.com/jobs/8e9d1026-0e75-4d77-a3ff-408867839883?index=0"
+    },
+    {
+      "id": "frost",
+      "url": "https://www.midjourney.com/jobs/d6b0f25d-2c72-4e1b-b28e-293a0a803980?index=0"
+    },
+    {
+      "id": "ward",
+      "url": "https://www.midjourney.com/jobs/b504894c-596f-4517-abfb-09f6ca26eaf9?index=0"
+    },
+    {
+      "id": "recall",
+      "url": "https://www.midjourney.com/jobs/1bfd7076-433f-44da-b1e5-15b95140f22c?index=0"
+    },
+    {
+      "id": "relay",
+      "url": "https://www.midjourney.com/jobs/46e00e0c-2949-4291-9232-fe58e4d1fbb4?index=0"
+    },
+    {
+      "id": "step",
+      "url": "https://www.midjourney.com/jobs/acbbab6d-f1d1-4dab-8da7-8344553a81b3?index=0"
+    },
+    {
+      "id": "lunge",
+      "url": "https://www.midjourney.com/jobs/da3caeea-aac1-43c7-8134-c598158f8ed2?index=0"
+    },
+    {
+      "id": "charge",
+      "url": "https://www.midjourney.com/jobs/37662497-c089-4bac-aaa8-d6879280d01f?index=0"
+    },
+    {
+      "id": "flank",
+      "url": "https://www.midjourney.com/jobs/1d209ad5-e28b-46f1-a005-688b3c4d72ff?index=0"
+    },
+    {
+      "id": "retreat",
+      "url": "https://www.midjourney.com/jobs/9a07e293-6be3-446d-8182-a90a04db5df1?index=0"
+    },
+    {
+      "id": "blink",
+      "url": "https://www.midjourney.com/jobs/5734eaf0-2de0-4613-8fe7-46636c04c96d?index=0"
+    },
+    {
+      "id": "crown",
+      "url": "https://www.midjourney.com/jobs/ee941d16-b676-480d-bf03-2aab54e2e343?index=0"
+    },
+    {
+      "id": "tower",
+      "url": "https://www.midjourney.com/jobs/c82fefea-002f-4913-ae20-87655ed130e4?index=0"
+    },
+    {
+      "id": "prism",
+      "url": "https://www.midjourney.com/jobs/57381b05-8afb-4915-b8a9-8ad049e0a4c7?index=0"
+    },
+    {
+      "id": "vault",
+      "url": "https://www.midjourney.com/jobs/00ce0bd0-ca64-4612-8030-d5f03076cadb?index=0"
+    },
+    {
+      "id": "rift",
+      "url": "https://www.midjourney.com/jobs/13d498ea-8b2a-4a14-8bb7-34adc453a216?index=0"
+    },
+    {
+      "id": "comet",
+      "url": "https://www.midjourney.com/jobs/30b05de9-7448-4434-8663-318dad16ebaf?index=0"
+    },
+    {
+      "id": "saddle",
+      "url": "https://www.midjourney.com/jobs/de3a1733-7c9f-490b-b55d-ff84254e49c5?index=0"
+    },
+    {
+      "id": "card-reference",
+      "url": "https://www.midjourney.com/jobs/1b6bfba6-338b-4c84-8550-46cf36167c35?index=0"
+    }
+  ]
+}

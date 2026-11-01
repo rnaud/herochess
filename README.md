@@ -94,3 +94,7 @@ Physical card-chess games already exist. Steve Jackson Games’ **Knightmare Che
 - [Official FAQ](https://www.sjgames.com/knightmare/KnightmareChess_FAQ.pdf)
 
 The permanent-hero editions remain recoverable in Git history. This edition has no backend, Ruby, or TypeScript.
+
+### Artwork
+
+Every card has an original Midjourney-generated illustration. The Living Grimoire art direction uses ivory, midnight teal and antique brass across the cards, interface and Three.js board. See [art direction and reference images](art-direction/README.md) and [prompts / provenance](art-direction/prompts.json). Optimized local artwork lives in `public/art/`; no Midjourney connection is needed to play.

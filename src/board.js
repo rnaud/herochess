@@ -15,13 +15,13 @@ export class ChessBoard {
   this.camera=new THREE.OrthographicCamera(-6,6,5,-5,.1,100);
   this.scene.add(new THREE.HemisphereLight(0xf6f4df,0x31473a,2.5));
   const key=new THREE.DirectionalLight(0xffecd0,4.0);key.position.set(-3,10,5);key.castShadow=true;key.shadow.mapSize.set(2048,2048);Object.assign(key.shadow.camera,{left:-7,right:7,top:7,bottom:-7,near:.5,far:25});key.shadow.normalBias=.035;key.shadow.bias=-.0004;key.shadow.radius=3;this.scene.add(key);
-  const fill=new THREE.DirectionalLight(0xb5f4de,1.7);fill.position.set(5,5,-6);this.scene.add(fill);
-  this.materials={white:new THREE.MeshStandardMaterial({color:0xe4ddc6,roughness:.32,metalness:.12}),black:new THREE.MeshStandardMaterial({color:0x263b34,roughness:.3,metalness:.32}),gold:new THREE.MeshStandardMaterial({color:0xd6b876,metalness:.65,roughness:.3}),whiteHero:new THREE.MeshStandardMaterial({color:0x187be0,metalness:.15,roughness:.34}),blackHero:new THREE.MeshStandardMaterial({color:0xec6718,metalness:.15,roughness:.34})};
-  const base=new THREE.Mesh(new THREE.BoxGeometry(8.7,.32,8.7),new THREE.MeshStandardMaterial({color:0x1d322a,metalness:.25,roughness:.45}));base.position.y=-.23;base.receiveShadow=true;this.scene.add(base);
+  const fill=new THREE.DirectionalLight(0xa9e6ee,1.7);fill.position.set(5,5,-6);this.scene.add(fill);
+  this.materials={white:new THREE.MeshStandardMaterial({color:0xe4ddc6,roughness:.32,metalness:.12}),black:new THREE.MeshStandardMaterial({color:0x153d45,roughness:.3,metalness:.32}),gold:new THREE.MeshStandardMaterial({color:0xd6b876,metalness:.65,roughness:.3}),whiteHero:new THREE.MeshStandardMaterial({color:0x187be0,metalness:.15,roughness:.34}),blackHero:new THREE.MeshStandardMaterial({color:0xec6718,metalness:.15,roughness:.34})};
+  const base=new THREE.Mesh(new THREE.BoxGeometry(8.7,.32,8.7),new THREE.MeshStandardMaterial({color:0x16343b,metalness:.25,roughness:.45}));base.position.y=-.23;base.receiveShadow=true;this.scene.add(base);
   const trim=new THREE.Mesh(new THREE.BoxGeometry(8.72,.045,8.72),this.materials.gold);trim.position.y=-.35;this.scene.add(trim);
-  const lower=new THREE.Mesh(new THREE.BoxGeometry(8.85,.14,8.85),new THREE.MeshStandardMaterial({color:0x18281f,roughness:.6}));lower.position.y=-.45;this.scene.add(lower);
+  const lower=new THREE.Mesh(new THREE.BoxGeometry(8.85,.14,8.85),new THREE.MeshStandardMaterial({color:0x10262b,roughness:.6}));lower.position.y=-.45;this.scene.add(lower);
   this.squares=[];
-  const light=new THREE.MeshStandardMaterial({color:0xc3c8b0,roughness:.73});const dark=new THREE.MeshStandardMaterial({color:0x557a65,roughness:.63});
+  const light=new THREE.MeshStandardMaterial({color:0xd8cfb5,roughness:.73});const dark=new THREE.MeshStandardMaterial({color:0x3a6870,roughness:.63});
   for(let i=0;i<64;i++){
    const square=new THREE.Mesh(new THREE.BoxGeometry(.996,.075,.996),((i%8+(i>>3))%2===0)?dark:light);square.position.set(...world(i));square.position.y=-.035;square.receiveShadow=true;square.userData.square=i;this.scene.add(square);this.squares.push(square);
   }
