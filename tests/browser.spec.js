@@ -33,3 +33,16 @@ test('families and power tiers are explicit and library filters compose',async({
  await page.locator('#reset-filters').click();await expect(page.locator('.library-card')).toHaveCount(18);await expect(page.locator('#library-empty')).toBeHidden();
  await page.setViewportSize({width:390,height:844});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.screenshot({path:'/tmp/herochess-family-key-mobile.png',fullPage:true});
 });
+
+test('spell workbench fits a laptop and shows exact rules for the selected card',async({page})=>{
+ await page.setViewportSize({width:1440,height:900});await page.goto('/');await page.locator('[data-slot="0"]').click();await page.screenshot({path:'/tmp/herochess-interface-complete.png',fullPage:true});
+ await page.setViewportSize({width:1280,height:720});await fixture(page,'ward',[[27,'q','w'],[59,'r','b']]);
+ await expect(page.locator('#power-mode')).toBeDisabled();await expect(page.locator('#normal-mode')).toBeDisabled();
+ await page.locator('[data-slot="0"]').click();await expect(page.locator('#selected-card-title')).toHaveText('Glass Aegis');await expect(page.locator('#selected-card-art')).toBeVisible();await expect(page.locator('#selected-card-meta')).toContainText('Defense');await expect(page.locator('#card-instruction')).toContainText('It cannot be captured during the opponent’s next turn.');
+ await expect(page.locator('#power-mode')).toBeEnabled();await page.locator('#normal-mode').click();await expect(page.locator('#card-instruction')).toContainText('Discard Glass Aegis');await page.locator('#power-mode').click();
+ for(const selector of ['#board-view','[data-slot="0"]','[data-slot="1"]','[data-slot="2"]','#power-mode','#normal-mode']){const box=await page.locator(selector).boundingBox();expect(box.x).toBeGreaterThanOrEqual(0);expect(box.x+box.width).toBeLessThanOrEqual(1280);expect(box.y+box.height).toBeLessThanOrEqual(720);}
+ await page.screenshot({path:'/tmp/herochess-interface-desktop.png',fullPage:true});
+ await page.setViewportSize({width:1440,height:900});await page.screenshot({path:'/tmp/herochess-interface-wide.png',fullPage:true});
+ await page.setViewportSize({width:390,height:844});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.screenshot({path:'/tmp/herochess-interface-mobile.png',fullPage:true});
+ await page.locator('#new-button').click();await expect(page.locator('#new-dialog')).toBeVisible();await page.screenshot({path:'/tmp/herochess-interface-dialog.png'});
+});

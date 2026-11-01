@@ -108,3 +108,9 @@ Each card has a primary family badge: **Offense** (attack/capture opportunities)
 The outer frame and labeled stars show a design rating: **silver ★ Standard**, **blue ★★ Powerful**, or **gold ★★★ Exceptional**. These indicate general potential, not a position-specific recommendation or statistical win-rate measurement. All 18 cards retain three copies each; tiers do not change draw odds or rules. Card-specific illustration colors remain intact.
 
 Families and tiers are declared in `src/cards.js` and appear in both hands and the library. The library supports combined family/tier filters, with a legend linked directly from the player's hand.
+
+### Arcana Table interface (current)
+
+The full game interface was redesigned from a [built-in image-generation reference](art-direction/interface-reference-v3.png), implemented with responsive HTML/CSS and the existing Three.js game. The desktop layout places the board and opponent hand on the left, and all three player cards, exact selected-spell rules, action modes, effects and recent moves on the right. A laptop layout check verifies that the board and all primary spell controls fit at 1280 × 720. Smaller screens stack the table and workbench, with swipeable cards.
+
+The new tabletop and Automaton portrait were generated with the built-in tool; the existing varied card illustrations are retained. [Exact prompts and asset paths](art-direction/interface-v3-prompts.md) document the generation. Card summaries help scanning; the selected panel, card atlas and accessible names retain the full rules.

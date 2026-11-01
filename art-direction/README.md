@@ -1,3 +1,7 @@
+# Current UI: The Arcana Table
+
+The current full-screen interface follows [interface-reference-v3.png](interface-reference-v3.png), generated with the built-in image tool. See [exact prompts, asset paths and implementation notes](interface-v3-prompts.md). This replaces the Shattered Court layout below. The varied card illustrations remain in use.
+
 # Herochess — The Shattered Court
 
 ## Current direction

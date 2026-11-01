@@ -13,13 +13,13 @@ export class ChessBoard {
   this.renderer.toneMapping=THREE.ACESFilmicToneMapping;this.renderer.toneMappingExposure=1.03;this.renderer.outputColorSpace=THREE.SRGBColorSpace;this.renderer.setClearColor(0,0);
   container.appendChild(this.renderer.domElement);
   this.camera=new THREE.OrthographicCamera(-6,6,5,-5,.1,100);
-  this.scene.add(new THREE.HemisphereLight(0xf6f4df,0x35283f,2.1));
+  this.scene.add(new THREE.HemisphereLight(0xf6f4df,0x302a24,2.1));
   const key=new THREE.DirectionalLight(0xffd3a0,3.5);key.position.set(-3,10,5);key.castShadow=true;key.shadow.mapSize.set(2048,2048);Object.assign(key.shadow.camera,{left:-7,right:7,top:7,bottom:-7,near:.5,far:25});key.shadow.normalBias=.035;key.shadow.bias=-.0004;key.shadow.radius=3;this.scene.add(key);
-  const fill=new THREE.DirectionalLight(0xb9b1ed,1.6);fill.position.set(5,5,-6);this.scene.add(fill);
-  this.materials={white:new THREE.MeshStandardMaterial({color:0xe4ddc6,roughness:.32,metalness:.12}),black:new THREE.MeshStandardMaterial({color:0x342840,roughness:.3,metalness:.32}),gold:new THREE.MeshStandardMaterial({color:0xd6b876,metalness:.65,roughness:.3}),whiteHero:new THREE.MeshStandardMaterial({color:0x187be0,metalness:.15,roughness:.34}),blackHero:new THREE.MeshStandardMaterial({color:0xec6718,metalness:.15,roughness:.34})};
+  const fill=new THREE.DirectionalLight(0xd5dce4,1.6);fill.position.set(5,5,-6);this.scene.add(fill);
+  this.materials={white:new THREE.MeshStandardMaterial({color:0xe4ddc6,roughness:.32,metalness:.12}),black:new THREE.MeshStandardMaterial({color:0x292725,roughness:.3,metalness:.32}),gold:new THREE.MeshStandardMaterial({color:0xd6b876,metalness:.65,roughness:.3}),whiteHero:new THREE.MeshStandardMaterial({color:0x187be0,metalness:.15,roughness:.34}),blackHero:new THREE.MeshStandardMaterial({color:0xec6718,metalness:.15,roughness:.34})};
   const base=new THREE.Mesh(new THREE.BoxGeometry(8.7,.32,8.7),new THREE.MeshStandardMaterial({color:0x514134,metalness:.25,roughness:.45}));base.position.y=-.23;base.receiveShadow=true;this.scene.add(base);
   const trim=new THREE.Mesh(new THREE.BoxGeometry(8.72,.045,8.72),this.materials.gold);trim.position.y=-.35;this.scene.add(trim);
-  const lower=new THREE.Mesh(new THREE.BoxGeometry(8.85,.14,8.85),new THREE.MeshStandardMaterial({color:0x30232d,roughness:.6}));lower.position.y=-.45;this.scene.add(lower);
+  const lower=new THREE.Mesh(new THREE.BoxGeometry(8.85,.14,8.85),new THREE.MeshStandardMaterial({color:0x26201b,roughness:.6}));lower.position.y=-.45;this.scene.add(lower);
   this.squares=[];
   // Painted mineral grain keeps the board tactile without competing with its squares.
   const stoneCanvas=document.createElement('canvas');stoneCanvas.width=256;stoneCanvas.height=256;
@@ -34,9 +34,9 @@ export class ChessBoard {
   for(const x of [-4.22,4.22])for(const z of [-4.22,4.22]){
    const finial=new THREE.Mesh(new THREE.OctahedronGeometry(.13),this.materials.gold);finial.position.set(x,.02,z);this.scene.add(finial);
   }
-  for(const radius of [5.6,5.72]){const ring=new THREE.Mesh(new THREE.TorusGeometry(radius,.008,4,128),new THREE.MeshStandardMaterial({color:0xc7a465,metalness:.6,roughness:.6,transparent:true,opacity:.35}));ring.rotation.x=-Math.PI/2;ring.position.y=-.48;this.scene.add(ring);}
 
-  const light=new THREE.MeshStandardMaterial({color:0xd3bb94,roughness:.65,map:stoneMap});const dark=new THREE.MeshStandardMaterial({color:0x625468,roughness:.55,map:stoneMap});
+
+  const light=new THREE.MeshStandardMaterial({color:0xd3bb94,roughness:.65,map:stoneMap});const dark=new THREE.MeshStandardMaterial({color:0x686054,roughness:.55,map:stoneMap});
   for(let i=0;i<64;i++){
    const square=new THREE.Mesh(new THREE.BoxGeometry(.996,.075,.996),((i%8+(i>>3))%2===0)?dark:light);square.position.set(...world(i));square.position.y=-.035;square.receiveShadow=true;square.userData.square=i;this.scene.add(square);this.squares.push(square);
   }
@@ -55,7 +55,7 @@ export class ChessBoard {
    const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:false}));sprite.position.set(...pos);sprite.scale.set(.28,.28,1);this.labels.add(sprite);
   }
  }
- resize(){const w=this.container.clientWidth,h=this.container.clientHeight;if(!w||!h)return;this.renderer.setSize(w,h,false);const aspect=w/h;const extent=Math.max(4.25,4.95/aspect);this.camera.left=-extent*aspect;this.camera.right=extent*aspect;this.camera.top=extent;this.camera.bottom=-extent;this.camera.position.set(0,11.8,this.flipped?-10.3:10.3);this.camera.lookAt(0,0,0);this.camera.updateProjectionMatrix();this.render();}
+ resize(){const w=this.container.clientWidth,h=this.container.clientHeight;if(!w||!h)return;this.renderer.setSize(w,h,false);const aspect=w/h;const extent=Math.max(4.65,4.65/aspect);this.camera.left=-extent*aspect;this.camera.right=extent*aspect;this.camera.top=extent;this.camera.bottom=-extent;this.camera.position.set(0,17,this.flipped?-6.8:6.8);this.camera.lookAt(0,0,0);this.camera.updateProjectionMatrix();this.render();}
  flip(value=!this.flipped){this.flipped=value;this.makeLabels();this.resize();}
  pick(event){const r=this.container.getBoundingClientRect();this.pointer.set((event.clientX-r.left)/r.width*2-1,-(event.clientY-r.top)/r.height*2+1);this.raycaster.setFromCamera(this.pointer,this.camera);const hits=this.raycaster.intersectObjects([...this.pieceMeshes,...this.squares],true);for(const hit of hits){let obj=hit.object;while(obj){if(obj.userData.square!==undefined)return obj.userData.square;obj=obj.parent;}}return null;}
  mesh(geometry,material,parent,x=0,y=0,z=0){const m=new THREE.Mesh(geometry,material);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m;}
