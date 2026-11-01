@@ -16,7 +16,7 @@ export const squareIndex = s => 'abcdefgh'.indexOf(s[0]) + (Number(s[1])-1)*8;
 export function initialState(mode='heroes') {
  const board=Array(64).fill(null), back=mode==='heroes'?['s','h','o','q','k','b','n','r']:['r','n','b','q','k','b','n','r'];
  for(let x=0;x<8;x++) { board[x]={type:back[x],color:'w'}; board[x+8]={type:'p',color:'w'}; board[x+48]={type:'p',color:'b'}; board[x+56]={type:back[x],color:'b'}; }
- const state={board,turn:'w',rights:'KQkq',ep:null,halfmove:0,fullmove:1,mode,history:[]};
+ const state={board,turn:'w',rights:'KQkq',ep:null,halfmove:0,fullmove:1,mode,powers:{w:mode==='heroes',b:mode==='heroes'},shield:null,history:[]};
  state.history=[positionKey(state)]; return state;
 }
 function targets(state,from,attacks=false) {
@@ -50,11 +50,13 @@ function pseudoMoves(state) {
  for(let from=0;from<64;from++) {
   const p=state.board[from]; if(!p||p.color!==state.turn)continue;
   for(const to of targets(state,from)){
-   if(state.board[to]?.type==='k')continue;
+   if(state.board[to]?.type==='k'||state.shield?.square===to)continue;
+   if(p.type==='p'&&to===state.ep&&state.shield?.square===to+(p.color==='w'?-8:8))continue;
    const special=p.type==='p'&&to===state.ep&&!state.board[to]?'ep':null;
    if(p.type==='p'&&(to<8||to>=56))for(const promotion of ['q','r','b','n'])moves.push({from,to,promotion,special});
    else moves.push({from,to,special});
   }
+  if(state.mode==='heroes'&&state.powers?.[state.turn]&&p.type!=='k')moves.push({from,to:from,special:'shield'});
   const home=p.color==='w'?4:60;
   if(p.type==='k'&&from===home&&!inCheck(state)){
    for(const [right,rook,empty,to] of p.color==='w'?[['K',7,[5,6],6],['Q',0,[3,2,1],2]]:[['k',63,[61,62],62],['q',56,[59,58,57],58]]){
@@ -74,23 +76,28 @@ export function legalMoves(state,from=null) {
 export function applyMove(state,move,record=true) {
  const board=state.board.slice(), p=board[move.from], captured=board[move.to];
  if(!p)throw new Error('No piece at origin');
+ if(move.special==='shield'){
+  const next={...state,turn:opposite(state.turn),powers:{...state.powers,[state.turn]:false},shield:{square:move.from,color:state.turn},ep:null,halfmove:state.halfmove+1,fullmove:state.fullmove+(state.turn==='b'?1:0),lastMove:move};
+  if(record)next.history=[...state.history,positionKey(next)];return next;
+ }
+
  board[move.to]={...p,type:move.promotion||p.type};board[move.from]=null;
  if(move.special==='ep')board[move.to+(p.color==='w'?-8:8)]=null;
  if(move.special==='castle'){const rookFrom=move.to>move.from?move.from+3:move.from-4,rookTo=move.to>move.from?move.from+1:move.from-1;board[rookTo]=board[rookFrom];board[rookFrom]=null;}
  let rights=state.rights;
  if(p.type==='k')rights=rights.replace(p.color==='w'?/[KQ]/g:/[kq]/g,'');
  for(const [square,right] of [[0,'Q'],[7,'K'],[56,'q'],[63,'k']])if(move.from===square||move.to===square)rights=rights.replace(right,'');
- const next={...state,board,turn:opposite(state.turn),rights,ep:p.type==='p'&&Math.abs(move.to-move.from)===16?(move.to+move.from)/2:null,halfmove:p.type==='p'||captured||move.special==='ep'?0:state.halfmove+1,fullmove:state.fullmove+(state.turn==='b'?1:0),lastMove:move};
+ const next={...state,board,shield:null,turn:opposite(state.turn),rights,ep:p.type==='p'&&Math.abs(move.to-move.from)===16?(move.to+move.from)/2:null,halfmove:p.type==='p'||captured||move.special==='ep'?0:state.halfmove+1,fullmove:state.fullmove+(state.turn==='b'?1:0),lastMove:move};
  if(record)next.history=[...state.history,positionKey(next)];
  return next;
 }
 export function positionKey(state) {
  // An en-passant target matters for repetition only if a legal capture exists.
  const ep=state.ep!==null && legalMovesForEp(state) ? state.ep : '-';
- return state.board.map(p=>p?p.color+p.type:'.').join('')+state.turn+state.rights+ep;
+ return state.board.map(p=>p?p.color+p.type:'.').join('')+state.turn+state.rights+ep+`|${Number(!!state.powers?.w)}${Number(!!state.powers?.b)}|${state.shield?state.shield.color+state.shield.square:'-'}`;
 }
 function legalMovesForEp(state){
- for(let i=0;i<64;i++)if(state.board[i]?.color===state.turn&&state.board[i].type==='p'&&targets(state,i).includes(state.ep)){
+ for(let i=0;i<64;i++)if(state.shield?.square!==state.ep+(state.turn==='w'?-8:8)&&state.board[i]?.color===state.turn&&state.board[i].type==='p'&&targets(state,i).includes(state.ep)){
   if(!inCheck(applyMove(state,{from:i,to:state.ep,special:'ep'},false),state.turn))return true;
  }
  return false;
@@ -106,7 +113,13 @@ export function outcome(state,moves=legalMoves(state)) {
 }
 export function moveLabel(state,move){
  const p=state.board[move.from];
+ if(move.special==='shield')return `Aegis ${squareName(move.from)}`;
  if(move.special==='castle')return move.to>move.from?'O-O':'O-O-O';
  const capture=state.board[move.to]||move.special==='ep';
  return `${p.type==='p'?'':p.type.toUpperCase()+' '}${squareName(move.from)}${capture?'×':'–'}${squareName(move.to)}${move.promotion?'='+move.promotion.toUpperCase():''}`;
+}
+// Keep pre-Aegis saved games on their original rules, including repetition counts.
+export function restoreState(saved){
+ if(saved.powers)return saved;
+ return {...saved,powers:{w:false,b:false},shield:null,history:saved.history.map(key=>key.includes('|')?key:key+'|00|-')};
 }

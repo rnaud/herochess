@@ -66,3 +66,27 @@ test('undo cancels active motion and reduced-motion play remains functional',asy
  await page.goto('/');await page.locator('#view-2d').click();await page.locator('[data-square="12"]').click();await page.locator('[data-square="28"]').click();await expect(page.locator('#flat-board')).toHaveAttribute('data-animating','move');await page.locator('#undo-button').click();await expect(page.locator('#move-count')).toHaveText('00');await expect(page.locator('#flat-board')).not.toHaveAttribute('data-animating');await expect(page.locator('body > .flat-piece')).toHaveCount(0);await expect(page.locator('[data-square="12"]')).toHaveAttribute('aria-label',/White Pawn/);
  await page.emulateMedia({reducedMotion:'reduce'});await page.locator('[data-square="12"]').click();await page.locator('[data-square="28"]').click();await expect(page.locator('#move-count')).toHaveText('02');await expect(page.locator('#flat-board')).not.toHaveAttribute('data-animating');
 });
+test('three interactive lessons teach legal moves and preserve the current match',async({page})=>{
+ await page.goto('/');await page.emulateMedia({reducedMotion:'reduce'});await page.locator('#view-2d').click();await page.locator('[data-square="12"]').click();await page.locator('[data-square="28"]').click();await expect(page.locator('#move-count')).toHaveText('02',{timeout:15000});
+ const saved=await page.evaluate(()=>localStorage.getItem('herochess-v2'));
+ await page.locator('#lessons-button').click();await page.getByRole('button',{name:/01.*Oracle/}).click();await expect(page.locator('#lesson-panel')).toBeVisible();await expect(page.locator('#aegis-panel')).toBeHidden();
+ await page.locator('[data-square="18"]').click();await page.locator('[data-square="27"]').click();await expect(page.locator('#lesson-feedback')).toContainText('not the challenge');await expect(page.locator('#move-count')).toHaveText('00');
+ await page.locator('#lesson-hint').click();await expect(page.locator('#lesson-feedback')).toContainText('c3');
+ await page.screenshot({path:'/tmp/herochess-lesson.png',fullPage:true});
+ await page.locator('[data-square="45"]').click();await expect(page.locator('#lesson-next')).toBeVisible();await page.locator('#lesson-next').click();
+ await page.locator('[data-square="1"]').click();await page.locator('[data-square="27"]').click();await expect(page.locator('#lesson-next')).toBeVisible();await page.locator('#lesson-next').click();
+ await page.locator('[data-square="18"]').click();await page.locator('[data-square="36"]').click();await expect(page.locator('#lesson-next')).toHaveText('Finish · Return to match');await page.locator('#lesson-next').click();
+ await expect(page.locator('#lesson-panel')).toBeHidden();await expect(page.locator('#move-count')).toHaveText('02');expect(await page.evaluate(()=>localStorage.getItem('herochess-v2'))).toBe(saved);
+ await page.reload();await page.locator('#lessons-button').click();await expect(page.locator('.lesson-choice').filter({hasText:'✓'})).toHaveCount(3);
+});
+test('Aegis is an explicit turn action, persists, expires, and can be undone',async({page})=>{
+ const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto('/');await page.locator('#difficulty').selectOption('3');
+ await page.getByRole('button',{name:/Double Knight: Far leap/}).click();await expect(page.locator('#aegis-button')).toBeEnabled();await page.locator('#aegis-button').click();
+ await expect(page.locator('#aegis-charge')).toHaveText('0 / 1');await expect(page.locator('#aegis-status')).toContainText('protected');
+ await page.locator('#view-2d').click();await expect(page.locator('[data-square="1"]')).toHaveClass(/shielded/);await page.screenshot({path:'/tmp/herochess-shield.png',fullPage:true});
+ await expect(page.locator('#move-count')).toHaveText('02',{timeout:15000});await expect(page.locator('[data-square="1"]')).not.toHaveClass(/shielded/);await expect(page.locator('#white-captured')).toHaveText('');
+ await page.reload();await expect(page.locator('#aegis-charge')).toHaveText('0 / 1');await page.locator('#undo-button').click();await expect(page.locator('#aegis-charge')).toHaveText('1 / 1 AVAILABLE');await expect(page.locator('#move-count')).toHaveText('00');expect(errors).toEqual([]);
+});
+test('mobile lessons fit and exiting practice restores the match',async({page})=>{
+ await page.setViewportSize({width:390,height:844});await page.goto('/');await page.locator('#lessons-button').click();await page.getByRole('button',{name:/03.*Bastion/}).click();await page.screenshot({path:'/tmp/herochess-lesson-mobile.png',fullPage:true});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.locator('#lesson-exit').click();await expect(page.locator('#lesson-panel')).toBeHidden();await expect(page.locator('#move-count')).toHaveText('00');
+});

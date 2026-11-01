@@ -1,35 +1,38 @@
 import './style.css';
+import {LESSONS,lessonState,solvesLesson} from './tutorials.js';
 import {HERO_SUMMARIES,isHeroPowerMove,oracleMoveHint} from './hero-ui.js';
 import {ChessBoard} from './board.js';
-import {PIECES,initialState,legalMoves,applyMove,outcome,moveLabel,squareName,opposite,inCheck} from './engine.js';
+import {PIECES,initialState,legalMoves,applyMove,outcome,moveLabel,squareName,opposite,inCheck,restoreState} from './engine.js';
 const $=id=>document.getElementById(id);
 const glyph={p:'♟',n:'♞',b:'♝',r:'♜',q:'♛',k:'♚',h:'♞',o:'♝',s:'♜'};
 const SAVE_KEY='herochess-v2';
 let state=initialState(),human='w',selected=null,moves=[],snapshots=[],journal=[],worker=null,requestId=0,thinking=false,flipped=false,board=null,view='3d',heroFocus=null;
 let level='2';
+let tutorial=null,returnGame=null,lessonProgress=[];
+try{const progress=JSON.parse(localStorage.getItem('herochess-lessons')||'[]');if(Array.isArray(progress))lessonProgress=progress.filter(i=>Number.isInteger(i)&&i>=0&&i<LESSONS.length);}catch{}
 let animating=false,transitionId=0,flatAnimations=[];
 function cancelPresentation(){transitionId++;board?.cancelAnimation();flatAnimations.forEach(a=>a.cancel());flatAnimations=[];animating=false;setMotionControls(false);}
-function setMotionControls(active){for(const id of ['flip-button','view-2d','difficulty'])$(id).disabled=active;$('view-3d').disabled=active||!board;}
+function setMotionControls(active){for(const id of ['flip-button','view-2d','difficulty'])$(id).disabled=active||(id==='difficulty'&&!!tutorial);$('view-3d').disabled=active||!board;}
 try{
  const saved=JSON.parse(localStorage.getItem(SAVE_KEY));
  if(saved&&saved.version===2&&['w','b'].includes(saved.human)&&Array.isArray(saved.state.board)&&saved.state.board.length===64&&saved.state.board.every(p=>p===null||(PIECES[p.type]&&['w','b'].includes(p.color)))&&['w','b'].every(c=>saved.state.board.filter(p=>p?.type==='k'&&p.color===c).length===1)&&Array.isArray(saved.state.history)&&Array.isArray(saved.snapshots)&&Array.isArray(saved.journal)){
-  state=saved.state;human=saved.human;snapshots=saved.snapshots;journal=saved.journal;level=['1','2','3'].includes(saved.level)?saved.level:'2';flipped=human==='b';
+  state=restoreState(saved.state);human=saved.human;snapshots=saved.snapshots.map(restoreState);journal=saved.journal;level=['1','2','3'].includes(saved.level)?saved.level:'2';flipped=human==='b';
  }
 }catch{/* Ignore inaccessible or invalid browser storage. */}
 $('difficulty').value=level;
 try{board=new ChessBoard($('board-view'),selectSquare);board.flip(flipped);}catch(error){console.warn('3D unavailable; using accessible board.',error);view='2d';$('view-3d').disabled=true;$('view-3d').title='WebGL is unavailable on this device';}
-function save(){try{localStorage.setItem(SAVE_KEY,JSON.stringify({version:2,state,human,snapshots,journal,level:$('difficulty').value}));}catch{/* Play remains available when browser storage is disabled. */}}
+function save(){if(tutorial)return;try{localStorage.setItem(SAVE_KEY,JSON.stringify({version:2,state,human,snapshots,journal,level:$('difficulty').value}));}catch{/* Play remains available when browser storage is disabled. */}}
 function stopCPU(){requestId++;worker?.terminate();worker=null;thinking=false;}
 function startCPU(){
- if(state.turn===human||outcome(state).over)return;
+ if(tutorial||state.turn===human||outcome(state).over)return;
  stopCPU();thinking=true;render();
  const id=++requestId;
  worker=new Worker(new URL('./ai-worker.js',import.meta.url),{type:'module'});
- const levels={'1':{maxDepth:1,timeMs:300},'2':{maxDepth:3,timeMs:1300},'3':{maxDepth:4,timeMs:3200}};
+ const levels={'1':{maxDepth:1,timeMs:450,quiescence:false},'2':{maxDepth:3,timeMs:1800},'3':{maxDepth:5,timeMs:4000}};
  worker.onmessage=({data})=>{
   if(data.id!==requestId)return;
   if(data.error){cpuFailure();return;}
-  const legal=legalMoves(state).find(m=>m.from===data.move?.from&&m.to===data.move?.to&&m.promotion===data.move?.promotion);
+  const legal=legalMoves(state).find(m=>m.from===data.move?.from&&m.to===data.move?.to&&m.promotion===data.move?.promotion&&m.special===data.move?.special);
   if(!legal){cpuFailure();return;}
   stopCPU();commit(legal);$('cpu-caption').textContent=`${['','APPRENTICE','TACTICIAN','STRATEGIST'][$('difficulty').value]} · DEPTH ${data.depth}`;
  };
@@ -38,6 +41,12 @@ function startCPU(){
 }
 function cpuFailure(){stopCPU();render();$('status-title').textContent='The Automaton paused.';$('status-detail').textContent='Could not calculate a move. Change opponent level to retry, or undo your last turn.';}
 async function animateFlat(state,move){
+ if(move.special==='shield'){
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  const target=$('flat-board').querySelector(`[data-square="${move.from}"]`);if(!target)return;
+  const animation=target.animate([{boxShadow:'inset 0 0 0 0 #a4dcff'},{boxShadow:'inset 0 0 0 12px #79cbff',offset:.5},{boxShadow:'inset 0 0 0 3px #79cbff'}],{duration:500});flatAnimations=[animation];await Promise.allSettled([animation.finished]);flatAnimations=[];return;
+ }
+
  if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
  const flat=$('flat-board'),origin=flat.querySelector(`[data-square="${move.from}"] .flat-piece`),destination=flat.querySelector(`[data-square="${move.to}"] .flat-piece`);
  if(!origin||!destination)return;
@@ -55,14 +64,15 @@ async function animateFlat(state,move){
  ghosts.forEach(ghost=>ghost.remove());hidden.forEach(element=>element.style.visibility='');delete flat.dataset.animating;flatAnimations=[];
 }
 async function commit(move){
+ if(tutorial){if(tutorial.complete)return;if(!solvesLesson(tutorial.index,move)){tutorial.feedback='That move is legal, but it is not the challenge. '+LESSONS[tutorial.index].hint;render();return;}}
  const before=state,text=moveLabel(state,move),id=++transitionId;
  snapshots.push(state);state=applyMove(state,move);const end=outcome(state);journal.push(text+(end.reason==='Checkmate'?'#':inCheck(state)?'+':''));selected=null;moves=[];heroFocus=null;save();
- animating=true;setMotionControls(true);$('undo-button').disabled=!snapshots.some(s=>s.turn===human);$('thinking-overlay').hidden=true;
+ animating=true;setMotionControls(true);$('undo-button').disabled=!!tutorial||!snapshots.some(s=>s.turn===human);$('thinking-overlay').hidden=true;
  try {await (view==='3d'&&board?board.animateMove(before,move):animateFlat(before,move));}
- finally {if(id===transitionId){animating=false;setMotionControls(false);render();if(!end.over&&state.turn!==human)startCPU();}}
+ finally {if(id===transitionId){animating=false;setMotionControls(false);if(tutorial){tutorial.complete=true;tutorial.feedback=LESSONS[tutorial.index].success;if(!lessonProgress.includes(tutorial.index))lessonProgress.push(tutorial.index);try{localStorage.setItem('herochess-lessons',JSON.stringify(lessonProgress));}catch{}}render();if(!tutorial&&!end.over&&state.turn!==human)startCPU();}}
 }
 function selectSquare(square){
- if(animating||thinking||state.turn!==human||outcome(state).over)return;
+ if(animating||thinking||tutorial?.complete||state.turn!==human||outcome(state).over)return;
  const options=moves.filter(m=>m.to===square);
  if(options.length){
   if(options[0].promotion){
@@ -72,7 +82,7 @@ function selectSquare(square){
   }
   commit(options[0]);return;
  }
- if(state.board[square]?.color===human){selected=selected===square?null:square;moves=selected===null?[]:legalMoves(state,selected);heroFocus=state.board[square].type;}
+ if(state.board[square]?.color===human){selected=selected===square?null:square;moves=selected===null?[]:legalMoves(state,selected).filter(m=>m.special!=='shield');heroFocus=state.board[square].type;}
  else{selected=null;moves=[];heroFocus=null;}
  render();
 }
@@ -84,28 +94,30 @@ function render(){
  $('mode-label').textContent=state.mode==='heroes'?'HERO RULES':'CLASSIC RULES';$('status-mode').textContent=state.mode==='heroes'?'HERO CHESS':'CLASSIC CHESS';
  $('turn-chip').textContent=end.over?'GAME OVER':myTurn?'YOUR TURN':'CPU TURN';
  $('thinking-overlay').hidden=!thinking;
+ renderLesson();renderAegis();
  $('player-caption').textContent=`${human==='w'?'IVORY · WHITE':'OBSIDIAN · BLACK'} · ${flipped===(human==='b')?'PLAYING FROM THE SOUTH':'PLAYING FROM THE NORTH'}`;
  document.querySelector('.side-chip').textContent=human==='w'?'OBSIDIAN':'IVORY';
  document.querySelector('.human-avatar').style.background=human==='w'?'#dcd8c5':'#33483b';
- $('undo-button').disabled=!snapshots.some(s=>s.turn===human);
+ $('undo-button').disabled=!!tutorial||!snapshots.some(s=>s.turn===human);
  let title=end.over?(end.winner?(end.winner===human?'An extraordinary victory.':'The Automaton prevails.'):'A balanced ending.'):(thinking?'A worthy opponent.':inCheck(state)?'Your king is in check.':journal.length?'Your next possibility.':'Your opening move.');
  let detail=end.over?`${end.reason}. Start a new match to explore another possibility.`:thinking?'The Automaton is weighing every move, including your heroes’ powers.':inCheck(state)?'Protect your king. Only moves that escape check are available.':'Select a piece to see its possibilities.';
  if(selected!==null){const p=state.board[selected];title=PIECES[p.type].name+'.';detail=p.type==='o'?oracleMoveHint(state,selected,moves):PIECES[p.type].description||`${squareName(selected)} · ${moves.length} legal move${moves.length===1?'':'s'}. Choose a highlighted square.`;}
  else if(heroFocus&&PIECES[heroFocus].description){title=PIECES[heroFocus].name+'.';detail=PIECES[heroFocus].description;}
+ if(tutorial){title=tutorial.complete?'Challenge complete!':'Practice your power.';detail=tutorial.feedback||LESSONS[tutorial.index].goal;}
  $('status-title').textContent=title;$('status-detail').textContent=detail;
  board?.update(state,selected,moves);
  renderFlat();renderHeroes();renderJournal();renderCaptures();setView(view);
 }
 function renderHeroes(){
  const container=$('hero-cards');container.replaceChildren();
- document.querySelector('.arsenal .section-heading h3').textContent=state.mode==='heroes'?'Your special pieces':'The original rules';
- document.querySelector('.arsenal .section-heading>span').textContent=state.mode==='heroes'?'03':'06';
- document.querySelector('.section-description').textContent=state.mode==='heroes'?`${human==='w'?'Blue':'Orange'} pieces are your heroes. Select a card to find one.`:'Six timeless pieces. Endless possibilities.';
- document.querySelector('.power-note').hidden=state.mode!=='heroes';
+ document.querySelector('.arsenal .section-heading h3').textContent=tutorial?'Your lesson piece':state.mode==='heroes'?'Your special pieces':'The original rules';
+ document.querySelector('.arsenal .section-heading>span').textContent=tutorial?'01':state.mode==='heroes'?'03':'06';
+ document.querySelector('.section-description').textContent=tutorial?'Practice this hero’s movement on the board.':state.mode==='heroes'?`${human==='w'?'Blue':'Orange'} pieces are your heroes. Select a card to find one.`:'Six timeless pieces. Endless possibilities.';
+ document.querySelector('.power-note').hidden=state.mode!=='heroes'||!!tutorial;
  if(state.mode!=='heroes'){container.innerHTML='<p class="classic-note">The classic army, exactly as you know it. Start a new match in Hero mode to discover three extraordinary pieces.</p>';return;}
- for(const type of ['h','o','s']){
+ for(const type of tutorial?[LESSONS[tutorial.index].hero]:['h','o','s']){
   const p=PIECES[type],summary=HERO_SUMMARIES[type],square=state.board.findIndex(piece=>piece?.type===type&&piece.color===human),button=document.createElement('button');button.className=`hero-card ${human==='w'?'ivory-heroes':'obsidian-heroes'}${heroFocus===type?' active':''}${square<0?' captured-hero':''}`;button.setAttribute('aria-label',`${p.name}: ${p.title}. ${summary.normal} ${summary.power} ${square<0?'Captured':`At ${squareName(square)}`}. Show power and select piece.`);button.innerHTML=`<span class="hero-icon">${glyph[type]}<span>✦</span></span><span class="hero-copy"><span class="hero-name"><strong>${p.name}</strong><span class="hero-location">${square<0?'Captured':squareName(square)}</span></span><span class="hero-normal">${summary.normal}</span><span class="hero-power"><b>✦ Power</b> ${summary.power}</span></span>`;
-  button.onclick=()=>{heroFocus=type;const square=state.board.findIndex(p=>p?.type===type&&p.color===human);if(animating)return;if(square>=0&&!thinking&&state.turn===human&&!outcome(state).over){selected=square;moves=legalMoves(state,square);}else{selected=null;moves=[];}render();};container.append(button);
+  button.onclick=()=>{heroFocus=type;const square=state.board.findIndex(p=>p?.type===type&&p.color===human);if(animating)return;if(square>=0&&!thinking&&state.turn===human&&!outcome(state).over){selected=square;moves=legalMoves(state,square).filter(m=>m.special!=='shield');}else{selected=null;moves=[];}render();};container.append(button);
  }
 }
 function renderJournal(){
@@ -114,14 +126,14 @@ function renderJournal(){
  for(let i=0;i<journal.length;i+=2){const row=document.createElement('div');row.className='journal-row';for(const text of [String(i/2+1).padStart(2,'0'),journal[i],journal[i+1]||'…']){const span=document.createElement('span');span.textContent=text;row.append(span);}container.append(row);}container.scrollTop=container.scrollHeight;
 }
 function renderCaptures(){
- const captured={w:[],b:[]};for(let i=0;i<snapshots.length;i++){const before=snapshots[i],after=snapshots[i+1]||state,m=after.lastMove;if(!m)continue;const p=m.special==='ep'?{type:'p',color:opposite(before.turn)}:before.board[m.to];if(p)captured[before.turn].push(glyph[p.type]);}
+ const captured={w:[],b:[]};for(let i=0;i<snapshots.length;i++){const before=snapshots[i],after=snapshots[i+1]||state,m=after.lastMove;if(!m)continue;if(m.special==='shield')continue;const p=m.special==='ep'?{type:'p',color:opposite(before.turn)}:before.board[m.to];if(p)captured[before.turn].push(glyph[p.type]);}
  $('white-captured').textContent=captured[human].join('');$('white-captured').title='Pieces you captured';$('black-captured').textContent=captured[opposite(human)].join('');$('black-captured').title='Pieces captured by the CPU';
 }
 function renderFlat(){
  const focused=document.activeElement?.dataset.square;const flat=$('flat-board');flat.replaceChildren();
  for(let row=0;row<8;row++)for(let col=0;col<8;col++){
-  const square=flipped?row*8+7-col:(7-row)*8+col,p=state.board[square],button=document.createElement('button');button.className=`flat-square${(square%8+(square>>3))%2===0?' dark':''}${p?.color==='b'?' black-piece':''}${PIECES[p?.type]?.base?' hero':''}${moves.some(m=>m.to===square&&isHeroPowerMove(state,m))?' power-move':''}${selected===square?' selected':''}${moves.some(m=>m.to===square)?' legal':''}${state.lastMove&&(state.lastMove.from===square||state.lastMove.to===square)?' last':''}`;button.dataset.square=square;
-  button.setAttribute('aria-label',`${squareName(square)}${p?`, ${p.color==='w'?'White':'Black'} ${PIECES[p.type].name}`:', empty'}${moves.some(m=>m.to===square)?', legal destination':''}${moves.some(m=>m.to===square&&isHeroPowerMove(state,m))?', extra hero power move':''}`);button.setAttribute('aria-pressed',String(selected===square));button.innerHTML=`<span class="flat-piece">${p?glyph[p.type]:''}</span><span class="square-label">${squareName(square)}</span>`;button.onclick=()=>selectSquare(square);
+  const square=flipped?row*8+7-col:(7-row)*8+col,p=state.board[square],button=document.createElement('button');button.className=`flat-square${(square%8+(square>>3))%2===0?' dark':''}${p?.color==='b'?' black-piece':''}${PIECES[p?.type]?.base?' hero':''}${state.shield?.square===square?' shielded':''}${moves.some(m=>m.to===square&&isHeroPowerMove(state,m))?' power-move':''}${selected===square?' selected':''}${moves.some(m=>m.to===square)?' legal':''}${state.lastMove&&(state.lastMove.from===square||state.lastMove.to===square)?' last':''}`;button.dataset.square=square;
+  button.setAttribute('aria-label',`${squareName(square)}${p?`, ${p.color==='w'?'White':'Black'} ${PIECES[p.type].name}`:', empty'}${state.shield?.square===square?', Aegis shield active':''}${moves.some(m=>m.to===square)?', legal destination':''}${moves.some(m=>m.to===square&&isHeroPowerMove(state,m))?', extra hero power move':''}`);button.setAttribute('aria-pressed',String(selected===square));button.innerHTML=`<span class="flat-piece">${p?glyph[p.type]:''}</span><span class="square-label">${squareName(square)}</span>`;button.onclick=()=>selectSquare(square);
   button.onkeydown=e=>{const delta={ArrowRight:1,ArrowLeft:-1,ArrowDown:8,ArrowUp:-8}[e.key];if(delta!==undefined){e.preventDefault();const buttons=[...flat.children],next=buttons.indexOf(button)+delta;buttons[next]?.focus();}};flat.append(button);
  }
  if(focused!==undefined&&view==='2d')flat.querySelector(`[data-square="${focused}"]`)?.focus();
@@ -132,9 +144,42 @@ $('flip-button').onclick=()=>{flipped=!flipped;board?.flip(flipped);renderFlat()
 $('undo-button').onclick=()=>{cancelPresentation();stopCPU();let index=snapshots.length-1;while(index>=0&&snapshots[index].turn!==human)index--;if(index<0)return;state=snapshots[index];snapshots=snapshots.slice(0,index);journal=journal.slice(0,index);selected=null;moves=[];heroFocus=null;save();render();};
 $('difficulty').onchange=()=>{save();if(state.turn!==human&&!outcome(state).over)startCPU();};
 $('new-button').onclick=()=>{$('side').value=human;$('new-form').elements.mode.value=state.mode;$('new-dialog').showModal();};
-$('new-form').onsubmit=e=>{e.preventDefault();cancelPresentation();stopCPU();const data=new FormData(e.target);state=initialState(data.get('mode'));human=data.get('side');snapshots=[];journal=[];selected=null;moves=[];heroFocus=null;flipped=human==='b';board?.flip(flipped);$('new-dialog').close();$('cpu-caption').textContent='POWER-AWARE CPU';save();render();startCPU();};
+$('new-form').onsubmit=e=>{e.preventDefault();cancelPresentation();stopCPU();tutorial=null;returnGame=null;const data=new FormData(e.target);state=initialState(data.get('mode'));human=data.get('side');snapshots=[];journal=[];selected=null;moves=[];heroFocus=null;flipped=human==='b';board?.flip(flipped);$('new-dialog').close();$('cpu-caption').textContent='POWER-AWARE CPU';save();render();startCPU();};
 $('guide-button').onclick=()=>$('guide-dialog').showModal();
 for(const button of document.querySelectorAll('.close-dialog'))button.onclick=()=>button.closest('dialog').close();
 for(const dialog of document.querySelectorAll('dialog'))dialog.addEventListener('click',e=>{if(e.target===dialog){const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)dialog.close();}});
 $('guide-heroes').innerHTML=['h','o','s'].map(t=>`<div class="guide-hero"><span class="hero-icon">${glyph[t]}</span><div><strong>${PIECES[t].name} · ${PIECES[t].title}</strong><p>${PIECES[t].description}</p></div></div>`).join('');
+function renderAegis(){
+ $('aegis-panel').hidden=state.mode!=='heroes'||!!tutorial;
+ const charge=!!state.powers?.[human],p=selected===null?null:state.board[selected];
+ const move=selected===null?null:legalMoves(state,selected).find(m=>m.special==='shield');
+ $('aegis-charge').textContent=charge?'1 / 1 AVAILABLE':'0 / 1';
+ $('aegis-button').disabled=animating||thinking||state.turn!==human||!move||outcome(state).over;
+ $('aegis-button').textContent=!charge?'Aegis unavailable':inCheck(state)?'Cannot shield while in check':!p?'Select a piece to shield':p.type==='k'?'Kings cannot be shielded':`Activate Aegis · ${squareName(selected)}`;
+ const active=state.shield?`${state.shield.color===human?'Your':'CPU’s'} ${PIECES[state.board[state.shield.square].type].name} on ${squareName(state.shield.square)} is protected until ${state.shield.color===human?'your':'the CPU’s'} next turn. `:'';
+ $('aegis-status').textContent=active+`CPU charge: ${state.powers?.[opposite(human)]?'available':'unavailable'}.`;
+}
+$('aegis-button').onclick=()=>{if(animating||thinking||tutorial||state.turn!==human||outcome(state).over)return;const move=legalMoves(state,selected).find(m=>m.special==='shield');if(move)commit(move);};
+function renderLesson(){
+ $('lesson-panel').hidden=!tutorial;document.querySelector('.difficulty-row').hidden=!!tutorial;$('difficulty').disabled=animating||!!tutorial;
+ document.querySelector('.opponent strong').textContent=tutorial?'Practice board':'The Automaton';
+ if(!tutorial)return;
+ const lesson=LESSONS[tutorial.index];$('lesson-step').textContent=`HERO LESSON ${tutorial.index+1} / ${LESSONS.length}`;$('lesson-title').textContent=lesson.name;$('lesson-goal').textContent=lesson.goal;$('lesson-feedback').textContent=tutorial.feedback||'Select the hero, then capture the enemy piece named above.';
+ $('lesson-panel').classList.toggle('complete',tutorial.complete);$('lesson-next').hidden=!tutorial.complete;$('lesson-next').textContent=tutorial.index===LESSONS.length-1?'Finish · Return to match':'Next lesson →';$('lesson-hint').disabled=animating||tutorial.complete;$('lesson-retry').disabled=animating;
+ $('turn-chip').textContent=tutorial.complete?'COMPLETE':'YOUR CHALLENGE';
+}
+function beginLesson(index){
+ if(!tutorial){save();returnGame={state,human,snapshots,journal,flipped,view,cpuCaption:$('cpu-caption').textContent};}
+ cancelPresentation();stopCPU();tutorial={index,complete:false,feedback:''};state=lessonState(index);human='w';flipped=false;snapshots=[];journal=[];selected=null;moves=[];heroFocus=null;board?.flip(false);$('lessons-dialog').close();$('cpu-caption').textContent='GUIDED PRACTICE · NO CPU';render();$('lesson-panel').scrollIntoView({block:'start',behavior:'instant'});
+}
+function endLesson(){
+ if(!tutorial)return;cancelPresentation();stopCPU();const match=returnGame;tutorial=null;returnGame=null;({state,human,snapshots,journal,flipped,view}=match);$('cpu-caption').textContent=match.cpuCaption;selected=null;moves=[];heroFocus=null;board?.flip(flipped);render();startCPU();
+}
+$('lessons-button').onclick=()=>{
+ $('lesson-list').replaceChildren();LESSONS.forEach((lesson,index)=>{const button=document.createElement('button');button.className='lesson-choice';button.textContent=`${lessonProgress.includes(index)?'✓':'0'+(index+1)}  ${lesson.name}`;button.onclick=()=>beginLesson(index);$('lesson-list').append(button);});$('lessons-dialog').showModal();
+};
+$('lesson-hint').onclick=()=>{if(animating||!tutorial)return;tutorial.feedback=LESSONS[tutorial.index].hint;render();};
+$('lesson-retry').onclick=()=>{if(!animating&&tutorial)beginLesson(tutorial.index);};
+$('lesson-next').onclick=()=>{if(animating||!tutorial?.complete)return;if(tutorial.index===LESSONS.length-1)endLesson();else beginLesson(tutorial.index+1);};
+$('lesson-exit').onclick=endLesson;
 render();startCPU();
