@@ -1,92 +1,25 @@
-import { test, expect } from '@playwright/test';
-test('3D renders, CPU replies, undo and saved games work',async({page})=>{
- const errors=[];page.on('pageerror',e=>errors.push(e.message));
- await page.goto('/');await expect(page.locator('#board-view canvas')).toBeVisible();
- await page.screenshot({path:'/tmp/herochess-desktop.png',fullPage:true});
- await page.locator('#view-2d').click();await page.locator('[data-square="12"]').click();await expect(page.locator('[data-square="28"]')).toHaveClass(/legal/);await page.locator('[data-square="28"]').click();
- await expect(page.locator('#move-count')).toHaveText('02',{timeout:15000});
- await page.reload();await expect(page.locator('#move-count')).toHaveText('02');
- await page.locator('#undo-button').click();await expect(page.locator('#move-count')).toHaveText('00');
- await page.getByRole('button',{name:/Double Knight: Far leap/}).click();await expect(page.locator('#status-title')).toHaveText('Double Knight.');
- await page.locator('#view-2d').click();await expect(page.locator('[data-square="27"]')).toHaveClass(/legal/); // b1-d4 long leap
- await page.locator('[data-square="27"]').click();await expect(page.locator('#move-count')).toHaveText('02',{timeout:15000});
- expect(errors).toEqual([]);
+import {test,expect} from '@playwright/test';
+async function normalMove(page,from=12,to=28){await page.locator('[data-slot="0"]').click();await page.locator('#normal-mode').click();await page.locator('[data-square="'+from+'"]').click();await page.locator('[data-square="'+to+'"]').click();}
+async function fixture(page,card,pieces){await page.goto('/');await page.evaluate(async({card,pieces})=>{const {initialState,positionKey}=await import('/src/engine.js');const s=initialState('cards',42);s.board=Array(64).fill(null);for(const [i,type,color] of [[0,'k','w'],[63,'k','b'],...pieces])s.board[i]={type,color};s.rights='';s.hands.w=[card,'ward','frost'];s.hands.b=['step','retreat','flank'];s.history=[positionKey(s)];localStorage.setItem('herochess-cards-v1',JSON.stringify({version:1,state:s,human:'w',snapshots:[],journal:[],level:'1'}));},{card,pieces});await page.reload();}
+test('three-card hand, 18-card library, CPU reply, exact undo and reload',async({page})=>{
+ const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto('/');await expect(page.locator('#board-view canvas')).toBeVisible();await expect(page.locator('.spell-card')).toHaveCount(3);await expect(page.locator('.cpu-card')).toHaveCount(3);await page.screenshot({path:'/tmp/herochess-cards-desktop.png',fullPage:true});
+ await page.locator('#library-button').click();await expect(page.locator('.library-card')).toHaveCount(18);await page.locator('#library-dialog .close-dialog').click();const hand=await page.locator('.spell-card strong').allTextContents();
+ await page.locator('#view-2d').click();await normalMove(page);await expect(page.locator('#move-count')).toHaveText('02',{timeout:15000});await expect(page.locator('.spell-card')).toHaveCount(3);const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('herochess-cards-v1')));expect(saved.state.hands.w.length).toBe(3);expect(saved.state.hands.b.length).toBe(3);
+ await page.reload();await expect(page.locator('#move-count')).toHaveText('02');await page.locator('#undo-button').click();await expect(page.locator('#move-count')).toHaveText('00');expect(await page.locator('.spell-card strong').allTextContents()).toEqual(hand);expect(errors).toEqual([]);
 });
-test('classic mode, black side and guide',async({page})=>{
- await page.goto('/');await page.locator('#guide-button').click();await expect(page.locator('#guide-dialog')).toBeVisible();await page.locator('#guide-dialog .close-dialog').click();
- await page.locator('#new-button').click();await page.locator('input[value="classic"]').check();await page.locator('#side').selectOption('b');await page.getByRole('button',{name:'Let’s play'}).click();
- await expect(page.locator('#mode-label')).toHaveText('CLASSIC RULES');await expect(page.locator('#move-count')).toHaveText('01',{timeout:15000});await expect(page.locator('#turn-chip')).toHaveText('YOUR TURN');
- await page.locator('#view-2d').click();await expect(page.locator('.flat-square').first()).toHaveAttribute('data-square','7');
- await page.locator('#flip-button').click();await expect(page.locator('.flat-square').first()).toHaveAttribute('data-square','56');
+test('card power is temporary; leap capture animates and cycles the selected slot',async({page})=>{
+ await fixture(page,'comet',[[18,'n','w'],[44,'q','b']]);await page.locator('[data-slot="0"]').click();await page.locator('#view-2d').click();await page.locator('[data-square="18"]').click();await expect(page.locator('[data-square="44"]')).toHaveClass(/power-move/);await page.locator('#view-3d').click();await page.locator('[data-square="44"]').evaluate(b=>b.click());await expect(page.locator('#board-view')).toHaveAttribute('data-animating','capture');await expect(page.locator('#move-count')).toHaveText('02',{timeout:15000});await page.locator('#view-2d').click();await expect(page.locator('[data-square="44"]')).toHaveAttribute('aria-label',/White Knight/);await expect(page.locator('#journal')).toContainText('Comet Leap');await expect(page.locator('.spell-card')).toHaveCount(3);
 });
-test('mobile has no horizontal overflow and keyboard moves work',async({page})=>{
- await page.setViewportSize({width:390,height:844});await page.goto('/');await page.screenshot({path:'/tmp/herochess-mobile.png',fullPage:true});
- expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
- await page.locator('#view-2d').click();await page.locator('[data-square="12"]').focus();await page.keyboard.press('Enter');await expect(page.locator('[data-square="28"]')).toHaveClass(/legal/);await page.locator('[data-square="28"]').focus();await page.keyboard.press('Enter');await expect(page.locator('#move-count')).toHaveText('02',{timeout:15000});
+test('shield and freeze are target actions, not self-captures',async({page})=>{
+ await fixture(page,'ward',[[27,'q','w'],[59,'r','b']]);await page.locator('#difficulty').selectOption('3');await page.locator('#view-2d').click();await page.locator('[data-slot="0"]').click();await page.locator('[data-square="27"]').click();await expect(page.locator('#effects')).toContainText('shielded');await expect(page.locator('[data-square="27"]')).toHaveClass(/shielded/);await page.screenshot({path:'/tmp/herochess-cards-shield.png',fullPage:true});await expect(page.locator('#move-count')).toHaveText('02',{timeout:15000});await expect(page.locator('#effects')).toHaveText('No lasting effects.');await expect(page.locator('#white-captured')).toHaveText('');
+ await fixture(page,'frost',[[27,'r','b'],[9,'q','w']]);await page.locator('#view-2d').click();await page.locator('[data-slot="0"]').click();await page.locator('[data-square="27"]').click();await expect(page.locator('#move-count')).toHaveText('02',{timeout:15000});await expect(page.locator('[data-square="27"]')).toHaveAttribute('aria-label',/Black Rook/);await expect(page.locator('#white-captured')).toHaveText('');
 });
-test('3D ray picking selects and moves a pawn',async({page})=>{
- await page.setViewportSize({width:1280,height:1100});await page.goto('/');
- async function clickWorld(x,y,z){
-  const point=await page.evaluate(async({x,y,z})=>{
-   const {OrthographicCamera,Vector3}=await import('/node_modules/three/build/three.module.js');
-   const r=document.querySelector('#board-view').getBoundingClientRect(),aspect=r.width/r.height,extent=Math.max(4.25,4.95/aspect);
-   const camera=new OrthographicCamera(-extent*aspect,extent*aspect,extent,-extent,.1,100);camera.position.set(0,11.8,10.3);camera.lookAt(0,0,0);camera.updateMatrixWorld();
-   const p=new Vector3(x,y,z).project(camera);return {x:r.left+(p.x+1)/2*r.width,y:r.top+(1-p.y)/2*r.height};
-  },{x,y,z});await page.mouse.click(point.x,point.y);
- }
- await clickWorld(.5,.45,2.5);await expect(page.locator('#status-title')).toHaveText('Pawn.');
- await clickWorld(.5,.02,.5);await expect(page.locator('#move-count')).toHaveText('02',{timeout:15000});
+test('swap animates both friendly pieces and preserves material',async({page})=>{
+ await fixture(page,'relay',[[18,'r','w'],[27,'b','w']]);await page.locator('[data-slot="0"]').click();await page.locator('#view-2d').click();await page.locator('[data-square="18"]').click();await page.locator('[data-square="27"]').click();await expect(page.locator('#move-count')).toHaveText('02',{timeout:15000});await expect(page.locator('[data-square="18"]')).toHaveAttribute('aria-label',/White Bishop/);await expect(page.locator('[data-square="27"]')).toHaveAttribute('aria-label',/White Rook/);await expect(page.locator('#white-captured')).toHaveText('');
 });
-test('promotion choice and draw display are functional',async({page})=>{
- await page.goto('/');
- await page.evaluate(async()=>{const {initialState,positionKey}=await import('/src/engine.js');const s=initialState('classic');s.board=Array(64).fill(null);s.board[0]={color:'w',type:'k'};s.board[63]={color:'b',type:'k'};s.board[49]={color:'w',type:'p'};s.rights='';s.history=[positionKey(s)];localStorage.setItem('herochess-v2',JSON.stringify({version:2,state:s,human:'w',snapshots:[],journal:[],level:'1'}));});
- await page.reload();await page.locator('#view-2d').click();await page.locator('[data-square="49"]').click();await page.locator('[data-square="57"]').click();await expect(page.locator('#promotion-dialog')).toBeVisible();await page.getByRole('button',{name:'Knight',exact:false}).last().click();await expect(page.locator('#status-detail')).toContainText('Insufficient material');
+test('mobile hand fits; keyboard controls and reduced motion work',async({page})=>{
+ await page.setViewportSize({width:390,height:844});await page.goto('/');await page.emulateMedia({reducedMotion:'reduce'});await page.screenshot({path:'/tmp/herochess-cards-mobile.png',fullPage:true});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.locator('[data-slot="0"]').click();await page.locator('#normal-mode').click();await page.locator('#view-2d').click();await page.locator('[data-square="12"]').focus();await page.keyboard.press('Enter');await page.locator('[data-square="28"]').focus();await page.keyboard.press('Enter');await expect(page.locator('#move-count')).toHaveText('02',{timeout:15000});
 });
-test('WebGL failure uses a playable 2D fallback',async({page})=>{
- await page.addInitScript(()=>{const original=HTMLCanvasElement.prototype.getContext;HTMLCanvasElement.prototype.getContext=function(type,...args){return type.includes('webgl')?null:original.call(this,type,...args);};});
- await page.goto('/');await expect(page.locator('#flat-board')).toBeVisible();await expect(page.locator('#view-3d')).toBeDisabled();await page.locator('[data-square="12"]').click();await page.locator('[data-square="28"]').click();await expect(page.locator('#move-count')).toHaveText('02',{timeout:15000});
-});
-test('Oracle explains blocked diagonals and can slide once its pawn moves',async({page})=>{
- await page.goto('/');await page.getByRole('button',{name:/Oracle: Phase step/}).click();await expect(page.locator('#status-detail')).toContainText('Your own pieces block every diagonal');
- await page.evaluate(async()=>{const {initialState,positionKey}=await import('/src/engine.js');const s=initialState();s.board[27]=s.board[11];s.board[11]=null;s.history=[positionKey(s)];localStorage.setItem('herochess-v2',JSON.stringify({version:2,state:s,human:'w',snapshots:[],journal:[],level:'1'}));});
- await page.reload();await page.locator('#view-2d').click();await page.locator('[data-square="2"]').click();await expect(page.locator('[data-square="38"]')).toHaveClass(/legal/);await page.locator('[data-square="38"]').click();await expect(page.locator('#flat-board')).toHaveAttribute('data-animating','move');await expect(page.locator('[data-square="38"]')).toHaveAttribute('aria-label',/White Oracle/);await expect(page.locator('#move-count')).toHaveText('02');
-});
-test('3D captures animate and restarting cancels a moving piece safely',async({page})=>{
- const errors=[];page.on('pageerror',error=>errors.push(error.message));await page.goto('/');
- await page.evaluate(async()=>{const {initialState,positionKey}=await import('/src/engine.js');const s=initialState();s.board=Array(64).fill(null);for(const [i,type,color] of [[0,'k','w'],[63,'k','b'],[18,'o','w'],[45,'q','b']])s.board[i]={type,color};s.rights='';s.history=[positionKey(s)];localStorage.setItem('herochess-v2',JSON.stringify({version:2,state:s,human:'w',snapshots:[],journal:[],level:'1'}));});
- await page.reload();await page.locator('#view-2d').click();await page.locator('[data-square="18"]').click();await page.locator('#view-3d').click();
- // Invoke the selected square's UI handler while retaining the 3D view.
- await page.locator('[data-square="45"]').evaluate(button=>button.click());await expect(page.locator('#board-view')).toHaveAttribute('data-animating','capture');
- await page.screenshot({path:'/tmp/herochess-capture.png',fullPage:true});
- await expect(page.locator('#move-count')).toHaveText('01');await expect(page.locator('#status-detail')).toContainText('Checkmate');await expect(page.locator('#board-view')).not.toHaveAttribute('data-animating');
- await page.locator('#new-button').click();await page.getByRole('button',{name:'Let’s play'}).click();await page.locator('#view-2d').click();await page.locator('[data-square="12"]').click();await page.locator('[data-square="28"]').click();await expect(page.locator('#flat-board')).toHaveAttribute('data-animating','move');
- await page.locator('#new-button').click();await page.getByRole('button',{name:'Let’s play'}).click();await expect(page.locator('#move-count')).toHaveText('00');await expect(page.locator('#flat-board')).not.toHaveAttribute('data-animating');expect(errors).toEqual([]);
-});
-test('undo cancels active motion and reduced-motion play remains functional',async({page})=>{
- await page.goto('/');await page.locator('#view-2d').click();await page.locator('[data-square="12"]').click();await page.locator('[data-square="28"]').click();await expect(page.locator('#flat-board')).toHaveAttribute('data-animating','move');await page.locator('#undo-button').click();await expect(page.locator('#move-count')).toHaveText('00');await expect(page.locator('#flat-board')).not.toHaveAttribute('data-animating');await expect(page.locator('body > .flat-piece')).toHaveCount(0);await expect(page.locator('[data-square="12"]')).toHaveAttribute('aria-label',/White Pawn/);
- await page.emulateMedia({reducedMotion:'reduce'});await page.locator('[data-square="12"]').click();await page.locator('[data-square="28"]').click();await expect(page.locator('#move-count')).toHaveText('02');await expect(page.locator('#flat-board')).not.toHaveAttribute('data-animating');
-});
-test('three interactive lessons teach legal moves and preserve the current match',async({page})=>{
- await page.goto('/');await page.emulateMedia({reducedMotion:'reduce'});await page.locator('#view-2d').click();await page.locator('[data-square="12"]').click();await page.locator('[data-square="28"]').click();await expect(page.locator('#move-count')).toHaveText('02',{timeout:15000});
- const saved=await page.evaluate(()=>localStorage.getItem('herochess-v2'));
- await page.locator('#lessons-button').click();await page.getByRole('button',{name:/01.*Oracle/}).click();await expect(page.locator('#lesson-panel')).toBeVisible();await expect(page.locator('#aegis-panel')).toBeHidden();
- await page.locator('[data-square="18"]').click();await page.locator('[data-square="27"]').click();await expect(page.locator('#lesson-feedback')).toContainText('not the challenge');await expect(page.locator('#move-count')).toHaveText('00');
- await page.locator('#lesson-hint').click();await expect(page.locator('#lesson-feedback')).toContainText('c3');
- await page.screenshot({path:'/tmp/herochess-lesson.png',fullPage:true});
- await page.locator('[data-square="45"]').click();await expect(page.locator('#lesson-next')).toBeVisible();await page.locator('#lesson-next').click();
- await page.locator('[data-square="1"]').click();await page.locator('[data-square="27"]').click();await expect(page.locator('#lesson-next')).toBeVisible();await page.locator('#lesson-next').click();
- await page.locator('[data-square="18"]').click();await page.locator('[data-square="36"]').click();await expect(page.locator('#lesson-next')).toHaveText('Finish · Return to match');await page.locator('#lesson-next').click();
- await expect(page.locator('#lesson-panel')).toBeHidden();await expect(page.locator('#move-count')).toHaveText('02');expect(await page.evaluate(()=>localStorage.getItem('herochess-v2'))).toBe(saved);
- await page.reload();await page.locator('#lessons-button').click();await expect(page.locator('.lesson-choice').filter({hasText:'✓'})).toHaveCount(3);
-});
-test('Aegis is an explicit turn action, persists, expires, and can be undone',async({page})=>{
- const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto('/');await page.locator('#difficulty').selectOption('3');
- await page.getByRole('button',{name:/Double Knight: Far leap/}).click();await expect(page.locator('#aegis-button')).toBeEnabled();await page.locator('#aegis-button').click();
- await expect(page.locator('#aegis-charge')).toHaveText('0 / 1');await expect(page.locator('#aegis-status')).toContainText('protected');
- await page.locator('#view-2d').click();await expect(page.locator('[data-square="1"]')).toHaveClass(/shielded/);await page.screenshot({path:'/tmp/herochess-shield.png',fullPage:true});
- await expect(page.locator('#move-count')).toHaveText('02',{timeout:15000});await expect(page.locator('[data-square="1"]')).not.toHaveClass(/shielded/);await expect(page.locator('#white-captured')).toHaveText('');
- await page.reload();await expect(page.locator('#aegis-charge')).toHaveText('0 / 1');await page.locator('#undo-button').click();await expect(page.locator('#aegis-charge')).toHaveText('1 / 1 AVAILABLE');await expect(page.locator('#move-count')).toHaveText('00');expect(errors).toEqual([]);
-});
-test('mobile lessons fit and exiting practice restores the match',async({page})=>{
- await page.setViewportSize({width:390,height:844});await page.goto('/');await page.locator('#lessons-button').click();await page.getByRole('button',{name:/03.*Bastion/}).click();await page.screenshot({path:'/tmp/herochess-lesson-mobile.png',fullPage:true});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.locator('#lesson-exit').click();await expect(page.locator('#lesson-panel')).toBeHidden();await expect(page.locator('#move-count')).toHaveText('00');
-});
+test('classic mode and Black side remain playable',async({page})=>{await page.goto('/');await page.locator('#new-button').click();await page.locator('input[value="classic"]').check();await page.locator('#side').selectOption('b');await page.getByRole('button',{name:'Deal & play'}).click();await expect(page.locator('#hand-panel')).toBeHidden();await expect(page.locator('#move-count')).toHaveText('01',{timeout:15000});await page.locator('#view-2d').click();await expect(page.locator('.flat-square').first()).toHaveAttribute('data-square','7');});
+test('undo and new game cancel animations without stale CPU turns',async({page})=>{await page.goto('/');await page.locator('#view-2d').click();await normalMove(page);await page.locator('#undo-button').click();await expect(page.locator('#move-count')).toHaveText('00');await expect(page.locator('body > .flat-piece')).toHaveCount(0);await normalMove(page);await page.locator('#new-button').click();await page.getByRole('button',{name:'Deal & play'}).click();await expect(page.locator('#move-count')).toHaveText('00');await expect(page.locator('.spell-card')).toHaveCount(3);});
+test('WebGL fallback and old hero saves are preserved separately',async({page})=>{await page.addInitScript(()=>{localStorage.setItem('herochess-v2','old-match-marker');const get=HTMLCanvasElement.prototype.getContext;HTMLCanvasElement.prototype.getContext=function(type,...args){return type.includes('webgl')?null:get.call(this,type,...args);};});await page.goto('/');await expect(page.locator('#flat-board')).toBeVisible();await expect(page.locator('#save-notice')).toBeVisible();await expect(page.locator('#view-3d')).toBeDisabled();await normalMove(page);await expect(page.locator('#move-count')).toHaveText('02',{timeout:15000});expect(await page.evaluate(()=>localStorage.getItem('herochess-v2'))).toBe('old-match-marker');});

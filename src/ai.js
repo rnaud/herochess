@@ -1,4 +1,5 @@
-import { PIECES, legalMoves, applyMove, inCheck, outcome, isAttacked, opposite } from './engine.js';
+import {CARDS} from './cards.js';
+import { PIECES, legalMoves, applyMove, inCheck, outcome, isAttacked, opposite, positionKey } from './engine.js';
 export function evaluate(state) {
  let score=0;
  const nonPawns=state.board.filter(p=>p&&p.type!=='p'&&p.type!=='k').length;
@@ -8,34 +9,39 @@ export function evaluate(state) {
   let value=PIECES[p.type].value;
   if(p.type==='p')value+=y*9+center*3+(y>=5?(y-4)*25:0);
   else if(p.type==='k')value+=nonPawns<=4?center*12:y<2?(Math.abs(3.5-x)>1.5?24:0):-center*8;
-  else value+=center*(['n','h','o','b'].includes(p.type)?12:4);
+  else value+=center*(['n','b'].includes(p.type)?12:4);
   // A temporary shield buys a tempo, not permanent immunity.
   if(state.shield?.square===i&&isAttacked(state,i,opposite(p.color)))value+=Math.min(value*.12,85);
   score+=p.color===state.turn?value:-value;
  }
- score+=(state.powers?.[state.turn]?25:0)-(state.powers?.[opposite(state.turn)]?25:0);
+ if(state.mode==='cards')for(const color of ['w','b']){const value=(state.hands?.[color]||[]).reduce((sum,id)=>sum+(CARDS[id].pawn&&!state.board.some(p=>p?.color===color&&p.type==='p')?0:['prism','tower','saddle','comet'].includes(id)?30:18),0);score+=color===state.turn?value:-value;}
+ if(state.freeze){const p=state.board[state.freeze.square];if(p)score+=(p.color===state.turn?-1:1)*Math.min(PIECES[p.type].value*.1,60);}
  return score;
 }
-const sameMove=(a,b)=>a&&b&&a.from===b.from&&a.to===b.to&&a.special===b.special&&a.promotion===b.promotion;
+const sameMove=(a,b)=>a&&b&&a.from===b.from&&a.to===b.to&&a.special===b.special&&a.promotion===b.promotion&&a.slot===b.slot&&a.usePower===b.usePower;
 function priority(s,m){
+ if(m.special==='freeze')return 30;
+ if(m.special==='swap')return 0;
  if(m.special==='shield')return isAttacked(s,m.from,opposite(s.turn))?PIECES[s.board[m.from].type].value: -100;
  return (s.board[m.to]?10*PIECES[s.board[m.to].type].value-PIECES[s.board[m.from].type].value:0)+(m.promotion?900:0)+(m.special==='ep'?100:0);
 }
 export function chooseMove(state,{maxDepth=3,timeMs=1600,quiescence=true}={}) {
+ // Search only public hands; never inspect the shuffled draw pile or predict draws.
+ state={...state,simulation:true,deck:[],discard:[],rng:0,history:[]};state.history=[positionKey(state)];
  const start=performance.now();let nodes=0,qnodes=0,completedDepth=0;
  const rootMoves=legalMoves(state);if(!rootMoves.length||outcome(state,rootMoves).over)return {move:null,nodes,depth:0,qnodes};
  rootMoves.sort((a,b)=>priority(state,b)-priority(state,a));let best=rootMoves[0];
  const timeout={},killers=new Map();
- function tick(){if((++nodes&31)===0&&performance.now()-start>timeMs)throw timeout;}
+ function tick(){if((++nodes&7)===0&&performance.now()-start>timeMs)throw timeout;}
  function quiet(s,alpha,beta,ply,qdepth,moves,end){
   tick();qnodes++;
   moves??=legalMoves(s);end??=outcome(s,moves);
   if(end.over)return end.winner?-100000+ply:0;
   const checked=inCheck(s);
   // Bound pathological checking sequences, while normally searching all evasions.
-  if(qdepth>=8)return evaluate(s)-(checked?80:0);
+  if(qdepth>=5)return evaluate(s)-(checked?80:0);
   if(!checked){const stand=evaluate(s);if(stand>=beta)return stand;alpha=Math.max(alpha,stand);}
-  const tactical=checked?moves:moves.filter(m=>m.promotion||m.special==='ep'||(m.special==='shield'?qdepth<2&&isAttacked(s,m.from,opposite(s.turn)):s.board[m.to]));
+  const tactical=checked?moves:moves.filter(m=>m.promotion||m.special==='ep'||(m.special==='shield'?qdepth<2&&isAttacked(s,m.from,opposite(s.turn)):!['swap','freeze'].includes(m.special)&&s.board[m.to]));
   tactical.sort((a,b)=>priority(s,b)-priority(s,a));
   for(const m of tactical){const value=-quiet(applyMove(s,m),-beta,-alpha,ply+1,qdepth+1);if(value>=beta)return value;alpha=Math.max(alpha,value);}
   return alpha;

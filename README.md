@@ -1,84 +1,96 @@
-# Herochess
+# Herochess — The Arcana Deck
 
-Classic chess. Extraordinary pieces. A browser game rebuilt from scratch with **JavaScript and Three.js**, featuring a sculpted 3D board and a CPU that understands every hero move.
+A JavaScript + Three.js card-chess game: standard pieces, a three-card hand, and 18 temporary powers.
 
-[Play Herochess](https://rnaud.github.io/herochess/)
+**[Play online](https://rnaud.github.io/herochess/)**
 
-## Play
+## The turn loop
 
-Select a piece and then a highlighted destination. Ivory (White) moves first. Checkmate wins; kings cannot be captured. Choose either side and switch between Hero and Classic rules when starting a new match.
+1. Choose one of your three cards.
+2. Use its power **instead of** your normal move, or choose **Discard & make a normal move**.
+3. Select a piece and a legal destination. Shield and freeze cards need just one target; swaps need two friendly pieces.
+4. The used/discarded card goes into the shared discard pile. Draw a replacement immediately, so you always hold three; that replacement is available on your next turn.
 
-In Hero mode, each army replaces its a-file rook, b-file knight, and c-file bishop with:
+Both players start with three cards and see each other's hands. There is no extra opening draw. The shared shuffled deck contains three copies of each card (54 total). When it empties, the discard pile is shuffled back into the draw pile. Undo restores the exact cards, pile order, and position. The draw order is hidden from both players, including the CPU.
 
-| Hero | Power |
+## The 18 cards
+
+| Card | Temporary power |
 | --- | --- |
-| **Double Knight** | Normal knight jumps plus (3, 2) and (2, 3) jumps, in every direction. |
-| **Oracle** | Bishop slides plus normal knight jumps. |
-| **Bastion** | Rook slides plus jumps exactly two squares diagonally. |
+| Borrowed Saddle | Any friendly non-king piece makes a normal knight jump. |
+| Comet Leap | Any friendly non-king piece makes a 3-by-2 leap. |
+| Diagonal Rift | Jump exactly two squares diagonally. |
+| Stone Vault | Jump exactly two squares horizontally or vertically. |
+| Prism Path | Slide along a clear diagonal, like a bishop. |
+| Tower Road | Slide along a clear rank or file, like a rook. |
+| Lesser Crown | Slide up to two squares in any straight direction. |
+| Pocket Portal | Teleport to an empty square within two files and two ranks. |
+| Safe Retreat | Move 1–3 squares straight toward home on a clear path; no capture. |
+| Sidewinder | Slide 1–3 squares sideways; may capture. |
+| Marching Orders | A pawn advances 1–3 clear squares; no capture. A two-square advance permits en passant. |
+| Spearpoint | A pawn captures an enemy directly one square ahead. |
+| King’s Footwork | A non-king piece steps one square in any direction. |
+| Close Quarters | Swap adjacent friendly non-kings; neither may be frozen, and pawns cannot swap onto either back rank. |
+| Homeward | Teleport a non-king piece to an empty square on its own back rank. |
+| Glass Aegis | Shield a friendly non-king against capture for one opposing turn. |
+| Winter Seal | Freeze an enemy non-king for its next turn. It still attacks and blocks paths. |
+| Through the Veil | A bishop, rook, or queen captures along its normal line through exactly one intervening piece, leaving that piece intact. |
 
-Ivory’s heroes have blue bodies; Obsidian’s heroes have orange bodies. Their bases keep their army’s color. Hero cards show each piece’s current square and explain its normal moves and extra power. Select a hero to see normal destinations as green dots and extra power destinations as blue rings.
+Unless a card restricts its target type, it applies to any friendly non-king piece. Leaps ignore intervening pieces. Slides stop at blockers. Travel cards marked “no capture” require empty destinations. All exact rules are also available in the in-game card library.
 
-The Oracle’s bishop slides need a clear diagonal: its own pawns block both forward diagonals at the start. Selecting it shows available bishop moves and knight jumps, and explains blocked diagonals.
+## Chess rules
 
-All jumps ignore intervening pieces. These movement powers are unlimited, always active, and identical for both sides. Heroes can capture on their destinations but cannot land on allies. All pieces must respect king safety. Bastions can castle from their original rook squares.
+Card movement lasts for one action. A pawn borrowing a rook slide remains a pawn afterward, including for attack/check detection. Kings cannot receive powers, be frozen or shielded, or be captured. No action may leave your king in check. Cards in a hand do not themselves attack a king; check uses ordinary piece attacks on the resulting board. Checkmate considers all legal card actions and all discard-for-normal-move options in the current hand.
 
-Castling, en passant, and four promotion choices are supported. Stalemate, threefold repetition, the 50-move rule, and basic insufficient-material positions automatically draw. Promotions use standard pieces. In the 2D view, use Tab or arrow keys to focus a square and Enter or Space to select it. The 2D board also works when WebGL is unavailable.
+Shields and freezes expire after the following turn, including if that player uses another effect card. Frozen pieces still give check, so freezing a checking piece does not evade check. Shielded pieces still block and attack normally.
 
-Moves animate in both 3D and 2D: sliding pieces glide, jumping pieces arc over the board, and captures dissolve. Castling moves both pieces together. Reduced-motion preferences skip these effects. Undo and new matches safely cancel animations.
+Standard castling, en passant, and promotion remain. A pawn reaching the opposite back rank by card movement promotes to a queen, rook, bishop, or knight. Returning a pawn to its own back rank does not promote it. Moving/swapping an original rook forfeits its castling rights; a frozen rook cannot castle. Only ordinary pawn double advances and two-square Marching Orders advances allow en passant.
 
-Undo takes back the player's last turn and the CPU reply, including while the CPU is thinking. The current match and undo history save locally in this browser. No account or server is required.
+The 50-move draw and stalemate remain. Repetition includes the complete position, effects, hands, and deck state; threefold repeats are therefore unusual. Only bare kings automatically draw for insufficient material in card mode, because cards can change the mating potential of other material. Classic mode retains conventional material draws and has no card costs.
 
-## Hero lessons
+## Interface and saves
 
-Choose **Hero lessons** in the header for three interactive challenges: an Oracle diagonal capture, a Double Knight long leap, and a Bastion jump over a blocker. Hints explain the move, incorrect attempts give feedback, and completion is saved locally. Practice pauses your match without overwriting it; return to resume, or reload to recover the saved match.
+- 3D and keyboard-accessible 2D boards, move/capture animations, and reduced-motion support.
+- Three difficulty levels, playing either side, exact undo, and local autosave.
+- Read all 18 cards from **The 18 cards** in the header.
+- In 2D, Tab or arrows focus squares; Enter/Space selects them.
+- Saves use `herochess-cards-v1`. The earlier permanent-hero edition’s `herochess-v2` save is left untouched, but its rules are incompatible with this edition and it is not loaded into card matches.
 
-## Aegis: an active power
+## CPU
 
-In **new Hero matches**, each army gets one Aegis charge. Select a friendly non-king piece, then choose **Activate Aegis**. This spends your entire turn without moving the piece. The target cannot be captured during the opponent’s next turn; the shield expires at the end of that turn. It still blocks paths and attacks normally. Aegis cannot be used in check, cannot shield a king, and forfeits any current en passant opportunity. A shield action counts toward the 50-move rule and is a legal turn when checking for stalemate. The CPU can activate Aegis and searches its protection and expiration. Undo restores the charge and prior position. A shield bubble in 3D and a blue border in 2D mark the protected piece.
+The worker receives public board state and both visible hands, **not the actual deck, shuffle seed, or history containing that order**. It searches legal card actions and discard choices with iterative-deepening alpha-beta search, move ordering, material/position evaluation, and bounded capture/check continuation on stronger levels. It consumes known cards during search but does not predict unknown replacement draws. This is a lightweight tactical opponent, not an exact chance-tree solver or a tournament engine.
 
-Classic games and pre-Aegis saved games keep their original rules. Saved positions and repetition keys include both charges and any active shield.
+Apprentice searches one ply for up to 0.6 seconds; Tactician up to three plies for 1.8 seconds; Strategist up to four for 4 seconds. Search depth depends on branching and device speed. Every actual CPU action is revalidated against the real game state before it is applied.
 
-## Develop
+## Development
 
-Requires Node.js 22.12+ (or 20.19+).
+Requires Node.js 22.12+ or 20.19+.
 
 ```sh
 npm ci
 npm run dev
 npm test
 npm run build
-npm run preview
-```
-
-Browser integration tests:
-
-```sh
 npx playwright install chromium
 npm run test:e2e
 ```
 
-To use an installed Google Chrome instead: `PLAYWRIGHT_CHANNEL=chrome npm run test:e2e`.
+Use `PLAYWRIGHT_CHANNEL=chrome npm run test:e2e` to test an installed Chrome. Tests cover all 18 effects, deck conservation/reshuffling, three-card hands, king safety, ordinary chess perft, CPU card usage and hidden-draw independence, animations, saving, undo, mobile layout, and keyboard/fallback controls.
 
-## Architecture
+- `src/cards.js`: card definitions, deterministic shuffle and hand cycling.
+- `src/engine.js`: standard chess rules, card actions, effects, turn application and results.
+- `src/ai.js` / `src/ai-worker.js`: public-information CPU search off the main thread.
+- `src/board.js`: procedural 3D models, picking, motion, capture and effect visuals.
+- `src/main.js`: card hand, board controls, library, journal and saves.
 
-- `src/engine.js`: pure rules, piece definitions, attack detection, legal moves, and game results. Shared by the interface and CPU.
-- `src/ai.js`: iterative-deepening negamax with alpha-beta pruning, capture and killer-move ordering, bounded quiescence search for captures, promotions, checks and tactical shield actions, material and positional evaluation, and a time budget.
-- `src/ai-worker.js`: CPU search off the main thread; restarting or undoing terminates stale searches.
-- `src/board.js`: procedural Three.js board, piece geometry, lighting, shadows, and picking.
-- `src/tutorials.js`: authored practice positions, lesson objectives, and solution checks.
-- `tests/powers.test.js`: Aegis lifecycle, CPU tactical regressions, lessons, and legacy-save migration.
-- `src/main.js`: game lifecycle, controls, accessible 2D board, promotion, move journal, and local saves.
-- `tests/engine.test.js`: standard perft, hero powers, king safety, special moves, draws, and CPU behavior.
-- `tests/browser.spec.js`: complete user flows, saves, undo, both sides, keyboard controls, and mobile layout.
+The GitHub Actions workflow tests, builds, and publishes to GitHub Pages on pushes to `master`. Vite uses relative asset URLs for the `/herochess/` project path.
 
-### Add a hero
+## Design research
 
-Add a definition to `PIECES` in `engine.js`, with a name, material value, step offsets and/or sliding rays. Set `base` to a standard piece type for its 3D model and add descriptive text. Then add the hero to the initial setup, UI card/glyph lists, and tests. The CPU automatically generates and evaluates its moves from the same definition. Stateful powers such as cooldowns require extending the position, move application, and repetition key as well.
+Physical card-chess games already exist. Steve Jackson Games’ **Knightmare Chess** uses cards to modify chess rules; its official FAQ describes a limit of one card on a player's turn. That supplied a useful precedent for a single-card action economy. This game uses its own 18-card names and wording, a fixed three-card hand, public hands, explicit discard-for-normal-move rules, and a simplified timing model. No card artwork or card text was copied.
 
-The CPU is a lightweight custom opponent, not a tournament engine. Apprentice uses a one-ply static search. Tactician searches up to three plies with a 1.8-second budget; Strategist up to five with a 4-second budget. Both stronger levels extend tactical sequences beyond the nominal horizon, examining captures and recaptures, promotions, check evasions, and relevant shield actions. Quiescence is capped at eight plies to bound repeated checks. A regression position verifies that this avoids a poisoned-pawn capture chosen by the shallow evaluator. It models hero powers at every search node, including check and mate. Conservative insufficient-material detection does not attempt to prove every possible dead position with heroes.
+- [Knightmare Chess — publisher](https://www.sjgames.com/knightmare/)
+- [Official rules](https://www.sjgames.com/knightmare/img/knightmare-chess-rules.pdf)
+- [Official FAQ](https://www.sjgames.com/knightmare/KnightmareChess_FAQ.pdf)
 
-## Deploy
-
-The GitHub Actions workflow tests and builds on pushes to `master`, then deploys `dist` to GitHub Pages. In repository settings, choose **GitHub Actions** as the Pages source. Vite uses relative asset URLs, so the build works beneath the `/herochess/` project path. A successful deployment is available at the Play link above.
-
-The old Rails implementation remains recoverable in Git history. This version has no Ruby or TypeScript and needs no backend. All piece models are generated in code; typography uses Google Fonts with local system fallbacks.
+The permanent-hero editions remain recoverable in Git history. This edition has no backend, Ruby, or TypeScript.

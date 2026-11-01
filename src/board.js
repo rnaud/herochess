@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { PIECES } from './engine.js';
-import { isHeroPowerMove } from './hero-ui.js';
+import {CARDS} from './cards.js';
+const isHeroPowerMove=(_state,move)=>!!move.usePower;
 const world = i => [i%8-3.5,0,3.5-(i>>3)];
 export class ChessBoard {
  constructor(container,onSelect){
@@ -91,17 +92,18 @@ export class ChessBoard {
  }
  animateMove(state,move){
   this.cancelAnimation();
-  if(move.special==='shield')return this.animateShield(move.from);
+  if(['shield','freeze'].includes(move.special))return this.animateShield(move.from);
   if(matchMedia('(prefers-reduced-motion: reduce)').matches)return Promise.resolve();
   const moving=this.pieceMeshes.find(mesh=>mesh.userData.square===move.from);
   if(!moving)return Promise.resolve();
   const piece=state.board[move.from];
   const capturedSquare=move.special==='ep'?move.to+(piece.color==='w'?-8:8):move.to;
-  const victim=this.pieceMeshes.find(mesh=>mesh.userData.square===capturedSquare);
+  const partner=move.special==='swap'?this.pieceMeshes.find(mesh=>mesh.userData.square===move.to):null;
+  const victim=partner?null:this.pieceMeshes.find(mesh=>mesh.userData.square===capturedSquare);
   const rook=move.special==='castle'?this.pieceMeshes.find(mesh=>mesh.userData.square===(move.to>move.from?move.from+3:move.from-4)):null;
   const start=new THREE.Vector3(...world(move.from)),end=new THREE.Vector3(...world(move.to));
   const rookStart=rook?.position.clone(),rookEnd=rook?new THREE.Vector3(...world(move.to>move.from?move.from+1:move.from-1)):null;
-  const jump=piece.type==='n'||isHeroPowerMove(state,move)||piece.type==='h';
+  const jump=move.usePower?['Leap','Travel'].includes(CARDS[move.card]?.kind):piece.type==='n';
   const originals=[];
   victim?.traverse(object=>{if(object.isMesh){const original=object.material;object.material=original.clone();object.material.transparent=true;originals.push([object,original]);}});
   const burst=new THREE.Group();burst.position.set(...world(capturedSquare));burst.position.y=.12;
@@ -120,7 +122,7 @@ export class ChessBoard {
    const tick=now=>{
     const t=Math.min((now-began)/duration,1),travel=Math.min(t/(victim ? 0.72 : 1),1),ease=travel*travel*(3-2*travel);
     moving.position.lerpVectors(start,end,ease);moving.position.y=Math.sin(travel*Math.PI)*(jump?1.15:.16);
-    if(rook)rook.position.lerpVectors(rookStart,rookEnd,ease);
+    if(rook)rook.position.lerpVectors(rookStart,rookEnd,ease);if(partner){partner.position.lerpVectors(end,start,ease);partner.position.y=Math.sin(travel*Math.PI)*.7;}
     if(victim){const impact=Math.max(0,(t-.55)/.45);victim.scale.setScalar((state.board[capturedSquare]?.type==='p' ? 0.8 : 1)*(1-impact*.9));victim.position.y=-impact*.35;victim.rotation.z=impact*.8;for(const [object] of originals)object.material.opacity=1-impact;
      burst.children.forEach((spark,i)=>{const angle=i*Math.PI*2/12;spark.position.set(Math.cos(angle)*impact*.9,Math.sin(impact*Math.PI)*.45,Math.sin(angle)*impact*.9);spark.material.opacity=impact>0?1-impact:0;});
     }
@@ -131,7 +133,7 @@ export class ChessBoard {
  update(state,selected,moves){
   for(const m of this.pieceMeshes){this.scene.remove(m);m.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.userData.disposableMaterial)o.material.dispose();});}this.pieceMeshes=[];
   state.board.forEach((p,i)=>{if(!p)return;const m=this.piece(p.type,p.color);m.position.set(...world(i));m.userData.square=i;
-   if(state.shield?.square===i){const shell=new THREE.Mesh(new THREE.SphereGeometry(.62,24,16),new THREE.MeshBasicMaterial({color:0x8ad8ff,transparent:true,opacity:.2,depthWrite:false}));shell.position.y=.6;shell.scale.y=1.25;shell.userData.disposableMaterial=true;m.add(shell);}
+   if(state.shield?.square===i||state.freeze?.square===i){const shell=new THREE.Mesh(new THREE.SphereGeometry(.62,24,16),new THREE.MeshBasicMaterial({color:state.freeze?.square===i?0xb9a0ff:0x8ad8ff,transparent:true,opacity:.25,depthWrite:false}));shell.position.y=.6;shell.scale.y=1.25;shell.userData.disposableMaterial=true;m.add(shell);}
    this.scene.add(m);this.pieceMeshes.push(m);});
   for(const m of [...this.marks.children]){m.geometry.dispose();m.material.dispose();this.marks.remove(m);}
   const tile=(i,color,opacity)=>{const m=new THREE.Mesh(new THREE.PlaneGeometry(.96,.96),new THREE.MeshBasicMaterial({color,transparent:true,opacity,depthWrite:false}));m.rotation.x=-Math.PI/2;m.position.set(...world(i));m.position.y=.01;this.marks.add(m);};
