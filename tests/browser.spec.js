@@ -106,7 +106,7 @@ test('card burn and board frost animate together and undo cleans up presentation
 });
 test('3D spell capture has board feedback and reduced motion skips all transient effects',async({page})=>{
  await fixture(page,'comet',[[18,'n','w'],[44,'q','b']]);await page.locator('[data-slot="0"]').click();await page.locator('#view-2d').click();await page.locator('[data-square="18"]').click();await page.locator('#view-3d').click();
- await page.locator('[data-square="44"]').evaluate(b=>b.click());await expect(page.locator('.fx-impact')).toHaveCount(1);await expect(page.locator('.fx-trail')).toHaveCount(1);await expect(page.locator('#board-view')).toHaveAttribute('data-animating','capture');
+ const phase=await page.locator('[data-square="44"]').evaluate(b=>{b.click();document.querySelector('.game-fx').getAnimations({subtree:true}).forEach(a=>{a.pause();a.currentTime=700;});return document.querySelector('#board-view').dataset.animating;});expect(phase).toBe('capture');await expect(page.locator('.fx-impact')).toHaveCount(1);await expect(page.locator('.fx-trail')).toHaveCount(1);
  const impact=await page.locator('.fx-impact').boundingBox(),board=await page.locator('#board-view').boundingBox();expect(impact.x+impact.width/2).toBeGreaterThan(board.x);expect(impact.x+impact.width/2).toBeLessThan(board.x+board.width);
  await page.locator('#undo-button').click();await expect(page.locator('.game-fx:not(.rewind-fx)')).toHaveCount(0);
  await page.emulateMedia({reducedMotion:'reduce'});await page.locator('#view-2d').click();await page.locator('[data-slot="0"]').click();await page.locator('[data-square="18"]').click();await page.locator('[data-square="44"]').click();
@@ -185,6 +185,7 @@ test('saved duplicate cards upgrade without losing the position or unique held c
 });
 
 test('rewind has three charges, requires a new turn, and cannot be refilled by reload',async({page})=>{
+ await page.emulateMedia({reducedMotion:'reduce'});
  await page.addInitScript(()=>{window.Worker=class{
   postMessage(data){import('/src/engine.js').then(({legalMoves})=>{const move=legalMoves(data.state).find(m=>!m.usePower);setTimeout(()=>{if(!this.dead)this.onmessage?.({data:{id:data.id,move,depth:1}});},30);});}
   terminate(){this.dead=true;}

@@ -4,7 +4,7 @@ import {ChessBoard} from './board.js';
 import {GameEffects} from './effects.js';
 import {GameSound} from './sound.js';
 import {actionTiming} from './motion.js';
-let impactTimer=null,flatCleanup=null;
+let impactTimer=null,flatCleanup=null,boardPresentation=null,boardDirty=false;
 const effects=new GameEffects(),sound=new GameSound();
 for(const event of ['pointerdown','keydown'])document.addEventListener(event,()=>sound.unlock(),{capture:true});
 function renderSound(){const button=document.getElementById('sound-button');button.textContent=sound.enabled?'♪ On':'♪ Off';button.setAttribute('aria-label',sound.enabled?'Mute sound effects':'Enable sound effects');button.setAttribute('aria-pressed',String(sound.enabled));}
@@ -180,7 +180,7 @@ function render(){
  $('status-title').textContent=title;$('status-detail').textContent=detail;renderHand();
  const effects=[];if(state.shield)effects.push(`${squareName(state.shield.square)} is shielded: cannot be captured this turn.`);if(state.freeze)effects.push(`${squareName(state.freeze.square)} is frozen: cannot move this turn, but still attacks.`);$('effects').textContent=effects.join(' ')||'No lasting effects.';
  let marks=moves;if(slot!==null&&CARDS[state.hands[human][slot]].effect==='freeze'&&pendingFreeze===null)marks=[...new Set(available().map(m=>m.freezeTarget))].map(to=>({to,usePower:true}));else if(selected===null&&state.mode==='cards'&&slot!==null&&usePower&&CARDS[state.hands[human][slot]].effect==='shield')marks=available();
- board?.update(pendingFreeze===null?state:{...state,freeze:{square:pendingFreeze,color:opposite(human)}},selected,marks);renderFlat(marks);renderJournal();renderCaptures();renderCPURecap();setView(view);
+ boardPresentation=[pendingFreeze===null?state:{...state,freeze:{square:pendingFreeze,color:opposite(human)}},selected,marks];boardDirty=true;renderFlat(marks);renderJournal();renderCaptures();renderCPURecap();setView(view);
 }
 function renderFlat(marks){
  const checked=inCheck(state),focused=document.activeElement?.dataset.square,flat=$('flat-board');flat.replaceChildren();
@@ -200,7 +200,7 @@ function renderCPURecap(){
  panel.dataset.family=m.usePower?CARDS[m.card].family:'normal';
 }
 function renderCaptures(){const captured={w:[],b:[]};snapshots.forEach((before,i)=>{const next=snapshots[i+1]||state,m=next.lastMove;if(!m||['shield','freeze','swap'].includes(m.special))return;const p=m.special==='ep'?{type:'p'}:before.board[m.to];if(p)captured[before.turn].push(glyph[p.type]);});$('white-captured').textContent=captured[human].join('');$('black-captured').textContent=captured[opposite(human)].join('');}
-function setView(next){view=next;$('board-view').hidden=next!=='3d';$('flat-board').hidden=next!=='2d';$('view-3d').setAttribute('aria-pressed',String(next==='3d'));$('view-2d').setAttribute('aria-pressed',String(next==='2d'));if(next==='3d')board?.resize();positionCheckMarker();}
+function setView(next){view=next;$('board-view').hidden=next!=='3d';$('flat-board').hidden=next!=='2d';$('view-3d').setAttribute('aria-pressed',String(next==='3d'));$('view-2d').setAttribute('aria-pressed',String(next==='2d'));if(next==='3d'&&board){if(boardDirty&&boardPresentation){board.update(...boardPresentation);boardDirty=false;}board.resize();}positionCheckMarker();}
 $('normal-mode').onclick=()=>selectCard(null);
 $('view-3d').onclick=()=>setView('3d');$('view-2d').onclick=()=>setView('2d');$('flip-button').onclick=()=>{flipped=!flipped;board?.flip(flipped);render();};
 $('undo-button').onclick=()=>{if(rewindsUsed>=3||!rewindReady)return;let index=snapshots.length-1;while(index>=0&&snapshots[index].turn!==human)index--;if(index<0)return;cancelPresentation();stopCPU();state=snapshots[index];snapshots=snapshots.slice(0,index);journal=journal.slice(0,index);rewindsUsed++;rewindReady=false;resetSelection();save();render();sound.play('rewind');effects.rewind($('board-view').closest('.board-shell').getBoundingClientRect(),3-rewindsUsed);};
