@@ -134,3 +134,20 @@ test('Through the Veil includes an explicit capture example in hand and atlas',a
  await page.setViewportSize({width:390,height:844});await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  await page.screenshot({path:'/tmp/veil-mobile-fixed.png',fullPage:true});await page.locator('#library-button').click();await expect(page.locator('.library-card[data-card="pierce"] .veil-example')).toContainText('The pawn on a3 stays');
 });
+
+test('piece selection survives choosing, switching and cancelling powers',async({page})=>{
+ await fixture(page,'tower',[[18,'b','w'],[44,'q','b']]);await page.locator('#view-2d').click();
+ const piece=page.locator('[data-square="18"]');await piece.click();await expect(piece).toHaveAttribute('aria-pressed','true');
+ await expect(page.locator('[data-square="26"]')).not.toHaveClass(/legal/);
+ await page.locator('[data-slot="0"]').click();await expect(piece).toHaveAttribute('aria-pressed','true');await expect(page.locator('[data-square="26"]')).toHaveClass(/power-move/);
+ await page.locator('[data-slot="1"]').click();await expect(piece).toHaveAttribute('aria-pressed','true');await expect(piece).toHaveClass(/legal/);
+ await page.locator('[data-slot="2"]').click();await expect(piece).toHaveAttribute('aria-pressed','true');await expect(page.locator('[data-square="44"]')).toHaveClass(/legal/);await expect(page.locator('#card-instruction')).toContainText('Click a highlighted target');
+ await page.locator('[data-slot="0"]').click();await page.locator('[data-slot="0"]').click();await expect(piece).toHaveAttribute('aria-pressed','true');await expect(page.locator('[data-square="26"]')).not.toHaveClass(/legal/);await expect(page.locator('[data-square="27"]')).toHaveClass(/legal/);
+ await page.locator('[data-slot="0"]').click();await page.locator('#normal-mode').click();await expect(piece).toHaveAttribute('aria-pressed','true');await expect(page.locator('[data-square="27"]')).toHaveClass(/legal/);
+ await page.locator('[data-slot="0"]').click();await page.locator('[data-square="26"]').click();await expect(page.locator('#move-count')).toHaveText('02',{timeout:15000});await expect(page.locator('#journal')).toContainText('Tower Road');
+});
+test('an incompatible card keeps the piece selected with no invented destinations',async({page})=>{
+ await fixture(page,'charge',[[18,'b','w'],[44,'q','b']]);await page.locator('#view-2d').click();await page.locator('[data-square="18"]').click();await page.locator('[data-slot="0"]').click();
+ await expect(page.locator('[data-square="18"]')).toHaveAttribute('aria-pressed','true');await expect(page.locator('.flat-square.legal')).toHaveCount(0);await expect(page.locator('#move-count')).toHaveText('00');
+ await page.locator('#normal-mode').click();await expect(page.locator('.flat-square.legal')).not.toHaveCount(0);
+});

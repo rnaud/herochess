@@ -85,7 +85,13 @@ function selectSquare(square){
  if(options.length){if(options[0].promotion){$('promotion-options').replaceChildren();for(const m of options){const button=document.createElement('button');button.innerHTML=`<span>${glyph[m.promotion]}</span>${PIECES[m.promotion].name}`;button.onclick=()=>{$('promotion-dialog').close();commit(m);};$('promotion-options').append(button);}$('promotion-dialog').showModal();}else commit(options[0]);return;}
  if(state.board[square]?.color===human){selected=selected===square?null:square;moves=selected===null?[]:available(selected);}else{selected=null;moves=[];}render();
 }
-function selectCard(index){if(animating||thinking||state.turn!==human||outcome(state).over)return;if(slot===index)resetSelection();else{slot=index;usePower=true;selected=null;moves=[];}render();}
+function selectCard(index){
+ if(animating||thinking||state.turn!==human||outcome(state).over)return;
+ slot=slot===index?null:index;usePower=true;
+ const card=slot===null?null:CARDS[state.hands[human][slot]];
+ moves=selected===null?[]:card?.effect?available():available(selected);
+ render();
+}
 function dealHand(){
  if(state.mode!=='cards'||matchMedia('(prefers-reduced-motion: reduce)').matches)return;
  const origin=$('deck-count').getBoundingClientRect();
@@ -126,7 +132,7 @@ function render(){
  const end=outcome(state);$('turn-number').textContent=`ROUND ${String(state.fullmove).padStart(2,'0')}`;$('mode-label').textContent=state.mode==='cards'?'CARD CHESS':'CLASSIC CHESS';$('turn-chip').textContent=end.over?'GAME OVER':state.turn===human?'YOUR TURN':'CPU TURN';$('thinking-overlay').hidden=!thinking;$('player-caption').textContent=human==='w'?'IVORY · WHITE':'OBSIDIAN · BLACK';$('opponent-side').textContent=human==='w'?'OBSIDIAN':'IVORY';$('undo-button').disabled=!snapshots.some(s=>s.turn===human);motionControls();
  let title=end.over?(end.winner?(end.winner===human?'A winning hand.':'The Automaton prevails.'):'An even ending.'):thinking?'Reading the possibilities.':inCheck(state)?'Your king is in check.':state.mode==='cards'?'Your hand. Your move.':'Your next move.';
  let detail=end.over?`${end.reason}. Deal a new game to play again.`:thinking?'The CPU searches normal moves and card actions. It cannot see the draw pile.':inCheck(state)?'Escape check with a normal move or a card power.':state.mode==='cards'?'Move a piece, or click a card for its power. Normal moves keep all your cards.':'Select a piece, then a highlighted square.';
- if(selected!==null){title=PIECES[state.board[selected].type].name+' · '+squareName(selected);detail=`${moves.length} legal destination${moves.length===1?'':'s'} for this choice. ${state.mode==='cards'&&slot!==null&&usePower?'The piece returns to its normal movement after this action.':''}`;}
+ if(selected!==null&&!(slot!==null&&CARDS[state.hands[human][slot]].effect)){title=PIECES[state.board[selected].type].name+' · '+squareName(selected);detail=`${moves.length} legal destination${moves.length===1?'':'s'} for this choice. ${state.mode==='cards'&&slot!==null&&usePower?'The piece returns to its normal movement after this action.':''}`;}
  $('status-title').textContent=title;$('status-detail').textContent=detail;renderHand();
  const effects=[];if(state.shield)effects.push(`${squareName(state.shield.square)} is shielded: cannot be captured this turn.`);if(state.freeze)effects.push(`${squareName(state.freeze.square)} is frozen: cannot move this turn, but still attacks.`);$('effects').textContent=effects.join(' ')||'No lasting effects.';
  let marks=moves;if(selected===null&&state.mode==='cards'&&slot!==null&&usePower&&CARDS[state.hands[human][slot]].effect)marks=available();
@@ -141,7 +147,7 @@ function renderFlat(marks){
 function renderJournal(){const container=$('journal');container.replaceChildren();$('move-count').textContent=String(journal.length).padStart(2,'0');if(!journal.length){container.innerHTML='<p class="empty-journal">The first card is yours to play.</p>';return;}journal.forEach((text,i)=>{const row=document.createElement('div');row.className='turn-entry';row.textContent=`${Math.floor(i/2)+1}${i%2?' …':' .'} ${text}`;container.append(row);});container.scrollTop=container.scrollHeight;}
 function renderCaptures(){const captured={w:[],b:[]};snapshots.forEach((before,i)=>{const next=snapshots[i+1]||state,m=next.lastMove;if(!m||['shield','freeze','swap'].includes(m.special))return;const p=m.special==='ep'?{type:'p'}:before.board[m.to];if(p)captured[before.turn].push(glyph[p.type]);});$('white-captured').textContent=captured[human].join('');$('black-captured').textContent=captured[opposite(human)].join('');}
 function setView(next){view=next;$('board-view').hidden=next!=='3d';$('flat-board').hidden=next!=='2d';$('view-3d').setAttribute('aria-pressed',String(next==='3d'));$('view-2d').setAttribute('aria-pressed',String(next==='2d'));if(next==='3d')board?.resize();}
-$('normal-mode').onclick=()=>{resetSelection();render();};
+$('normal-mode').onclick=()=>selectCard(null);
 $('view-3d').onclick=()=>setView('3d');$('view-2d').onclick=()=>setView('2d');$('flip-button').onclick=()=>{flipped=!flipped;board?.flip(flipped);render();};
 $('undo-button').onclick=()=>{cancelPresentation();stopCPU();let index=snapshots.length-1;while(index>=0&&snapshots[index].turn!==human)index--;if(index<0)return;state=snapshots[index];snapshots=snapshots.slice(0,index);journal=journal.slice(0,index);resetSelection();save();render();};
 $('difficulty').onchange=()=>{save();if(state.turn!==human&&!outcome(state).over)startCPU();};
