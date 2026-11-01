@@ -1,10 +1,10 @@
 import {test,expect} from '@playwright/test';
 async function normalMove(page,from=12,to=28){await page.locator('[data-slot="0"]').click();await page.locator('#normal-mode').click();await page.locator('[data-square="'+from+'"]').click();await page.locator('[data-square="'+to+'"]').click();}
-async function fixture(page,card,pieces){await page.goto('/');await page.evaluate(async({card,pieces})=>{const {initialState,positionKey}=await import('/src/engine.js');const s=initialState('cards',42);s.board=Array(64).fill(null);for(const [i,type,color] of [[0,'k','w'],[63,'k','b'],...pieces])s.board[i]={type,color};s.rights='';s.hands.w=[card,'ward','frost'];s.hands.b=['step','retreat','flank'];s.history=[positionKey(s)];localStorage.setItem('herochess-cards-v1',JSON.stringify({version:1,state:s,human:'w',snapshots:[],journal:[],level:'1'}));},{card,pieces});await page.reload();}
+async function fixture(page,card,pieces){await page.goto('/');await page.evaluate(async({card,pieces})=>{const {initialState,positionKey}=await import('/src/engine.js');const s=initialState('cards',42);s.board=Array(64).fill(null);for(const [i,type,color] of [[0,'k','w'],[63,'k','b'],...pieces])s.board[i]={type,color};s.rights='';s.hands.w=[card,'ward','frost'];s.hands.b=['step','retreat','flank'];s.history=[positionKey(s)];localStorage.setItem('herochess-cards-v2',JSON.stringify({version:2,state:s,human:'w',snapshots:[],journal:[],level:'1'}));},{card,pieces});await page.reload();}
 test('three-card hand, 18-card library, CPU reply, exact undo and reload',async({page})=>{
  const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto('/');await expect(page.locator('#board-view canvas')).toBeVisible();await expect(page.locator('.spell-card')).toHaveCount(3);await expect(page.locator('.cpu-card')).toHaveCount(3);await page.locator('.cpu-card summary').first().click();await expect(page.locator('.cpu-card p').first()).toBeVisible();await page.locator('.cpu-card summary').first().click();await page.screenshot({path:'/tmp/herochess-cards-desktop.png',fullPage:true});
  await page.locator('#library-button').click();await expect(page.locator('.library-card')).toHaveCount(18);await page.locator('.library-art').evaluateAll(images=>images.forEach(img=>{img.loading='eager';}));await expect.poll(()=>page.locator('.library-art').evaluateAll(images=>images.every(img=>img.complete&&img.naturalWidth>0))).toBe(true);await page.screenshot({path:'/tmp/herochess-illustrated-library.png'});await page.locator('#library-dialog .close-dialog').click();const hand=await page.locator('.spell-card strong').allTextContents();
- await page.locator('#view-2d').click();await normalMove(page);await expect(page.locator('#move-count')).toHaveText('02',{timeout:15000});await expect(page.locator('.spell-card')).toHaveCount(3);const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('herochess-cards-v1')));expect(saved.state.hands.w.length).toBe(3);expect(saved.state.hands.b.length).toBe(3);
+ await page.locator('#view-2d').click();await normalMove(page);await expect(page.locator('#move-count')).toHaveText('02',{timeout:15000});await expect(page.locator('.spell-card')).toHaveCount(3);const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('herochess-cards-v2')));expect(saved.state.hands.w.length).toBe(3);expect(saved.state.hands.b.length).toBe(3);
  await page.reload();await expect(page.locator('#move-count')).toHaveText('02');await page.locator('#undo-button').click();await expect(page.locator('#move-count')).toHaveText('00');expect(await page.locator('.spell-card strong').allTextContents()).toEqual(hand);expect(errors).toEqual([]);
 });
 test('card power is temporary; leap capture animates and cycles the selected slot',async({page})=>{
@@ -26,7 +26,7 @@ test('WebGL fallback and old hero saves are preserved separately',async({page})=
 
 test('families and power tiers are explicit and library filters compose',async({page})=>{
  await page.goto('/');await expect(page.locator('.spell-card .family-badge')).toHaveCount(3);await expect(page.locator('.spell-card .tier-badge')).toHaveCount(3);
- await page.locator('#card-key-button').click();await expect(page.locator('#card-legend')).toHaveAttribute('open','');await expect(page.locator('#card-legend')).toContainText('gold cards are not rarer');
+ await page.locator('#card-key-button').click();await expect(page.locator('#card-legend')).toHaveAttribute('open','');await expect(page.locator('#card-legend')).toContainText('Gold cards are rarer');
  await page.locator('#family-filter').selectOption('offense');await expect(page.locator('.library-card')).toHaveCount(4);await expect(page.locator('.library-card .family-badge')).toHaveText(['⚔ Offense','⚔ Offense','⚔ Offense','⚔ Offense']);
  await page.locator('#tier-filter').selectOption('3');await expect(page.locator('.library-card')).toHaveCount(3);await expect(page.locator('#library-count')).toHaveText('3 of 18 spells');
  await page.locator('#family-filter').selectOption('defense');await expect(page.locator('.library-card')).toHaveCount(0);await expect(page.locator('#library-empty')).toBeVisible();
@@ -45,4 +45,35 @@ test('spell workbench fits a laptop and shows exact rules for the selected card'
  await page.setViewportSize({width:1440,height:900});await page.screenshot({path:'/tmp/herochess-interface-wide.png',fullPage:true});
  await page.setViewportSize({width:390,height:844});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.screenshot({path:'/tmp/herochess-interface-mobile.png',fullPage:true});
  await page.locator('#new-button').click();await expect(page.locator('#new-dialog')).toBeVisible();await page.screenshot({path:'/tmp/herochess-interface-dialog.png'});
+});
+
+test('clicking a selected card clears its targets and restores the unselected state',async({page})=>{
+ await fixture(page,'ward',[[27,'q','w'],[59,'r','b']]);await page.locator('#view-2d').click();
+ const hand=await page.locator('.spell-card strong').allTextContents();
+ await page.locator('[data-slot="0"]').click();await expect(page.locator('.flat-square.legal')).not.toHaveCount(0);
+ await page.locator('[data-slot="0"]').click();await expect(page.locator('.spell-card[aria-pressed="true"]')).toHaveCount(0);
+ await expect(page.locator('.flat-square.legal')).toHaveCount(0);await expect(page.locator('#selected-card-art')).toBeHidden();
+ await expect(page.locator('#power-mode')).toBeDisabled();await expect(page.locator('#normal-mode')).toBeDisabled();
+ await expect(page.locator('#move-count')).toHaveText('00');expect(await page.locator('.spell-card strong').allTextContents()).toEqual(hand);
+ await page.locator('[data-slot="0"]').press('Enter');await expect(page.locator('[data-slot="0"]')).toHaveAttribute('aria-pressed','true');
+ await page.locator('[data-slot="0"]').press('Enter');await expect(page.locator('[data-slot="0"]')).toHaveAttribute('aria-pressed','false');
+});
+test('fresh matches deal three cards in order, without replaying on selection or reduced motion',async({page})=>{
+ await page.addInitScript(()=>{window.deals=[];const animate=Element.prototype.animate;Element.prototype.animate=function(frames,options){if(this.classList.contains('spell-card'))window.deals.push({delay:options.delay,frames});return animate.call(this,frames,options);};});
+ await page.goto('/');expect(await page.evaluate(()=>window.deals.map(a=>a.delay))).toEqual([0,170,340]);
+ await page.locator('.spell-card').evaluateAll(cards=>cards.forEach(card=>card.getAnimations().forEach(a=>{a.pause();a.currentTime=400;})));
+ await page.screenshot({path:'/tmp/herochess-opening-deal.png',fullPage:true});
+ await page.locator('.spell-card').evaluateAll(cards=>cards.forEach(card=>card.getAnimations().forEach(a=>a.finish())));
+ await page.locator('[data-slot="0"]').click();await page.locator('[data-slot="0"]').click();expect(await page.evaluate(()=>window.deals.length)).toBe(3);
+ await page.locator('#new-button').click();await page.getByRole('button',{name:'Deal & play'}).click();expect(await page.evaluate(()=>window.deals.length)).toBe(6);
+ await page.reload();expect(await page.evaluate(()=>window.deals.length)).toBe(0);
+ await page.emulateMedia({reducedMotion:'reduce'});await page.locator('#new-button').click();await page.getByRole('button',{name:'Deal & play'}).click();expect(await page.evaluate(()=>window.deals.length)).toBe(0);
+});
+
+test('old card saves are preserved separately when balance rules change',async({page})=>{
+ await page.addInitScript(()=>localStorage.setItem('herochess-cards-v1','previous-card-match'));
+ await page.goto('/');await expect(page.locator('#save-notice')).toBeVisible();await expect(page.locator('#deck-count')).toContainText('34 in deck');
+ await page.locator('#new-button').click();await page.getByRole('button',{name:'Deal & play'}).click();
+ expect(await page.evaluate(()=>localStorage.getItem('herochess-cards-v1'))).toBe('previous-card-match');
+ expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('herochess-cards-v2')).version)).toBe(2);
 });

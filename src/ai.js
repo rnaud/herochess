@@ -14,7 +14,7 @@ export function evaluate(state) {
   if(state.shield?.square===i&&isAttacked(state,i,opposite(p.color)))value+=Math.min(value*.12,85);
   score+=p.color===state.turn?value:-value;
  }
- if(state.mode==='cards')for(const color of ['w','b']){const value=(state.hands?.[color]||[]).reduce((sum,id)=>sum+(CARDS[id].pawn&&!state.board.some(p=>p?.color===color&&p.type==='p')?0:['prism','tower','saddle','comet'].includes(id)?30:18),0);score+=color===state.turn?value:-value;}
+ if(state.mode==='cards')for(const color of ['w','b']){const value=(state.hands?.[color]||[]).reduce((sum,id)=>sum+((CARDS[id].pawn&&!state.board.some(p=>p?.color===color&&p.type==='p'))||(CARDS[id].pierce&&!state.board.some(p=>p?.color===color&&PIECES[p.type].rays))?0:12+CARDS[id].tier*8),0);score+=color===state.turn?value:-value;}
  if(state.freeze){const p=state.board[state.freeze.square];if(p)score+=(p.color===state.turn?-1:1)*Math.min(PIECES[p.type].value*.1,60);}
  return score;
 }

@@ -90,7 +90,7 @@ function cardMoves(state,id){
   if(card.lunge){add(x,y+dir);continue;}
   for(const [dx,dy] of card.steps||[])add(x+dx,y+dy);
   const rays=card.charge?[[0,dir]]:card.retreat?[[0,-dir]]:card.rays||[];
-  for(const [dx,dy] of rays)for(let n=1;n<=(card.range||3);n++){const nx=x+dx*n,ny=y+dy*n;if(nx<0||nx>7||ny<0||ny>7)break;add(nx,ny);if(state.board[ny*8+nx])break;}
+  for(const [dx,dy] of rays)for(let n=1;n<=(card.range||3);n++){const nx=x+dx*n,ny=y+dy*n;if(nx<0||nx>7||ny<0||ny>7)break;if(n>=(card.minRange||1))add(nx,ny);if(!card.jump&&state.board[ny*8+nx])break;}
  }
  return result;
 }

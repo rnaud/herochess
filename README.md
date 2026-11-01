@@ -11,7 +11,7 @@ A JavaScript + Three.js card-chess game: standard pieces, a three-card hand, and
 3. Select a piece and a legal destination. Shield and freeze cards need just one target; swaps need two friendly pieces.
 4. The used/discarded card goes into the shared discard pile. Draw a replacement immediately, so you always hold three; that replacement is available on your next turn.
 
-Both players start with three cards and see each other's hands. There is no extra opening draw. The shared shuffled deck contains three copies of each card (54 total). When it empties, the discard pile is shuffled back into the draw pile. Undo restores the exact cards, pile order, and position. The draw order is hidden from both players, including the CPU.
+Both players start with three cards and see each other's hands. There is no extra opening draw. The shared shuffled deck contains three copies of each Standard card, two of each Powerful card, and one of each Exceptional card (40 total). When it empties, the discard pile is shuffled back into the draw pile. Undo restores the exact cards, pile order, and position. The draw order is hidden from both players, including the CPU.
 
 ## The 18 cards
 
@@ -23,10 +23,10 @@ Both players start with three cards and see each other's hands. There is no extr
 | Stone Vault | Jump exactly two squares horizontally or vertically. |
 | Prism Path | Slide along a clear diagonal, like a bishop. |
 | Tower Road | Slide along a clear rank or file, like a rook. |
-| Lesser Crown | Slide up to two squares in any straight direction. |
+| Lesser Crown | Slide exactly two squares in any straight direction; the intervening square must be clear. |
 | Pocket Portal | Teleport to an empty square within two files and two ranks. |
-| Safe Retreat | Move 1–3 squares straight toward home on a clear path; no capture. |
-| Sidewinder | Slide 1–3 squares sideways; may capture. |
+| Safe Retreat | Jump 1–3 squares straight toward home over blockers; land empty. |
+| Sidewinder | Jump exactly three squares sideways over blockers; may capture. |
 | Marching Orders | A pawn advances 1–3 clear squares; no capture. A two-square advance permits en passant. |
 | Spearpoint | A pawn captures an enemy directly one square ahead. |
 | King’s Footwork | A non-king piece steps one square in any direction. |
@@ -54,7 +54,7 @@ The 50-move draw and stalemate remain. Repetition includes the complete position
 - Three difficulty levels, playing either side, exact undo, and local autosave.
 - Read all 18 cards from **The 18 cards** in the header.
 - In 2D, Tab or arrows focus squares; Enter/Space selects them.
-- Saves use `herochess-cards-v1`. The earlier permanent-hero edition’s `herochess-v2` save is left untouched, but its rules are incompatible with this edition and it is not loaded into card matches.
+- Saves use `herochess-cards-v2`. The earlier permanent-hero edition’s `herochess-v2` save is left untouched, but its rules are incompatible with this edition and it is not loaded into card matches.
 
 ## CPU
 
@@ -105,7 +105,7 @@ See [art direction](art-direction/README.md), [full-screen reference](art-direct
 
 Each card has a primary family badge: **Offense** (attack/capture opportunities), **Defense** (protection and retreat), **Mobility** (reach and repositioning), or **Tactics** (swapping allies and disrupting enemies). The existing movement kind remains visible separately.
 
-The outer frame and labeled stars show a design rating: **silver ★ Standard**, **blue ★★ Powerful**, or **gold ★★★ Exceptional**. These indicate general potential, not a position-specific recommendation or statistical win-rate measurement. All 18 cards retain three copies each; tiers do not change draw odds or rules. Card-specific illustration colors remain intact.
+The outer frame and labeled stars show a design rating: **silver ★ Standard**, **blue ★★ Powerful**, or **gold ★★★ Exceptional**. These indicate general potential, not a position-specific recommendation or statistical win-rate measurement. New decks have 3 copies of each Standard card, 2 of each Powerful card, and 1 of each Exceptional card. Card-specific illustration colors remain intact.
 
 Families and tiers are declared in `src/cards.js` and appear in both hands and the library. The library supports combined family/tier filters, with a legend linked directly from the player's hand.
 
@@ -114,3 +114,5 @@ Families and tiers are declared in `src/cards.js` and appear in both hands and t
 The full game interface was redesigned from a [built-in image-generation reference](art-direction/interface-reference-v3.png), implemented with responsive HTML/CSS and the existing Three.js game. The desktop layout places the board and opponent hand on the left, and all three player cards, exact selected-spell rules, action modes, effects and recent moves on the right. A laptop layout check verifies that the board and all primary spell controls fit at 1280 × 720. Smaller screens stack the table and workbench, with swipeable cards.
 
 The new tabletop and Automaton portrait were generated with the built-in tool; the existing varied card illustrations are retained. [Exact prompts and asset paths](art-direction/interface-v3-prompts.md) document the generation. Card summaries help scanning; the selected panel, card atlas and accessible names retain the full rules.
+
+Balance rationale and card-by-card roles: [balance review](BALANCE.md).

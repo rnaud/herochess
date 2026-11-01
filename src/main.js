@@ -2,18 +2,19 @@ import './style.css';
 import {CARDS,CARD_IDS,FAMILIES,POWER_TIERS} from './cards.js';
 import {ChessBoard} from './board.js';
 import {PIECES,initialState,legalMoves,applyMove,outcome,moveLabel,squareName,opposite,inCheck} from './engine.js';
-const $=id=>document.getElementById(id),SAVE_KEY='herochess-cards-v1';
+const $=id=>document.getElementById(id),SAVE_KEY='herochess-cards-v2';
 const cardArt=id=>`${import.meta.env.BASE_URL}art/realms/${id}.jpg`;
 const familyBadge=c=>`<span class="family-badge" data-family="${c.family}"><span aria-hidden="true">${FAMILIES[c.family].icon}</span> ${FAMILIES[c.family].name}</span>`;
 const tierBadge=c=>`<span class="tier-badge" data-tier="${c.tier}" aria-label="${POWER_TIERS[c.tier].name}, power tier ${c.tier} of 3"><span aria-hidden="true">${POWER_TIERS[c.tier].stars}</span> ${POWER_TIERS[c.tier].name}</span>`;
 const glyph={p:'♟',n:'♞',b:'♝',r:'♜',q:'♛',k:'♚'};
+let resumed=false,dealAnimations=[];
 let state=initialState(),human='w',snapshots=[],journal=[],selected=null,slot=null,usePower=true,moves=[],worker=null,requestId=0,thinking=false,animating=false,transitionId=0,flatAnimations=[],board=null,view='3d',flipped=false,level='2';
-try{const saved=JSON.parse(localStorage.getItem(SAVE_KEY));if(saved?.version===1&&saved.state?.board?.length===64&&saved.state.board.every(p=>p===null||PIECES[p.type])&&saved.state.hands?.w?.length===3&&saved.state.hands?.b?.length===3&&[...saved.state.hands.w,...saved.state.hands.b,...saved.state.deck,...saved.state.discard].every(id=>CARDS[id])&&['w','b'].includes(saved.human)){
- state=saved.state;human=saved.human;snapshots=saved.snapshots;journal=saved.journal;level=saved.level||'2';flipped=human==='b';
-}else if(localStorage.getItem('herochess-v2'))$('save-notice').hidden=false;}catch{}
+try{const saved=JSON.parse(localStorage.getItem(SAVE_KEY));if(saved?.version===2&&saved.state?.board?.length===64&&saved.state.board.every(p=>p===null||PIECES[p.type])&&saved.state.hands?.w?.length===3&&saved.state.hands?.b?.length===3&&[...saved.state.hands.w,...saved.state.hands.b,...saved.state.deck,...saved.state.discard].every(id=>CARDS[id])&&['w','b'].includes(saved.human)){
+ resumed=true;state=saved.state;human=saved.human;snapshots=saved.snapshots;journal=saved.journal;level=saved.level||'2';flipped=human==='b';
+}else if((localStorage.getItem('herochess-v2')||localStorage.getItem('herochess-cards-v1')))$('save-notice').hidden=false;}catch{}
 $('difficulty').value=level;
 try{board=new ChessBoard($('board-view'),selectSquare);board.flip(flipped);}catch(error){console.warn('WebGL unavailable; using 2D.',error);view='2d';}
-function save(){try{localStorage.setItem(SAVE_KEY,JSON.stringify({version:1,state,human,snapshots,journal,level:$('difficulty').value}));}catch{}}
+function save(){try{localStorage.setItem(SAVE_KEY,JSON.stringify({version:2,state,human,snapshots,journal,level:$('difficulty').value}));}catch{}}
 function stopCPU(){requestId++;worker?.terminate();worker=null;thinking=false;}
 function motionControls(){for(const id of ['flip-button','view-2d','difficulty'])$(id).disabled=animating;$('view-3d').disabled=animating||!board;}
 function cancelPresentation(){transitionId++;board?.cancelAnimation();flatAnimations.forEach(a=>a.cancel());flatAnimations=[];animating=false;motionControls();}
@@ -67,8 +68,22 @@ function selectSquare(square){
  if(options.length){if(options[0].promotion){$('promotion-options').replaceChildren();for(const m of options){const button=document.createElement('button');button.innerHTML=`<span>${glyph[m.promotion]}</span>${PIECES[m.promotion].name}`;button.onclick=()=>{$('promotion-dialog').close();commit(m);};$('promotion-options').append(button);}$('promotion-dialog').showModal();}else commit(options[0]);return;}
  if(state.board[square]?.color===human){selected=selected===square?null:square;moves=selected===null?[]:available(selected);}else{selected=null;moves=[];}render();
 }
-function selectCard(index){if(animating||thinking||state.turn!==human||outcome(state).over)return;slot=index;selected=null;moves=[];render();}
+function selectCard(index){if(animating||thinking||state.turn!==human||outcome(state).over)return;if(slot===index)resetSelection();else{slot=index;selected=null;moves=[];}render();}
+function dealHand(){
+ if(state.mode!=='cards'||matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+ const origin=$('deck-count').getBoundingClientRect();
+ dealAnimations=[...$('hand').children].map((card,index)=>{
+  const rect=card.getBoundingClientRect();
+  const animation=card.animate([
+   {opacity:0,transform:`translate(${origin.left+origin.width/2-rect.left-rect.width/2}px, ${origin.top-rect.top-rect.height/2}px) rotate(-18deg) scale(.22)`},
+   {opacity:1,transform:'translate(0, 6px) rotate(2deg) scale(1.02)',offset:.82},
+   {opacity:1,transform:'translate(0, 0) rotate(0) scale(1)'}
+  ],{duration:650,delay:index*170,easing:'cubic-bezier(.2,.7,.25,1)',fill:'backwards'});
+  animation.id='opening-deal';return animation;
+ });
+}
 function renderHand(){
+ dealAnimations.forEach(animation=>animation.cancel());dealAnimations=[];
  document.body.dataset.mode=state.mode;
  const active=slot===null?null:CARDS[state.hands[human][slot]];
  $('selected-card-art').hidden=!active;$('selected-card-placeholder').hidden=!!active;
@@ -110,7 +125,7 @@ $('view-3d').onclick=()=>setView('3d');$('view-2d').onclick=()=>setView('2d');$(
 $('undo-button').onclick=()=>{cancelPresentation();stopCPU();let index=snapshots.length-1;while(index>=0&&snapshots[index].turn!==human)index--;if(index<0)return;state=snapshots[index];snapshots=snapshots.slice(0,index);journal=journal.slice(0,index);resetSelection();save();render();};
 $('difficulty').onchange=()=>{save();if(state.turn!==human&&!outcome(state).over)startCPU();};
 $('new-button').onclick=()=>{$('side').value=human;$('new-form').elements.mode.value=state.mode;$('new-dialog').showModal();};
-$('new-form').onsubmit=e=>{e.preventDefault();cancelPresentation();stopCPU();const data=new FormData(e.target);state=initialState(data.get('mode'));human=data.get('side');snapshots=[];journal=[];resetSelection();flipped=human==='b';board?.flip(flipped);$('new-dialog').close();$('save-notice').hidden=true;$('cpu-caption').textContent='CARD-AWARE CPU';save();render();startCPU();};
+$('new-form').onsubmit=e=>{e.preventDefault();cancelPresentation();stopCPU();const data=new FormData(e.target);state=initialState(data.get('mode'));human=data.get('side');snapshots=[];journal=[];resetSelection();flipped=human==='b';board?.flip(flipped);$('new-dialog').close();$('save-notice').hidden=true;$('cpu-caption').textContent='CARD-AWARE CPU';save();render();startCPU();dealHand();};
 $('guide-button').onclick=()=>$('guide-dialog').showModal();$('library-button').onclick=()=>$('library-dialog').showModal();
 for(const button of document.querySelectorAll('.close-dialog'))button.onclick=()=>button.closest('dialog').close();
 function renderLibrary(){
@@ -118,13 +133,13 @@ function renderLibrary(){
  const ids=CARD_IDS.filter(id=>(!family||CARDS[id].family===family)&&(!tier||String(CARDS[id].tier)===tier));
  $('library-count').textContent=`${ids.length} of ${CARD_IDS.length} spells`;
  $('library-empty').hidden=ids.length>0;
- $('card-library').innerHTML=ids.map(id=>{const c=CARDS[id];return `<article class="library-card" data-card="${id}" data-tier="${c.tier}"><div class="library-family">${familyBadge(c)}<small>${c.kind}</small></div><img class="library-art" src="${cardArt(id)}" alt="" width="900" height="600" loading="lazy"><span aria-hidden="true">${c.icon}</span><h3>${c.name}</h3><div class="library-rating">${tierBadge(c)}</div><p>${c.text}</p></article>`;}).join('');
+ $('card-library').innerHTML=ids.map(id=>{const c=CARDS[id];return `<article class="library-card" data-card="${id}" data-tier="${c.tier}"><div class="library-family">${familyBadge(c)}<small>${c.kind} · ${POWER_TIERS[c.tier].copies} ${POWER_TIERS[c.tier].copies===1?'copy':'copies'} / deck</small></div><img class="library-art" src="${cardArt(id)}" alt="" width="900" height="600" loading="lazy"><span aria-hidden="true">${c.icon}</span><h3>${c.name}</h3><div class="library-rating">${tierBadge(c)}</div><p>${c.text}</p></article>`;}).join('');
 }
-$('card-legend').innerHTML=`<summary>Card families & power tiers</summary><div class="family-key">${Object.entries(FAMILIES).map(([id,f])=>`<div>${familyBadge({family:id})}<span>${f.text}</span></div>`).join('')}</div><div class="tier-key"><b>Frame color = power tier</b>${Object.keys(POWER_TIERS).map(tier=>tierBadge({tier})).join('')}</div><p>Silver = Standard · Blue = Powerful · Gold = Exceptional. Tiers rate a spell’s general potential, not the best move in every position. All cards still have three copies in the deck; gold cards are not rarer.</p>`;
+$('card-legend').innerHTML=`<summary>Card families & power tiers</summary><div class="family-key">${Object.entries(FAMILIES).map(([id,f])=>`<div>${familyBadge({family:id})}<span>${f.text}</span></div>`).join('')}</div><div class="tier-key"><b>Frame color = power tier</b>${Object.keys(POWER_TIERS).map(tier=>tierBadge({tier})).join('')}</div><p>Silver = Standard · Blue = Powerful · Gold = Exceptional. Tiers rate a spell’s general potential, not the best move in every position. New matches use 40 cards: 3 copies of each Standard, 2 of each Powerful, and 1 of each Exceptional spell. Gold cards are rarer.</p>`;
 $('family-filter').innerHTML='<option value="">All families</option>'+Object.entries(FAMILIES).map(([id,f])=>`<option value="${id}">${f.name}</option>`).join('');
 $('tier-filter').innerHTML='<option value="">All power tiers</option>'+Object.entries(POWER_TIERS).map(([id,t])=>`<option value="${id}">${t.stars} ${t.name}</option>`).join('');
 $('family-filter').onchange=renderLibrary;$('tier-filter').onchange=renderLibrary;
 $('reset-filters').onclick=()=>{$('family-filter').value='';$('tier-filter').value='';renderLibrary();};
 $('card-key-button').onclick=()=>{$('library-dialog').showModal();$('card-legend').open=true;$('card-legend').scrollIntoView({block:'nearest'});};
 renderLibrary();
-render();startCPU();
+render();startCPU();if(!resumed)dealHand();
