@@ -15,7 +15,7 @@ export class ChessBoard {
   this.renderer.toneMapping=THREE.ACESFilmicToneMapping;this.renderer.toneMappingExposure=1.03;this.renderer.outputColorSpace=THREE.SRGBColorSpace;this.renderer.setClearColor(0,0);
   container.appendChild(this.renderer.domElement);
   this.camera=new THREE.OrthographicCamera(-6,6,5,-5,.1,100);
-  const pmrem=new THREE.PMREMGenerator(this.renderer),room=new RoomEnvironment();this.environment=pmrem.fromScene(room,.08);this.scene.environment=this.environment.texture;this.scene.environmentIntensity=.3;room.dispose();pmrem.dispose();
+  const pmrem=new THREE.PMREMGenerator(this.renderer),room=new RoomEnvironment();this.environment=pmrem.fromScene(room,.08,.1,100,{size:64});this.scene.environment=this.environment.texture;this.scene.environmentIntensity=.3;room.dispose();pmrem.dispose();
   this.scene.add(new THREE.HemisphereLight(0xfff4df,0x292b34,1.65));
   const key=new THREE.DirectionalLight(0xffe6c4,2.2);key.position.set(-3,14,3);key.castShadow=true;key.shadow.mapSize.set(2048,2048);Object.assign(key.shadow.camera,{left:-7,right:7,top:7,bottom:-7,near:.5,far:25});key.shadow.normalBias=.035;key.shadow.bias=-.0004;key.shadow.radius=5;key.shadow.intensity=.45;this.scene.add(key);
   const fill=new THREE.DirectionalLight(0xd5e2f2,1.25);fill.position.set(5,5,-6);this.scene.add(fill);
@@ -64,7 +64,7 @@ export class ChessBoard {
  mesh(geometry,material,parent,x=0,y=0,z=0){const m=new THREE.Mesh(geometry,material);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m;}
  piece(type,color){
   const group=new THREE.Group(),hero=!!PIECES[type].base,baseMat=color==='w'?this.materials.white:this.materials.black,mat=hero?(color==='w'?this.materials.whiteHero:this.materials.blackHero):baseMat,gold=this.materials.gold,kind=PIECES[type].base||type;
-  const lathe=points=>new THREE.LatheGeometry(new THREE.SplineCurve(points.map(([r,y])=>new THREE.Vector2(r,y))).getPoints(72),48);
+  const lathe=points=>new THREE.LatheGeometry(new THREE.SplineCurve(points.map(([r,y])=>new THREE.Vector2(r,y))).getPoints(40),40);
   this.mesh(lathe([[0,0],[.29,0],[.33,.045],[.33,.09],[.29,.14],[.27,.16],[.27,.2],[.21,.23],[.17,.31],[.13,.48],[.16,.54],[.2,.56],[.2,.61],[0,.61]]),mat,group);
   this.mesh(new THREE.TorusGeometry(.276,.018,8,48),hero?gold:mat,group,0,.18).rotation.x=Math.PI/2;
   if(kind==='p'){this.mesh(new THREE.SphereGeometry(.2,24,16),mat,group,0,.7);group.scale.setScalar(.8);}
