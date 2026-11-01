@@ -203,3 +203,16 @@ test('Winter Seal waits for your normal move and can be cancelled without spendi
  await page.locator('#normal-mode').click();await expect(page.locator('[data-square="27"]')).not.toHaveClass(/frozen/);await expect(page.locator('#move-count')).toHaveText('00');
  await page.locator('[data-slot="0"]').click();await page.locator('[data-square="27"]').click();await page.locator('[data-square="17"]').click();await expect(page.locator('#move-count')).toHaveText('02',{timeout:15000});await expect(page.locator('#journal')).toContainText('Winter Seal · freeze d4 + b2–b3');
 });
+
+test.describe('opponent inspection',()=>{
+ test.use({hasTouch:true});
+ test('opponent card inspection opens only one card at a time with pointer or keyboard',async({page})=>{
+ await page.goto('/');const cards=page.locator('#cpu-hand .cpu-card');
+ await cards.nth(0).locator('summary').click();await expect(cards.nth(0)).toHaveAttribute('open','');
+ await cards.nth(1).locator('summary').click();await expect(cards.nth(1)).toHaveAttribute('open','');await expect(page.locator('#cpu-hand details[open]')).toHaveCount(1);
+ await cards.nth(2).locator('summary').press('Enter');await expect(cards.nth(2)).toHaveAttribute('open','');await expect(page.locator('#cpu-hand details[open]')).toHaveCount(1);
+ await cards.nth(2).locator('summary').press('Enter');await expect(page.locator('#cpu-hand details[open]')).toHaveCount(0);
+ await page.setViewportSize({width:390,height:844});await cards.nth(0).locator('summary').tap();await cards.nth(1).locator('summary').tap();await expect(page.locator('#cpu-hand details[open]')).toHaveCount(1);
+});
+
+});
