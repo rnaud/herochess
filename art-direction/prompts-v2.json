@@ -1,0 +1,108 @@
+{
+  "generator": "Midjourney website",
+  "style": "Original high fantasy collectible card illustration, expressive hand painted oil and gouache brushwork, dramatic storytelling, rich color relationships, detailed focal subject and softer atmospheric background, imaginative worldbuilding, professional fantasy book cover quality, edge to edge artwork --ar 3:2 --no text letters border chess chessboard",
+  "sitePrompt": "Herochess fantasy strategy game screen concept, lavish illustrated high fantasy battlefield interface, central large readable chess board on an ancient carved stone altar, three large distinct illustrated spell cards fanned below the board, compact opponent portrait and hand above, narrow dark parchment journal on right, distant ruined citadel and soaring cliffs at dusk, amber sunlight from left and violet storm sky on right, painterly environment, rich burgundy leather and aged brass ornament, elegant large serif typography, immersive premium collectible card game aesthetic, functional clear composition --ar 16:9",
+  "environmentPrompt": "An ancient fantasy citadel above a sea of mist at twilight, towering ruined gothic arches framing both sides, warm amber sunset and distant golden mountains on the left, deep violet storm clouds and a floating shattered moon on the right, magical motes, dark stone terrace in lower foreground with quiet empty center for a game interface, epic hand painted oil fantasy environment illustration, rich burgundy shadows, atmospheric depth, wide cinematic composition --ar 16:9 --no text letters chess chessboard cards interface",
+  "scenes": {
+    "saddle": "Borrowed Saddle: a mischievous red-haired goblin courier borrowing a magnificent white pegasus, galloping above sunlit green meadows, joyful adventure, emerald grass and warm butter-yellow light, low dynamic viewpoint",
+    "comet": "Comet Leap: a daring silver-haired sky sorceress leaping between falling stars above a vast indigo cosmos, radiant magenta comet and electric pink stardust, tiny figure against a magnificent cosmic scale",
+    "rift": "Diagonal Rift: a hooded void mage slicing open a jagged violet fissure in a ruined cathedral, uncanny lavender and black shadows, fractured floating stained glass, frightening dimensional magic",
+    "vault": "Stone Vault: a massive moss-covered stone giant jumping over a deep mountain ravine, tiny birds scattering, earthy ochre cliffs and green moss, enormous weight and comic determination, bright blue morning sky",
+    "prism": "Prism Path: a graceful crystal dragon unfurling transparent wings that split sunlight into a rainbow in a white marble sanctuary, pearl white and iridescent pastel colors, luminous serenity",
+    "tower": "Tower Road: an impossible white fortress with soaring arches and a long golden bridge suspended above a sea of clouds, distant travelers crossing toward sunrise, monumental architecture, white gold and pale sky blue",
+    "crown": "Lesser Crown: a smug young fox curled on a velvet cushion wearing an oversized jeweled crown, royal crimson drapery, rich ruby and antique gold, intimate humorous portrait, lush painted fur",
+    "blink": "Pocket Portal: a curious raccoon thief emerging from a tiny glowing portal inside an alchemists leather satchel, stolen coins floating in midair, cozy amber candlelight and vivid purple magic, charming close-up",
+    "retreat": "Safe Retreat: a weary female ranger shielding a small child beneath her cloak while retreating toward a forest shrine, gentle mist and soft sage greens, compassionate hopeful mood, silver dawn",
+    "flank": "Sidewinder: a gigantic sand serpent curving sideways through bright vermilion desert dunes, dazzling turquoise scales, windblown orange sand, energetic panoramic action under a scorching sun",
+    "charge": "Marching Orders: an army of proud golden-armored soldiers charging beneath scarlet banners across a windswept field, fire-orange sunrise, dust and determination, heroic epic scale",
+    "lunge": "Spearpoint: a fierce spear-wielding warrior lunging through torrential rain, scarlet cloak whipping behind her, spear tip catching white lightning, slate blue storm and sharp red accents, dramatic foreshortening",
+    "step": "Kings Footwork: an elegant elderly king laughing as he dances nimbly between enchanted swords in a palace ballroom, embroidered plum robes, lavender and rose light, lively theatrical movement, playful portrait",
+    "relay": "Close Quarters: a nimble elven rogue and a burly dwarf warrior back to back switching places in a narrow tavern fight, flying mugs, copper lamplight, warm brown and jade, expressive camaraderie",
+    "recall": "Homeward: a lone traveler and loyal dog approaching a tiny lantern-lit cottage beneath autumn trees, winding path, orange leaves and warm honey light against a blue dusk, nostalgic welcoming landscape",
+    "ward": "Glass Aegis: a young armored guardian raising a translucent faceted blue shield as a fiery dragon breath crashes into it, strong contrast of cobalt glass and orange fire, heroic protection, dynamic silhouette",
+    "frost": "Winter Seal: a regal ice witch sealing a roaring bear-shaped spirit inside a glacier, icy white and pale cyan, swirling snow and crystalline magic, stark cold beauty, dramatic wide composition",
+    "pierce": "Through the Veil: an ethereal blindfolded archer drawing a spectral bow as an arrow passes through a curtain of ghosts, sickly pale green and deep black, haunted moonlit graveyard, eerie supernatural precision"
+  },
+  "assets": [
+    {
+      "id": "frost",
+      "url": "https://www.midjourney.com/jobs/f545a5c6-82bf-49c3-9fd9-4bdaa6400dd7?index=0"
+    },
+    {
+      "id": "ward",
+      "url": "https://www.midjourney.com/jobs/b5f3ae34-6595-4161-8920-5d70d7776612?index=0"
+    },
+    {
+      "id": "recall",
+      "url": "https://www.midjourney.com/jobs/21b07c2d-0669-4b33-9176-9373ad732b0f?index=0"
+    },
+    {
+      "id": "pierce",
+      "url": "https://www.midjourney.com/jobs/6d8f6c9b-6ce8-4722-bf54-8da9cd03e32b?index=0"
+    },
+    {
+      "id": "relay",
+      "url": "https://www.midjourney.com/jobs/54b28c85-e0c9-405c-985e-c4a3428be417?index=0"
+    },
+    {
+      "id": "step",
+      "url": "https://www.midjourney.com/jobs/e987e7aa-a39b-4d0d-9977-0de325050d5c?index=0"
+    },
+    {
+      "id": "lunge",
+      "url": "https://www.midjourney.com/jobs/c0ae3e64-0436-48a2-911b-66f30b37f8c8?index=0"
+    },
+    {
+      "id": "charge",
+      "url": "https://www.midjourney.com/jobs/a495f914-3d3c-44cb-96d5-78af16662900?index=0"
+    },
+    {
+      "id": "flank",
+      "url": "https://www.midjourney.com/jobs/38bf1d5e-6ef4-41c3-b3ea-e8d360f30459?index=0"
+    },
+    {
+      "id": "retreat",
+      "url": "https://www.midjourney.com/jobs/53750d95-c8c0-4187-81a6-ee35bdf9a1ef?index=0"
+    },
+    {
+      "id": "blink",
+      "url": "https://www.midjourney.com/jobs/51dbc2d6-9850-463d-9fca-0c75b53bb642?index=0"
+    },
+    {
+      "id": "crown",
+      "url": "https://www.midjourney.com/jobs/700e6da5-9f5a-4d53-97fc-386654138f55?index=0"
+    },
+    {
+      "id": "tower",
+      "url": "https://www.midjourney.com/jobs/9a7b695f-5eb2-48b8-9e0d-2385706d02a6?index=0"
+    },
+    {
+      "id": "prism",
+      "url": "https://www.midjourney.com/jobs/e0963c93-7c48-4979-b5cd-0c6421010fbf?index=0"
+    },
+    {
+      "id": "vault",
+      "url": "https://www.midjourney.com/jobs/29ad33ea-ab9c-4841-975f-105e297f9af5?index=0"
+    },
+    {
+      "id": "rift",
+      "url": "https://www.midjourney.com/jobs/c349db12-a76a-47ea-8694-66c6fdf5b405?index=0"
+    },
+    {
+      "id": "comet",
+      "url": "https://www.midjourney.com/jobs/402db278-5798-4de1-852e-e1d25188c792?index=0"
+    },
+    {
+      "id": "saddle",
+      "url": "https://www.midjourney.com/jobs/2459ead4-639a-4ee6-8098-7aaeb474b9f1?index=0"
+    },
+    {
+      "id": "battlefield",
+      "url": "https://www.midjourney.com/jobs/4b71d252-4ec9-4ebd-99b0-1a87bd05b0f4?index=0"
+    },
+    {
+      "id": "site-reference",
+      "url": "https://www.midjourney.com/jobs/297995dc-5ee6-4e37-8405-80fbd618874c?index=0"
+    }
+  ]
+}

@@ -10,18 +10,33 @@ export class ChessBoard {
   this.renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
   this.renderer.setPixelRatio(Math.min(devicePixelRatio,2));
   this.renderer.shadowMap.enabled=true;this.renderer.shadowMap.type=THREE.PCFSoftShadowMap;
-  this.renderer.toneMapping=THREE.ACESFilmicToneMapping;this.renderer.toneMappingExposure=1.15;this.renderer.outputColorSpace=THREE.SRGBColorSpace;this.renderer.setClearColor(0,0);
+  this.renderer.toneMapping=THREE.ACESFilmicToneMapping;this.renderer.toneMappingExposure=1.03;this.renderer.outputColorSpace=THREE.SRGBColorSpace;this.renderer.setClearColor(0,0);
   container.appendChild(this.renderer.domElement);
   this.camera=new THREE.OrthographicCamera(-6,6,5,-5,.1,100);
-  this.scene.add(new THREE.HemisphereLight(0xf6f4df,0x31473a,2.5));
-  const key=new THREE.DirectionalLight(0xffecd0,4.0);key.position.set(-3,10,5);key.castShadow=true;key.shadow.mapSize.set(2048,2048);Object.assign(key.shadow.camera,{left:-7,right:7,top:7,bottom:-7,near:.5,far:25});key.shadow.normalBias=.035;key.shadow.bias=-.0004;key.shadow.radius=3;this.scene.add(key);
-  const fill=new THREE.DirectionalLight(0xa9e6ee,1.7);fill.position.set(5,5,-6);this.scene.add(fill);
-  this.materials={white:new THREE.MeshStandardMaterial({color:0xe4ddc6,roughness:.32,metalness:.12}),black:new THREE.MeshStandardMaterial({color:0x153d45,roughness:.3,metalness:.32}),gold:new THREE.MeshStandardMaterial({color:0xd6b876,metalness:.65,roughness:.3}),whiteHero:new THREE.MeshStandardMaterial({color:0x187be0,metalness:.15,roughness:.34}),blackHero:new THREE.MeshStandardMaterial({color:0xec6718,metalness:.15,roughness:.34})};
-  const base=new THREE.Mesh(new THREE.BoxGeometry(8.7,.32,8.7),new THREE.MeshStandardMaterial({color:0x16343b,metalness:.25,roughness:.45}));base.position.y=-.23;base.receiveShadow=true;this.scene.add(base);
+  this.scene.add(new THREE.HemisphereLight(0xf6f4df,0x35283f,2.1));
+  const key=new THREE.DirectionalLight(0xffd3a0,3.5);key.position.set(-3,10,5);key.castShadow=true;key.shadow.mapSize.set(2048,2048);Object.assign(key.shadow.camera,{left:-7,right:7,top:7,bottom:-7,near:.5,far:25});key.shadow.normalBias=.035;key.shadow.bias=-.0004;key.shadow.radius=3;this.scene.add(key);
+  const fill=new THREE.DirectionalLight(0xb9b1ed,1.6);fill.position.set(5,5,-6);this.scene.add(fill);
+  this.materials={white:new THREE.MeshStandardMaterial({color:0xe4ddc6,roughness:.32,metalness:.12}),black:new THREE.MeshStandardMaterial({color:0x342840,roughness:.3,metalness:.32}),gold:new THREE.MeshStandardMaterial({color:0xd6b876,metalness:.65,roughness:.3}),whiteHero:new THREE.MeshStandardMaterial({color:0x187be0,metalness:.15,roughness:.34}),blackHero:new THREE.MeshStandardMaterial({color:0xec6718,metalness:.15,roughness:.34})};
+  const base=new THREE.Mesh(new THREE.BoxGeometry(8.7,.32,8.7),new THREE.MeshStandardMaterial({color:0x514134,metalness:.25,roughness:.45}));base.position.y=-.23;base.receiveShadow=true;this.scene.add(base);
   const trim=new THREE.Mesh(new THREE.BoxGeometry(8.72,.045,8.72),this.materials.gold);trim.position.y=-.35;this.scene.add(trim);
-  const lower=new THREE.Mesh(new THREE.BoxGeometry(8.85,.14,8.85),new THREE.MeshStandardMaterial({color:0x10262b,roughness:.6}));lower.position.y=-.45;this.scene.add(lower);
+  const lower=new THREE.Mesh(new THREE.BoxGeometry(8.85,.14,8.85),new THREE.MeshStandardMaterial({color:0x30232d,roughness:.6}));lower.position.y=-.45;this.scene.add(lower);
   this.squares=[];
-  const light=new THREE.MeshStandardMaterial({color:0xd8cfb5,roughness:.73});const dark=new THREE.MeshStandardMaterial({color:0x3a6870,roughness:.63});
+  // Painted mineral grain keeps the board tactile without competing with its squares.
+  const stoneCanvas=document.createElement('canvas');stoneCanvas.width=256;stoneCanvas.height=256;
+  const stoneContext=stoneCanvas.getContext('2d'),pixels=stoneContext.createImageData(256,256);
+  for(let y=0;y<256;y++)for(let x=0;x<256;x++){
+   const wave=Math.sin(x*.045+Math.sin(y*.032)*2.3),vein=Math.pow(Math.abs(wave),22);
+   const grain=(Math.sin(x*127.1+y*311.7)*43758.5453)%1;
+   const shade=239-vein*7+grain*3,i=(y*256+x)*4;
+   pixels.data[i]=shade;pixels.data[i+1]=shade;pixels.data[i+2]=shade;pixels.data[i+3]=255;
+  }
+  stoneContext.putImageData(pixels,0,0);const stoneMap=new THREE.CanvasTexture(stoneCanvas);stoneMap.colorSpace=THREE.SRGBColorSpace;
+  for(const x of [-4.22,4.22])for(const z of [-4.22,4.22]){
+   const finial=new THREE.Mesh(new THREE.OctahedronGeometry(.13),this.materials.gold);finial.position.set(x,.02,z);this.scene.add(finial);
+  }
+  for(const radius of [5.6,5.72]){const ring=new THREE.Mesh(new THREE.TorusGeometry(radius,.008,4,128),new THREE.MeshStandardMaterial({color:0xc7a465,metalness:.6,roughness:.6,transparent:true,opacity:.35}));ring.rotation.x=-Math.PI/2;ring.position.y=-.48;this.scene.add(ring);}
+
+  const light=new THREE.MeshStandardMaterial({color:0xd3bb94,roughness:.65,map:stoneMap});const dark=new THREE.MeshStandardMaterial({color:0x625468,roughness:.55,map:stoneMap});
   for(let i=0;i<64;i++){
    const square=new THREE.Mesh(new THREE.BoxGeometry(.996,.075,.996),((i%8+(i>>3))%2===0)?dark:light);square.position.set(...world(i));square.position.y=-.035;square.receiveShadow=true;square.userData.square=i;this.scene.add(square);this.squares.push(square);
   }

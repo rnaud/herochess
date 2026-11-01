@@ -1,33 +1,20 @@
-# Herochess: The Living Grimoire
+# Herochess — The Shattered Court
 
-Art direction: original painterly high fantasy with playful magical storytelling. The tactile, dramatic appeal of illustrated fantasy trading cards, without copying another game's characters, symbols or frames.
+## Current direction
 
-## Shared visual language
+A varied fantasy anthology, united by painted illustration quality rather than repeated subjects and colors. All 18 card paintings were generated through the signed-in Midjourney website, without the previous teal chessboard style reference.
 
-- Midnight teal and blue-black environments; antique brass, warm ivory and parchment materials.
-- Brush-painted detail, believable sculpted objects, theatrical rim lighting, luminous magic and atmospheric depth.
-- A distinct visual gag or magical event on every card. Chess pieces are characters, but retain recognizable silhouettes.
-- Effects distinguish cards: honey gold for movement, violet for teleportation, turquoise for protection and glacial blue for freezing.
-- Art has no baked-in text or borders. Names, rules, selection and focus states remain accessible HTML.
-- The board uses the same ivory, teal and brass materials. Decoration must never obscure squares or legal-move highlights.
+Each spell has its own world: green meadow cavalry, magenta stars, violet void magic, ochre mountain giants, pearl crystal dragons, golden cloud cities, crimson royal foxes, mischievous portal thieves, misty forest guardians, turquoise desert serpents, fiery armies, storm warriors, a dancing king, tavern companions, autumn homecoming, glass protection, glacial spirits and haunted archery.
 
-## Reference targets
+## Whole-site design
 
-1. Game: an enchanted chess table in an old observatory, surrounded by three illuminated spell cards; restrained brass interface framing, clear board and legible parchment rules.
-2. Cards: a coherent family of painted vignettes with ornate brass edges, strong titles, large art windows and readable rules. Every painting has one unmistakable central action.
+- `site-reference-v2.png`: the Midjourney game-screen reference for the redesign.
+- `../public/art/realms/battlefield.jpg`: painted citadel environment with amber sunset and violet storm light.
+- `../public/art/realms/*.jpg`: the 18 new paintings, with card IDs as filenames.
+- `prompts-v2.json`: exact shared medium specification, all individual scene prompts, environment and site prompts, and selected Midjourney job links.
 
-## Asset production
+The implementation replaces the old stylesheet and layout. It puts the opponent's inspectable spells above the board and the player's three-card hand below it, with a compact status and journal column. The Three.js board has subtle procedural stone grain, ivory and obsidian pieces, brass corner details and engraved rings. Controls, dialogs, typography and card frames share the new fantasy visual language. Card rules remain accessible HTML, with keyboard focus and reduced-motion support.
 
-The scene descriptions in `prompts.json` share one style specification. Produce one distinct landscape painting per card. Reuse a chosen painting as a style reference when generating subsequent artwork. Keep references and final assets separate. Record the actual generator used; do not label non-Midjourney work as Midjourney.
+## Superseded references
 
-## Selected references and delivery
-
-Generated through the signed-in Midjourney website. The board reference was reused as a style reference for the card concepts and all 18 illustrations. No built-in image generator or fallback API was used.
-
-- `board-reference.png`: selected board / environment concept.
-- `card-reference.png`: selected frame and illustration concept.
-- `midjourney-reference.png`: screenshot of the generated card concept on Midjourney.
-- `../public/art/*.jpg`: 18 optimized game paintings, one per card ID. Full-resolution originals were downloaded to the user's Downloads folder.
-- `prompts.json`: exact shared style, individual scene prompts and selected Midjourney job links.
-
-The interface implements the reference using HTML brass frames, parchment rule panels and responsive art windows. Artwork is decorative and card names/rules remain accessible text; game mechanics are unchanged.
+`board-reference.png`, `card-reference.png`, `midjourney-reference.png` and `prompts.json` document the first teal-and-gold direction. These are retained as design history and are no longer used by the game. The user requested stronger variation and a full-site redesign after reviewing that version.

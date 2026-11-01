@@ -95,6 +95,8 @@ Physical card-chess games already exist. Steve Jackson Games’ **Knightmare Che
 
 The permanent-hero editions remain recoverable in Git history. This edition has no backend, Ruby, or TypeScript.
 
-### Artwork
+### Artwork and interface
 
-Every card has an original Midjourney-generated illustration. The Living Grimoire art direction uses ivory, midnight teal and antique brass across the cards, interface and Three.js board. See [art direction and reference images](art-direction/README.md) and [prompts / provenance](art-direction/prompts.json). Optimized local artwork lives in `public/art/`; no Midjourney connection is needed to play.
+The Shattered Court uses 18 distinct Midjourney paintings: different characters, environments, palettes and moods connected by a hand-painted fantasy illustration style. Each card has its own frame accent. The complete interface uses an illustrated citadel backdrop, a textured stone board, brass ornament, opponent spell disclosures, and a three-card hand beneath the battlefield.
+
+See [art direction](art-direction/README.md), [full-screen reference](art-direction/site-reference-v2.png) and [prompts / provenance](art-direction/prompts-v2.json). Optimized local images live in `public/art/realms/`; no Midjourney connection is needed to play. The earlier monochromatic concept remains documented as a superseded reference.
