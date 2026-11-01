@@ -4,6 +4,8 @@ import {ChessBoard} from './board.js';
 import {GameEffects} from './effects.js';
 import {GameSound} from './sound.js';
 import {actionTiming} from './motion.js';
+import {opponentPreview} from './preview.js';
+let cpuSlot=null,cpuPiece=null;
 let impactTimer=null,flatCleanup=null,boardPresentation=null,boardDirty=false;
 const effects=new GameEffects(),sound=new GameSound();
 for(const event of ['pointerdown','keydown'])document.addEventListener(event,()=>sound.unlock(),{capture:true});
@@ -29,7 +31,7 @@ function save(){try{localStorage.setItem(SAVE_KEY,JSON.stringify({version:3,stat
 function stopCPU(){requestId++;worker?.terminate();worker=null;thinking=false;}
 function motionControls(){for(const id of ['flip-button','view-2d','difficulty'])$(id).disabled=animating;$('view-3d').disabled=animating||!board;}
 function cancelPresentation(){transitionId++;clearTimeout(impactTimer);dealAnimations.forEach(a=>a.cancel());sound.stop();effects.cancel();board?.cancelAnimation();flatAnimations.forEach(a=>a.cancel());flatAnimations=[];flatCleanup?.();flatCleanup=null;animating=false;motionControls();}
-function resetSelection(){pendingFreeze=null;inspectedSquare=null;$('piece-status').hidden=true;selected=null;slot=null;moves=[];usePower=true;}
+function resetSelection(){cpuSlot=null;cpuPiece=null;pendingFreeze=null;inspectedSquare=null;$('piece-status').hidden=true;selected=null;slot=null;moves=[];usePower=true;}
 function choice(){return state.mode==='cards'?{slot:slot??0,usePower:slot!==null&&usePower}:null;}
 function available(from=null){const actions=legalMoves(state,from,choice());return pendingFreeze===null?actions:actions.filter(m=>m.freezeTarget===pendingFreeze);}
 function startCPU(){
@@ -87,10 +89,11 @@ function renderPieceStatus(){
  $('piece-status-details').innerHTML=descriptions.join('')+`<p class="status-expiry">Expires after ${state.turn==='w'?'White':'Black'} completes this turn, even if they use a card.</p>`;
 }
 $('close-piece-status').onclick=()=>{inspectedSquare=null;renderPieceStatus();};
-document.addEventListener('keydown',event=>{if(event.key==='Escape'){inspectedSquare=null;renderPieceStatus();}});
+document.addEventListener('keydown',event=>{if(event.key==='Escape'){inspectedSquare=null;if(cpuSlot!==null){cpuSlot=null;cpuPiece=null;render();}else renderPieceStatus();}});
 function selectSquare(square){
  if(animating)return;
  inspectedSquare=square;renderPieceStatus();
+ if(cpuSlot!==null){if(state.board[square]?.color===opposite(human))cpuPiece=cpuPiece===square?null:square;render();return;}
  if(thinking||state.turn!==human||outcome(state).over)return;
  const card=state.mode==='cards'&&slot!==null&&usePower?CARDS[state.hands[human][slot]]:null;
  if(card?.effect==='freeze'&&pendingFreeze===null){
@@ -104,7 +107,7 @@ function selectSquare(square){
 }
 function selectCard(index){
  if(animating||thinking||state.turn!==human||outcome(state).over)return;
- slot=slot===index?null:index;usePower=true;pendingFreeze=null;sound.play('select');
+ cpuSlot=null;cpuPiece=null;slot=slot===index?null:index;usePower=true;pendingFreeze=null;sound.play('select');
  const card=slot===null?null:CARDS[state.hands[human][slot]];
  moves=selected===null||card?.effect==='freeze'?[]:card?.effect?available():available(selected);
  render();
@@ -137,7 +140,7 @@ function renderHand(){
  $('hand-panel').hidden=state.mode!=='cards';$('cpu-hand-panel').hidden=state.mode!=='cards';
  $('deck-count').textContent=`${state.deck.length} in deck · ${state.discard.length} discarded`;$('hand').replaceChildren();$('cpu-hand').replaceChildren();
  state.hands[human].forEach((id,index)=>{const c=CARDS[id],button=document.createElement('button');button.className=`spell-card${slot===index?' chosen':''}`;button.dataset.slot=index;button.dataset.action='power';button.dataset.card=id;button.dataset.family=c.family;button.dataset.tier=c.tier;button.setAttribute('aria-pressed',String(slot===index));button.setAttribute('aria-label',`${c.name}. ${FAMILIES[c.family].name}. ${POWER_TIERS[c.tier].name}, power tier ${c.tier} of 3. ${c.text}`);button.innerHTML=`<span class="card-top">${familyBadge(c)}<span>0${index+1}</span></span><img class="card-art" src="${cardArt(id)}" alt="" width="900" height="600"><span class="card-sigil" aria-hidden="true">${c.icon}</span><strong>${c.name}</strong><span class="card-text">${c.summary}</span><span class="card-rating">${tierBadge(c)}<span class="card-mechanic">${c.kind}</span></span><span class="card-bottom">ONE ACTION · TEMPORARY</span>`;button.disabled=thinking||animating||state.turn!==human||outcome(state).over;button.onclick=()=>selectCard(index);$('hand').append(button);});
- state.hands[opposite(human)].forEach(id=>{const c=CARDS[id],item=document.createElement('details');item.className='cpu-card';item.setAttribute('name','opponent-cards');item.addEventListener('toggle',()=>{if(item.open)for(const other of $('cpu-hand').children)if(other!==item)other.open=false;});item.dataset.card=id;item.dataset.tier=c.tier;item.innerHTML=`<summary><img class="cpu-art" src="${cardArt(id)}" alt="" width="90" height="90" loading="lazy"><span class="cpu-card-title"><strong>${c.name}</strong><span class="cpu-rating">${FAMILIES[c.family].name} · ${POWER_TIERS[c.tier].stars}</span></span></summary><p>${familyBadge(c)} ${tierBadge(c)}<br>${c.text}</p>`;$('cpu-hand').append(item);});
+ state.hands[opposite(human)].forEach((id,index)=>{const c=CARDS[id],item=document.createElement('details');item.className='cpu-card';item.setAttribute('name','opponent-cards');item.open=cpuSlot===index;item.dataset.card=id;item.dataset.tier=c.tier;item.innerHTML=`<summary aria-controls="cpu-preview"><img class="cpu-art" src="${cardArt(id)}" alt="" width="90" height="90" loading="lazy"><span class="cpu-card-title"><strong>${c.name}</strong><span class="cpu-rating">${FAMILIES[c.family].name} · ${POWER_TIERS[c.tier].stars}</span></span></summary>`;item.querySelector('summary').onclick=event=>{event.preventDefault();if(animating)return;cpuSlot=cpuSlot===index?null:index;sound.play('select');render();$('cpu-hand').children[index].querySelector('summary').focus({preventScroll:true});};$('cpu-hand').append(item);});
  $('normal-mode').hidden=slot===null;
  for(const id of ['normal-mode']){$(id).disabled=animating||thinking||state.turn!==human||slot===null||outcome(state).over;$(id).setAttribute('aria-pressed',String(!usePower));}
  let instruction='Move a piece normally, or click a card to activate its power. Normal moves keep all your cards.';
@@ -145,6 +148,22 @@ function renderHand(){
  $('selected-card-title').closest('.spell-workspace').classList.toggle('has-selection',!!active);
  $('card-instruction').textContent=thinking?'The Automaton is choosing from its visible hand…':instruction;
 }
+function renderOpponentPreview(){
+ const panel=$('cpu-preview');panel.hidden=cpuSlot===null;document.body.dataset.cpuPreview=String(cpuSlot!==null);
+ if(cpuSlot===null)return null;
+ const card=CARDS[state.hands[opposite(human)][cpuSlot]],actions=opponentPreview(state,human,cpuSlot,cpuPiece),destinations=[...new Set(actions.map(m=>m.to))];
+ $('cpu-preview-title').textContent=`CPU preview · ${card.name}`;
+ $('cpu-preview-rules').textContent=card.text;
+ let message='Select a CPU piece to preview this power. Purple squares are previews only.';
+ if(cpuPiece!==null){const piece=PIECES[state.board[cpuPiece].type].name;
+  message=!actions.length?`${piece} on ${squareName(cpuPiece)} has no legal action with this card in this position.`:card.effect==='shield'?`The CPU can shield this ${piece.toLowerCase()} on ${squareName(cpuPiece)}. This card does not move it.`:`${piece} on ${squareName(cpuPiece)} · ${destinations.length} ${card.swap?'swap target':'destination'}${destinations.length===1?'':'s'}. Purple squares show where it can ${card.swap?'swap':'go'}.`;
+  if(card.effect==='freeze'&&actions.length)message+=` Winter Seal keeps its normal movement and can freeze your non-king pieces on ${[...new Set(actions.map(m=>squareName(m.freezeTarget)))].join(', ')}.`;
+ }
+ $('cpu-preview-instruction').textContent=message;
+ $('cpu-preview-note').textContent=state.turn===human?'If the CPU played next on this board; current-turn effects expire first. Your move may change these options.':'Current legal options. The CPU may choose a different action.';
+ return cpuPiece===null?[]:actions.map(m=>({...m,preview:true}));
+}
+$('close-cpu-preview').onclick=()=>{cpuSlot=null;cpuPiece=null;render();};
 function positionCheckMarker(){
  const marker=$('check-marker');if(marker.hidden)return;
  const square=state.board.findIndex(p=>p?.type==='k'&&p.color===state.turn),shell=$('board-view').closest('.board-shell').getBoundingClientRect();
@@ -179,13 +198,15 @@ function render(){
  if(!inCheck(state)&&selected!==null&&!(slot!==null&&CARDS[state.hands[human][slot]].effect)){title=PIECES[state.board[selected].type].name+' · '+squareName(selected);detail=`${moves.length} legal destination${moves.length===1?'':'s'} for this choice. ${state.mode==='cards'&&slot!==null&&usePower?'The piece returns to its normal movement after this action.':''}`;}
  $('status-title').textContent=title;$('status-detail').textContent=detail;renderHand();
  const effects=[];if(state.shield)effects.push(`${squareName(state.shield.square)} is shielded: cannot be captured this turn.`);if(state.freeze)effects.push(`${squareName(state.freeze.square)} is frozen: cannot move this turn, but still attacks.`);$('effects').textContent=effects.join(' ')||'No lasting effects.';
+ const previewMarks=renderOpponentPreview();
  let marks=moves;if(slot!==null&&CARDS[state.hands[human][slot]].effect==='freeze'&&pendingFreeze===null)marks=[...new Set(available().map(m=>m.freezeTarget))].map(to=>({to,usePower:true}));else if(selected===null&&state.mode==='cards'&&slot!==null&&usePower&&CARDS[state.hands[human][slot]].effect==='shield')marks=available();
- boardPresentation=[pendingFreeze===null?state:{...state,freeze:{square:pendingFreeze,color:opposite(human)}},selected,marks];boardDirty=true;renderFlat(marks);renderJournal();renderCaptures();renderCPURecap();setView(view);
+ if(previewMarks!==null)marks=previewMarks;
+ boardPresentation=[cpuSlot!==null||pendingFreeze===null?state:{...state,freeze:{square:pendingFreeze,color:opposite(human)}},cpuSlot!==null?cpuPiece:selected,marks,cpuSlot!==null];boardDirty=true;renderFlat(marks);renderJournal();renderCaptures();renderCPURecap();setView(view);
 }
 function renderFlat(marks){
  const checked=inCheck(state),focused=document.activeElement?.dataset.square,flat=$('flat-board');flat.replaceChildren();
  for(let row=0;row<8;row++)for(let col=0;col<8;col++){const square=flipped?row*8+7-col:(7-row)*8+col,p=state.board[square],button=document.createElement('button'),legal=marks.some(m=>m.to===square);
- button.className=`flat-square${checked&&p?.type==='k'&&p.color===state.turn?' king-in-check':''}${(square%8+(square>>3))%2===0?' dark':''}${p?.color==='b'?' black-piece':''}${state.shield?.square===square?' shielded':''}${state.freeze?.square===square||pendingFreeze===square?' frozen':''}${selected===square?' selected':''}${legal?' legal':''}${legal&&slot!==null&&usePower&&state.mode==='cards'?' power-move':''}${state.lastMove&&(state.lastMove.from===square||state.lastMove.to===square)?' last':''}`;button.dataset.square=square;button.setAttribute('aria-label',`${squareName(square)}${p?`, ${p.color==='w'?'White':'Black'} ${PIECES[p.type].name}`:', empty'}${checked&&p?.type==='k'&&p.color===state.turn?', in check':''}${legal?', legal destination':''}${state.shield?.square===square?', shielded':''}${state.freeze?.square===square?', frozen':''}${pendingFreeze===square?', selected freeze target':''}`);button.setAttribute('aria-pressed',String(selected===square));button.innerHTML=`<span class="flat-piece">${p?glyph[p.type]:''}</span><span class="square-label">${squareName(square)}</span>`;button.onclick=()=>selectSquare(square);button.onkeydown=e=>{const delta={ArrowRight:1,ArrowLeft:-1,ArrowDown:8,ArrowUp:-8}[e.key];if(delta!==undefined){e.preventDefault();const buttons=[...flat.children];buttons[buttons.indexOf(button)+delta]?.focus();}};flat.append(button);}
+ button.className=`flat-square${checked&&p?.type==='k'&&p.color===state.turn?' king-in-check':''}${(square%8+(square>>3))%2===0?' dark':''}${p?.color==='b'?' black-piece':''}${state.shield?.square===square?' shielded':''}${state.freeze?.square===square||pendingFreeze===square?' frozen':''}${cpuSlot!==null?(cpuPiece===square?' preview-origin':''):(selected===square?' selected':'')}${legal?(cpuSlot!==null?' preview-destination':' legal'):''}${cpuSlot===null&&legal&&slot!==null&&usePower&&state.mode==='cards'?' power-move':''}${state.lastMove&&(state.lastMove.from===square||state.lastMove.to===square)?' last':''}`;button.dataset.square=square;button.setAttribute('aria-label',`${squareName(square)}${p?`, ${p.color==='w'?'White':'Black'} ${PIECES[p.type].name}`:', empty'}${checked&&p?.type==='k'&&p.color===state.turn?', in check':''}${legal?(cpuSlot!==null?', CPU preview destination':', legal destination'):''}${state.shield?.square===square?', shielded':''}${state.freeze?.square===square?', frozen':''}${pendingFreeze===square?', selected freeze target':''}`);button.setAttribute('aria-pressed',String(cpuSlot!==null?cpuPiece===square:selected===square));button.innerHTML=`<span class="flat-piece">${p?glyph[p.type]:''}</span><span class="square-label">${squareName(square)}</span>`;button.onclick=()=>selectSquare(square);button.onkeydown=e=>{const delta={ArrowRight:1,ArrowLeft:-1,ArrowDown:8,ArrowUp:-8}[e.key];if(delta!==undefined){e.preventDefault();const buttons=[...flat.children];buttons[buttons.indexOf(button)+delta]?.focus();}};flat.append(button);}
  if(focused!==undefined&&view==='2d')flat.querySelector(`[data-square="${focused}"]`)?.focus();
 }
 function renderJournal(){const container=$('journal');container.replaceChildren();$('move-count').textContent=String(journal.length).padStart(2,'0');if(!journal.length){container.innerHTML='<p class="empty-journal">The first card is yours to play.</p>';return;}journal.forEach((text,i)=>{const row=document.createElement('div');row.className='turn-entry';row.textContent=`${Math.floor(i/2)+1}${i%2?' …':' .'} ${text}`;container.append(row);});container.scrollTop=container.scrollHeight;}
