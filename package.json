@@ -1,17 +1,20 @@
 {
-  "name": "hero-chess",
+  "name": "herochess",
+  "version": "2.0.0",
   "private": true,
-  "dependencies": {
-    "@hotwired/turbo-rails": "^7.0.0-beta.5",
-    "@rails/actioncable": "^6.0.0",
-    "@rails/ujs": "^6.0.0",
-    "@rails/webpacker": "5.2.1",
-    "form-request-submit-polyfill": "^2.0.0",
-    "interactjs": "^1.10.11",
-    "stimulus": "^2.0.0"
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "test": "node --test tests/*.test.js",
+    "test:e2e": "playwright test"
   },
-  "version": "0.1.0",
+  "dependencies": {
+    "three": "^0.180.0"
+  },
   "devDependencies": {
-    "webpack-dev-server": "^3.11.2"
+    "vite": "^7.1.7",
+    "@playwright/test": "^1.56.1"
   }
 }
