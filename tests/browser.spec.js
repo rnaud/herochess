@@ -95,3 +95,20 @@ test('choosing another card after discard mode activates its power immediately',
  await expect(page.locator('#card-instruction')).toContainText('Click a highlighted target');
  await page.locator('[data-square="27"]').click();await expect(page.locator('#effects')).toContainText('shielded');
 });
+
+test('card burn and board frost animate together and undo cleans up presentation',async({page})=>{
+ await fixture(page,'frost',[[27,'r','b'],[9,'q','w']]);await page.locator('#view-2d').click();await page.locator('[data-slot="0"]').click();
+ await page.locator('[data-square="27"]').click();await expect(page.locator('.game-fx .card-burn')).toBeVisible();await expect(page.locator('.fx-burn-edge')).toHaveCount(1);await expect(page.locator('.fx-frost')).toHaveCount(1);await expect(page.locator('.fx-crystal')).toHaveCount(12);
+ await page.locator('.game-fx').evaluate(layer=>layer.getAnimations({subtree:true}).forEach(a=>{a.pause();a.currentTime=300;}));
+ await page.screenshot({path:'/tmp/herochess-burn-and-frost.png',fullPage:true});
+ await page.locator('#undo-button').click();await expect(page.locator('.game-fx')).toHaveCount(0);await expect(page.locator('#move-count')).toHaveText('00');
+ await expect(page.locator('[data-slot="0"]')).toBeVisible();await expect(page.locator('[data-square="27"]')).toHaveAttribute('aria-label',/Black Rook/);
+});
+test('3D spell capture has board feedback and reduced motion skips all transient effects',async({page})=>{
+ await fixture(page,'comet',[[18,'n','w'],[44,'q','b']]);await page.locator('[data-slot="0"]').click();await page.locator('#view-2d').click();await page.locator('[data-square="18"]').click();await page.locator('#view-3d').click();
+ await page.locator('[data-square="44"]').evaluate(b=>b.click());await expect(page.locator('.fx-impact')).toHaveCount(1);await expect(page.locator('.fx-trail')).toHaveCount(1);await expect(page.locator('#board-view')).toHaveAttribute('data-animating','capture');
+ const impact=await page.locator('.fx-impact').boundingBox(),board=await page.locator('#board-view').boundingBox();expect(impact.x+impact.width/2).toBeGreaterThan(board.x);expect(impact.x+impact.width/2).toBeLessThan(board.x+board.width);
+ await page.locator('#undo-button').click();await expect(page.locator('.game-fx')).toHaveCount(0);
+ await page.emulateMedia({reducedMotion:'reduce'});await page.locator('#view-2d').click();await page.locator('[data-slot="0"]').click();await page.locator('[data-square="18"]').click();await page.locator('[data-square="44"]').click();
+ await expect(page.locator('#move-count')).toHaveText('02',{timeout:15000});await expect(page.locator('.game-fx')).toHaveCount(0);await expect(page.locator('body > .flat-piece')).toHaveCount(0);
+});

@@ -1,6 +1,8 @@
 import './style.css';
 import {CARDS,CARD_IDS,FAMILIES,POWER_TIERS} from './cards.js';
 import {ChessBoard} from './board.js';
+import {GameEffects} from './effects.js';
+const effects=new GameEffects();
 import {PIECES,initialState,legalMoves,applyMove,outcome,moveLabel,squareName,opposite,inCheck} from './engine.js';
 const $=id=>document.getElementById(id),SAVE_KEY='herochess-cards-v2';
 const cardArt=id=>`${import.meta.env.BASE_URL}art/realms/${id}.jpg`;
@@ -17,7 +19,7 @@ try{board=new ChessBoard($('board-view'),selectSquare);board.flip(flipped);}catc
 function save(){try{localStorage.setItem(SAVE_KEY,JSON.stringify({version:2,state,human,snapshots,journal,level:$('difficulty').value}));}catch{}}
 function stopCPU(){requestId++;worker?.terminate();worker=null;thinking=false;}
 function motionControls(){for(const id of ['flip-button','view-2d','difficulty'])$(id).disabled=animating;$('view-3d').disabled=animating||!board;}
-function cancelPresentation(){transitionId++;board?.cancelAnimation();flatAnimations.forEach(a=>a.cancel());flatAnimations=[];animating=false;motionControls();}
+function cancelPresentation(){transitionId++;effects.cancel();board?.cancelAnimation();flatAnimations.forEach(a=>a.cancel());flatAnimations=[];animating=false;motionControls();}
 function resetSelection(){selected=null;slot=null;moves=[];usePower=true;}
 function choice(){return state.mode==='cards'?{slot:slot??0,usePower:slot!==null&&usePower}:null;}
 function available(from=null){return legalMoves(state,from,choice());}
@@ -57,7 +59,9 @@ async function animateFlat(state,move){
 }
 async function commit(move){
  const before=state,text=moveLabel(state,move),id=++transitionId;snapshots.push(state);state=applyMove(state,move);const end=outcome(state);journal.push(text+(end.reason==='Checkmate'?' #':inCheck(state)?' +':''));resetSelection();save();animating=true;motionControls();$('undo-button').disabled=false;$('thinking-overlay').hidden=true;
- try{await(view==='3d'&&board?board.animateMove(before,move):animateFlat(before,move));}finally{if(id===transitionId){animating=false;motionControls();render();if(!end.over&&state.turn!==human)startCPU();}}
+ const source=before.turn===human?$('hand').children[move.slot]:$('cpu-hand').children[move.slot];
+ const point=square=>{if(view==='3d'&&board)return board.screenPoint(square);const rect=$('flat-board').querySelector(`[data-square="${square}"]`)?.getBoundingClientRect();return rect?{x:rect.left+rect.width/2,y:rect.top+rect.height/2}:null;};
+ try{await Promise.all([effects.play(before,move,source,point),view==='3d'&&board?board.animateMove(before,move):animateFlat(before,move)]);}finally{if(id===transitionId){animating=false;motionControls();render();if(!end.over&&state.turn!==human)startCPU();}}
 }
 function selectSquare(square){
  if(animating||thinking||state.turn!==human||outcome(state).over)return;

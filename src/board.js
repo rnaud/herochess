@@ -99,15 +99,19 @@ export class ChessBoard {
   }
   return group;
  }
+ screenPoint(square){
+  const p=new THREE.Vector3(...world(square));p.y=.45;p.project(this.camera);
+  const rect=this.renderer.domElement.getBoundingClientRect();return {x:rect.left+(p.x+1)*rect.width/2,y:rect.top+(1-p.y)*rect.height/2};
+ }
  cancelAnimation(){this.finishAnimation?.();}
- animateShield(square){
+ animateShield(square,frozen=false){
   if(matchMedia('(prefers-reduced-motion: reduce)').matches)return Promise.resolve();
-  const ring=new THREE.Mesh(new THREE.TorusGeometry(.5,.045,12,48),new THREE.MeshBasicMaterial({color:0x82d3ff,transparent:true}));ring.rotation.x=-Math.PI/2;ring.position.set(...world(square));this.scene.add(ring);
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(.5,.045,12,48),new THREE.MeshBasicMaterial({color:frozen?0xb5eeff:0x82d3ff,transparent:true}));ring.rotation.x=-Math.PI/2;ring.position.set(...world(square));this.scene.add(ring);
   return new Promise(resolve=>{let frame;const start=performance.now();const finish=()=>{cancelAnimationFrame(frame);this.scene.remove(ring);ring.geometry.dispose();ring.material.dispose();this.finishAnimation=null;resolve();};this.finishAnimation=finish;const tick=now=>{const t=Math.min((now-start)/550,1);ring.position.y=.1+t*1.4;ring.scale.setScalar(1+t*.5);ring.material.opacity=1-t;this.render();if(t<1)frame=requestAnimationFrame(tick);else finish();};frame=requestAnimationFrame(tick);});
  }
  animateMove(state,move){
   this.cancelAnimation();
-  if(['shield','freeze'].includes(move.special))return this.animateShield(move.from);
+  if(['shield','freeze'].includes(move.special))return this.animateShield(move.from,move.special==='freeze');
   if(matchMedia('(prefers-reduced-motion: reduce)').matches)return Promise.resolve();
   const moving=this.pieceMeshes.find(mesh=>mesh.userData.square===move.from);
   if(!moving)return Promise.resolve();
@@ -148,7 +152,7 @@ export class ChessBoard {
  update(state,selected,moves){
   for(const m of this.pieceMeshes){this.scene.remove(m);m.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.userData.disposableMaterial)o.material.dispose();});}this.pieceMeshes=[];
   state.board.forEach((p,i)=>{if(!p)return;const m=this.piece(p.type,p.color);m.position.set(...world(i));m.userData.square=i;
-   if(state.shield?.square===i||state.freeze?.square===i){const shell=new THREE.Mesh(new THREE.SphereGeometry(.62,24,16),new THREE.MeshBasicMaterial({color:state.freeze?.square===i?0xb9a0ff:0x8ad8ff,transparent:true,opacity:.25,depthWrite:false}));shell.position.y=.6;shell.scale.y=1.25;shell.userData.disposableMaterial=true;m.add(shell);}
+   if(state.shield?.square===i||state.freeze?.square===i){const shell=new THREE.Mesh(state.freeze?.square===i?new THREE.IcosahedronGeometry(.7,0):new THREE.SphereGeometry(.62,24,16),new THREE.MeshBasicMaterial({color:state.freeze?.square===i?0xb5eeff:0x8ad8ff,transparent:true,opacity:.25,depthWrite:false}));shell.position.y=.6;shell.scale.y=1.25;shell.userData.disposableMaterial=true;m.add(shell);}
    this.scene.add(m);this.pieceMeshes.push(m);});
   for(const m of [...this.marks.children]){m.geometry.dispose();m.material.dispose();this.marks.remove(m);}
   const tile=(i,color,opacity)=>{const m=new THREE.Mesh(new THREE.PlaneGeometry(.96,.96),new THREE.MeshBasicMaterial({color,transparent:true,opacity,depthWrite:false}));m.rotation.x=-Math.PI/2;m.position.set(...world(i));m.position.y=.01;this.marks.add(m);};

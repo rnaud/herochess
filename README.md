@@ -118,3 +118,7 @@ The new tabletop and Automaton portrait were generated with the built-in tool; t
 Balance rationale and card-by-card roles: [balance review](BALANCE.md).
 
 Normal moves require no card selection and automatically discard/replace the leftmost card. Clicking a card activates its power directly; click again to cancel. To choose a different discard for a normal move, select that card and use “Discard this card instead.”
+
+### Action feedback
+
+Played powers burn their card with a glowing edge and embers; ordinary discards fade to ash. Board feedback follows the action: family-colored trails and departure rings, capture shockwaves, a piercing beam, shield pulses, and frost crystals. Frozen 3D pieces use a faceted ice shell. Effects work for both players and in both board views. Reduced-motion preference skips transient effects, and undo/new match cancels and cleans them up immediately.
