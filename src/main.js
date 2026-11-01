@@ -1,4 +1,5 @@
 import './style.css';
+import {HERO_SUMMARIES,isHeroPowerMove} from './hero-ui.js';
 import {ChessBoard} from './board.js';
 import {PIECES,initialState,legalMoves,applyMove,outcome,moveLabel,squareName,opposite,inCheck} from './engine.js';
 const $=id=>document.getElementById(id);
@@ -54,6 +55,8 @@ function selectSquare(square){
 }
 function render(){
  const end=outcome(state),myTurn=state.turn===human;
+ $('hero-legend').hidden=state.mode!=='heroes';
+ $('move-legend').hidden=selected===null||!PIECES[state.board[selected]?.type]?.base;
  $('turn-number').textContent=`ROUND ${String(state.fullmove).padStart(2,'0')}`;
  $('mode-label').textContent=state.mode==='heroes'?'HERO RULES':'CLASSIC RULES';$('status-mode').textContent=state.mode==='heroes'?'HERO CHESS':'CLASSIC CHESS';
  $('turn-chip').textContent=end.over?'GAME OVER':myTurn?'YOUR TURN':'CPU TURN';
@@ -72,13 +75,13 @@ function render(){
 }
 function renderHeroes(){
  const container=$('hero-cards');container.replaceChildren();
- document.querySelector('.arsenal .section-heading h3').textContent=state.mode==='heroes'?'Your unfair advantages':'The original rules';
+ document.querySelector('.arsenal .section-heading h3').textContent=state.mode==='heroes'?'Your special pieces':'The original rules';
  document.querySelector('.arsenal .section-heading>span').textContent=state.mode==='heroes'?'03':'06';
- document.querySelector('.section-description').textContent=state.mode==='heroes'?'Three heroes. A whole new way to play.':'Six timeless pieces. Endless possibilities.';
+ document.querySelector('.section-description').textContent=state.mode==='heroes'?`${human==='w'?'Blue':'Orange'} pieces are your heroes. Select a card to find one.`:'Six timeless pieces. Endless possibilities.';
  document.querySelector('.power-note').hidden=state.mode!=='heroes';
  if(state.mode!=='heroes'){container.innerHTML='<p class="classic-note">The classic army, exactly as you know it. Start a new match in Hero mode to discover three extraordinary pieces.</p>';return;}
  for(const type of ['h','o','s']){
-  const p=PIECES[type],button=document.createElement('button');button.className=`hero-card${heroFocus===type?' active':''}`;button.setAttribute('aria-label',`${p.name}: ${p.title}. Show power and select piece.`);button.innerHTML=`<span class="hero-icon">${glyph[type]}</span><span><strong>${p.name}</strong><small>${p.title}</small></span><span class="hero-arrow">↗</span>`;
+  const p=PIECES[type],summary=HERO_SUMMARIES[type],square=state.board.findIndex(piece=>piece?.type===type&&piece.color===human),button=document.createElement('button');button.className=`hero-card ${human==='w'?'ivory-heroes':'obsidian-heroes'}${heroFocus===type?' active':''}${square<0?' captured-hero':''}`;button.setAttribute('aria-label',`${p.name}: ${p.title}. ${summary.normal} ${summary.power} ${square<0?'Captured':`At ${squareName(square)}`}. Show power and select piece.`);button.innerHTML=`<span class="hero-icon">${glyph[type]}<span>✦</span></span><span class="hero-copy"><span class="hero-name"><strong>${p.name}</strong><span class="hero-location">${square<0?'Captured':squareName(square)}</span></span><span class="hero-normal">${summary.normal}</span><span class="hero-power"><b>✦ Power</b> ${summary.power}</span></span>`;
   button.onclick=()=>{heroFocus=type;const square=state.board.findIndex(p=>p?.type===type&&p.color===human);if(square>=0&&!thinking&&state.turn===human&&!outcome(state).over){selected=square;moves=legalMoves(state,square);}else{selected=null;moves=[];}render();};container.append(button);
  }
 }
@@ -94,8 +97,8 @@ function renderCaptures(){
 function renderFlat(){
  const focused=document.activeElement?.dataset.square;const flat=$('flat-board');flat.replaceChildren();
  for(let row=0;row<8;row++)for(let col=0;col<8;col++){
-  const square=flipped?row*8+7-col:(7-row)*8+col,p=state.board[square],button=document.createElement('button');button.className=`flat-square${(square%8+(square>>3))%2===0?' dark':''}${p?.color==='b'?' black-piece':''}${PIECES[p?.type]?.base?' hero':''}${selected===square?' selected':''}${moves.some(m=>m.to===square)?' legal':''}${state.lastMove&&(state.lastMove.from===square||state.lastMove.to===square)?' last':''}`;button.dataset.square=square;
-  button.setAttribute('aria-label',`${squareName(square)}${p?`, ${p.color==='w'?'White':'Black'} ${PIECES[p.type].name}`:', empty'}${moves.some(m=>m.to===square)?', legal destination':''}`);button.setAttribute('aria-pressed',String(selected===square));button.innerHTML=`${p?glyph[p.type]:''}<span class="square-label">${squareName(square)}</span>`;button.onclick=()=>selectSquare(square);
+  const square=flipped?row*8+7-col:(7-row)*8+col,p=state.board[square],button=document.createElement('button');button.className=`flat-square${(square%8+(square>>3))%2===0?' dark':''}${p?.color==='b'?' black-piece':''}${PIECES[p?.type]?.base?' hero':''}${moves.some(m=>m.to===square&&isHeroPowerMove(state,m))?' power-move':''}${selected===square?' selected':''}${moves.some(m=>m.to===square)?' legal':''}${state.lastMove&&(state.lastMove.from===square||state.lastMove.to===square)?' last':''}`;button.dataset.square=square;
+  button.setAttribute('aria-label',`${squareName(square)}${p?`, ${p.color==='w'?'White':'Black'} ${PIECES[p.type].name}`:', empty'}${moves.some(m=>m.to===square)?', legal destination':''}${moves.some(m=>m.to===square&&isHeroPowerMove(state,m))?', extra hero power move':''}`);button.setAttribute('aria-pressed',String(selected===square));button.innerHTML=`${p?glyph[p.type]:''}<span class="square-label">${squareName(square)}</span>`;button.onclick=()=>selectSquare(square);
   button.onkeydown=e=>{const delta={ArrowRight:1,ArrowLeft:-1,ArrowDown:8,ArrowUp:-8}[e.key];if(delta!==undefined){e.preventDefault();const buttons=[...flat.children],next=buttons.indexOf(button)+delta;buttons[next]?.focus();}};flat.append(button);
  }
  if(focused!==undefined&&view==='2d')flat.querySelector(`[data-square="${focused}"]`)?.focus();

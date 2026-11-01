@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { PIECES } from './engine.js';
+import { isHeroPowerMove } from './hero-ui.js';
 const world = i => [i%8-3.5,0,3.5-(i>>3)];
 export class ChessBoard {
  constructor(container,onSelect){
@@ -14,7 +15,7 @@ export class ChessBoard {
   this.scene.add(new THREE.HemisphereLight(0xf6f4df,0x31473a,2.5));
   const key=new THREE.DirectionalLight(0xffecd0,4.0);key.position.set(-3,10,5);key.castShadow=true;key.shadow.mapSize.set(2048,2048);Object.assign(key.shadow.camera,{left:-7,right:7,top:7,bottom:-7,near:.5,far:25});key.shadow.normalBias=.035;key.shadow.bias=-.0004;key.shadow.radius=3;this.scene.add(key);
   const fill=new THREE.DirectionalLight(0xb5f4de,1.7);fill.position.set(5,5,-6);this.scene.add(fill);
-  this.materials={white:new THREE.MeshStandardMaterial({color:0xe4ddc6,roughness:.32,metalness:.12}),black:new THREE.MeshStandardMaterial({color:0x263b34,roughness:.3,metalness:.32}),gold:new THREE.MeshStandardMaterial({color:0xd6b876,metalness:.65,roughness:.3}),whiteHero:new THREE.MeshStandardMaterial({color:0x98c8ae,metalness:.35,roughness:.25}),blackHero:new THREE.MeshStandardMaterial({color:0x73b695,metalness:.4,roughness:.25})};
+  this.materials={white:new THREE.MeshStandardMaterial({color:0xe4ddc6,roughness:.32,metalness:.12}),black:new THREE.MeshStandardMaterial({color:0x263b34,roughness:.3,metalness:.32}),gold:new THREE.MeshStandardMaterial({color:0xd6b876,metalness:.65,roughness:.3}),whiteHero:new THREE.MeshStandardMaterial({color:0x187be0,metalness:.15,roughness:.34}),blackHero:new THREE.MeshStandardMaterial({color:0xec6718,metalness:.15,roughness:.34})};
   const base=new THREE.Mesh(new THREE.BoxGeometry(8.7,.32,8.7),new THREE.MeshStandardMaterial({color:0x1d322a,metalness:.25,roughness:.45}));base.position.y=-.23;base.receiveShadow=true;this.scene.add(base);
   const trim=new THREE.Mesh(new THREE.BoxGeometry(8.72,.045,8.72),this.materials.gold);trim.position.y=-.35;this.scene.add(trim);
   const lower=new THREE.Mesh(new THREE.BoxGeometry(8.85,.14,8.85),new THREE.MeshStandardMaterial({color:0x18281f,roughness:.6}));lower.position.y=-.45;this.scene.add(lower);
@@ -43,7 +44,7 @@ export class ChessBoard {
  pick(event){const r=this.container.getBoundingClientRect();this.pointer.set((event.clientX-r.left)/r.width*2-1,-(event.clientY-r.top)/r.height*2+1);this.raycaster.setFromCamera(this.pointer,this.camera);const hits=this.raycaster.intersectObjects([...this.pieceMeshes,...this.squares],true);for(const hit of hits){let obj=hit.object;while(obj){if(obj.userData.square!==undefined)return obj.userData.square;obj=obj.parent;}}return null;}
  mesh(geometry,material,parent,x=0,y=0,z=0){const m=new THREE.Mesh(geometry,material);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m;}
  piece(type,color){
-  const group=new THREE.Group(),mat=color==='w'?this.materials.white:this.materials.black,gold=this.materials.gold,hero=!!PIECES[type].base,kind=PIECES[type].base||type;
+  const group=new THREE.Group(),hero=!!PIECES[type].base,baseMat=color==='w'?this.materials.white:this.materials.black,mat=hero?(color==='w'?this.materials.whiteHero:this.materials.blackHero):baseMat,gold=this.materials.gold,kind=PIECES[type].base||type;
   const lathe=points=>new THREE.LatheGeometry(points.map(([r,y])=>new THREE.Vector2(r,y)),32);
   this.mesh(lathe([[0,0],[.29,0],[.33,.045],[.33,.09],[.29,.14],[.27,.16],[.27,.2],[.21,.23],[.17,.31],[.13,.48],[.16,.54],[.2,.56],[.2,.61],[0,.61]]),mat,group);
   this.mesh(new THREE.TorusGeometry(.276,.018,8,48),hero?gold:mat,group,0,.18).rotation.x=Math.PI/2;
@@ -76,6 +77,7 @@ export class ChessBoard {
    this.mesh(new THREE.BoxGeometry(.09,.34,.09),mat,group,0,1.24);this.mesh(new THREE.BoxGeometry(.27,.08,.09),mat,group,0,1.28);
   }
   if(hero){
+   this.mesh(new THREE.CylinderGeometry(.334,.334,.105,32),baseMat,group,0,.055);
    this.mesh(new THREE.TorusGeometry(.33,.022,10,48),gold,group,0,.07).rotation.x=Math.PI/2;
    this.mesh(new THREE.OctahedronGeometry(.075),color==='w'?this.materials.whiteHero:this.materials.blackHero,group,0,.33,.165);
   }
@@ -89,7 +91,7 @@ export class ChessBoard {
   if(state.lastMove){tile(state.lastMove.from,0xd7bc71,.25);tile(state.lastMove.to,0xd7bc71,.32);}
   if(selected!==null)tile(selected,0xe6bd64,.65);
   for(const to of new Set(moves.map(m=>m.to))){
-   const capture=!!state.board[to];const m=new THREE.Mesh(capture?new THREE.RingGeometry(.36,.42,48):new THREE.CircleGeometry(.105,32),new THREE.MeshBasicMaterial({color:capture?0xf0d48d:0x234c37,transparent:true,opacity:.82,depthWrite:false}));m.rotation.x=-Math.PI/2;m.position.set(...world(to));m.position.y=.025;this.marks.add(m);
+   const capture=!!state.board[to],power=moves.some(move=>move.to===to&&isHeroPowerMove(state,move));const m=new THREE.Mesh(capture?new THREE.RingGeometry(.36,.42,48):power?new THREE.RingGeometry(.12,.2,32):new THREE.CircleGeometry(.105,32),new THREE.MeshBasicMaterial({color:power?0x27a8ff:capture?0xf0d48d:0x234c37,transparent:true,opacity:.82,depthWrite:false}));m.rotation.x=-Math.PI/2;m.position.set(...world(to));m.position.y=.025;this.marks.add(m);
   }
   this.render();
  }
