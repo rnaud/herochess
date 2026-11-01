@@ -100,3 +100,11 @@ The permanent-hero editions remain recoverable in Git history. This edition has 
 The Shattered Court uses 18 distinct Midjourney paintings: different characters, environments, palettes and moods connected by a hand-painted fantasy illustration style. Each card has its own frame accent. The complete interface uses an illustrated citadel backdrop, a textured stone board, brass ornament, opponent spell disclosures, and a three-card hand beneath the battlefield.
 
 See [art direction](art-direction/README.md), [full-screen reference](art-direction/site-reference-v2.png) and [prompts / provenance](art-direction/prompts-v2.json). Optimized local images live in `public/art/realms/`; no Midjourney connection is needed to play. The earlier monochromatic concept remains documented as a superseded reference.
+
+### Card families and power tiers
+
+Each card has a primary family badge: **Offense** (attack/capture opportunities), **Defense** (protection and retreat), **Mobility** (reach and repositioning), or **Tactics** (swapping allies and disrupting enemies). The existing movement kind remains visible separately.
+
+The outer frame and labeled stars show a design rating: **silver ★ Standard**, **blue ★★ Powerful**, or **gold ★★★ Exceptional**. These indicate general potential, not a position-specific recommendation or statistical win-rate measurement. All 18 cards retain three copies each; tiers do not change draw odds or rules. Card-specific illustration colors remain intact.
+
+Families and tiers are declared in `src/cards.js` and appear in both hands and the library. The library supports combined family/tier filters, with a legend linked directly from the player's hand.
