@@ -98,9 +98,9 @@ export function legalMoves(state,from=null,choice=null){
  let candidates=[];
  if(state.mode!=='cards')candidates=pseudoMoves(state);
  else {
+  if(!choice||!choice.usePower)candidates=pseudoMoves(state).map(m=>({...m,usePower:false}));
   const slots=choice?[choice.slot]:state.hands[state.turn].map((_,i)=>i);
   for(const slot of slots){const card=state.hands[state.turn][slot];if(!card)continue;
-   if(!choice||!choice.usePower)candidates.push(...pseudoMoves(state).map(m=>({...m,slot,card,usePower:false})));
    if(!choice||choice.usePower)candidates.push(...cardMoves(state,card).map(m=>({...m,slot,card,usePower:true})));
   }
   // Search never predicts future draws; after known cards run out, use ordinary moves.
@@ -120,7 +120,7 @@ export function applyMove(state,move,record=true){
   if(p.type==='k')rights=rights.replace(p.color==='w'?/[KQ]/g:/[kq]/g,'');
   for(const [square,right] of [[0,'Q'],[7,'K'],[56,'q'],[63,'k']])if(move.from===square||move.to===square)rights=rights.replace(right,'');
  }
- const cycled=record?cycleCard(state,move.slot):state;
+ const cycled=record&&move.usePower?cycleCard(state,move.slot):state;
  const doublePawn=!effect&&!swap&&p.type==='p'&&move.to%8===move.from%8&&Math.abs(move.to-move.from)===16&&(!move.usePower||move.card==='charge');
  const next={...cycled,board,turn:opposite(state.turn),rights,ep:doublePawn?(move.to+move.from)/2:null,
   shield:move.special==='shield'?{square:move.from,color:state.turn}:null,
@@ -150,7 +150,7 @@ export function outcome(state,moves=legalMoves(state)) {
  return {over:false,winner:null,reason:inCheck(state)?'Check':null};
 }
 export function moveLabel(state,move){
- const prefix=state.mode==='cards'?`${move.usePower?CARDS[move.card].name:'Discard '+CARDS[move.card]?.name} · `:'';
+ const prefix=state.mode==='cards'&&move.usePower?`${CARDS[move.card].name} · `:'';
  if(move.special==='shield')return prefix+'shield '+squareName(move.from);
  if(move.special==='freeze')return prefix+'freeze '+squareName(move.from);
  if(move.special==='castle')return prefix+(move.to>move.from?'O-O':'O-O-O');

@@ -18,7 +18,7 @@ test('swap animates both friendly pieces and preserves material',async({page})=>
  await fixture(page,'relay',[[18,'r','w'],[27,'b','w']]);await page.locator('[data-slot="0"]').click();await page.locator('#view-2d').click();await page.locator('[data-square="18"]').click();await page.locator('[data-square="27"]').click();await expect(page.locator('#move-count')).toHaveText('02',{timeout:15000});await expect(page.locator('[data-square="18"]')).toHaveAttribute('aria-label',/White Bishop/);await expect(page.locator('[data-square="27"]')).toHaveAttribute('aria-label',/White Rook/);await expect(page.locator('#white-captured')).toHaveText('');
 });
 test('mobile hand fits; keyboard controls and reduced motion work',async({page})=>{
- await page.setViewportSize({width:390,height:844});await page.goto('/');await page.emulateMedia({reducedMotion:'reduce'});await page.screenshot({path:'/tmp/herochess-cards-mobile.png',fullPage:true});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.locator('[data-slot="2"]').click();await expect(page.locator('[data-slot="2"]')).toHaveAttribute('aria-pressed','true');await page.locator('[data-slot="0"]').click();await page.locator('#normal-mode').click();await page.locator('#view-2d').click();await page.locator('[data-square="12"]').focus();await page.keyboard.press('Enter');await page.locator('[data-square="28"]').focus();await page.keyboard.press('Enter');await expect(page.locator('#move-count')).toHaveText('02',{timeout:15000});
+ await page.setViewportSize({width:390,height:844});await page.goto('/');await page.emulateMedia({reducedMotion:'reduce'});await page.screenshot({path:'/tmp/herochess-cards-mobile.png',fullPage:true});await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.locator('[data-slot="2"]').click();await expect(page.locator('[data-slot="2"]')).toHaveAttribute('aria-pressed','true');await page.locator('[data-slot="0"]').click();await page.locator('#normal-mode').click();await page.locator('#view-2d').click();await page.locator('[data-square="12"]').focus();await page.keyboard.press('Enter');await page.locator('[data-square="28"]').focus();await page.keyboard.press('Enter');await expect(page.locator('#move-count')).toHaveText('02',{timeout:15000});
 });
 test('classic mode and Black side remain playable',async({page})=>{await page.goto('/');await page.locator('#new-button').click();await page.locator('input[value="classic"]').check();await page.locator('#side').selectOption('b');await page.getByRole('button',{name:'Deal & play'}).click();await expect(page.locator('#hand-panel')).toBeHidden();await expect(page.locator('#move-count')).toHaveText('01',{timeout:15000});await page.locator('#view-2d').click();await expect(page.locator('.flat-square').first()).toHaveAttribute('data-square','7');});
 test('undo and new game cancel animations without stale CPU turns',async({page})=>{await page.goto('/');await page.locator('#view-2d').click();await normalMove(page);await page.locator('#undo-button').click();await expect(page.locator('#move-count')).toHaveText('00');await expect(page.locator('body > .flat-piece')).toHaveCount(0);await normalMove(page);await page.locator('#new-button').click();await page.getByRole('button',{name:'Deal & play'}).click();await expect(page.locator('#move-count')).toHaveText('00');await expect(page.locator('.spell-card')).toHaveCount(3);});
@@ -31,7 +31,7 @@ test('families and power tiers are explicit and library filters compose',async({
  await page.locator('#tier-filter').selectOption('3');await expect(page.locator('.library-card')).toHaveCount(3);await expect(page.locator('#library-count')).toHaveText('3 of 18 spells');
  await page.locator('#family-filter').selectOption('defense');await expect(page.locator('.library-card')).toHaveCount(0);await expect(page.locator('#library-empty')).toBeVisible();
  await page.locator('#reset-filters').click();await expect(page.locator('.library-card')).toHaveCount(18);await expect(page.locator('#library-empty')).toBeHidden();
- await page.setViewportSize({width:390,height:844});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.screenshot({path:'/tmp/herochess-family-key-mobile.png',fullPage:true});
+ await page.setViewportSize({width:390,height:844});await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.screenshot({path:'/tmp/herochess-family-key-mobile.png',fullPage:true});
 });
 
 test('spell workbench fits a laptop and shows exact rules for the selected card',async({page})=>{
@@ -39,11 +39,11 @@ test('spell workbench fits a laptop and shows exact rules for the selected card'
  await page.setViewportSize({width:1280,height:720});await fixture(page,'ward',[[27,'q','w'],[59,'r','b']]);
  await expect(page.locator('#power-mode')).toHaveCount(0);await expect(page.locator('#normal-mode')).toBeHidden();
  await page.locator('[data-slot="0"]').click();await expect(page.locator('#selected-card-title')).toHaveText('Glass Aegis');await expect(page.locator('#selected-card-art')).toBeVisible();await expect(page.locator('#selected-card-meta')).toContainText('Defense');await expect(page.locator('#card-instruction')).toContainText('It cannot be captured during the opponent’s next turn.');
- await expect(page.locator('#card-instruction')).toContainText('Click a highlighted target');await page.locator('#normal-mode').click();await expect(page.locator('#card-instruction')).toContainText('Discard Glass Aegis');await page.locator('[data-slot="0"]').click();await page.locator('[data-slot="0"]').click();
+ await expect(page.locator('#card-instruction')).toContainText('Click a highlighted target');await page.locator('#normal-mode').click();await expect(page.locator('#card-instruction')).toContainText('Normal moves keep all your cards');await page.locator('[data-slot="0"]').click();
  for(const selector of ['#board-view','[data-slot="0"]','[data-slot="1"]','[data-slot="2"]','#normal-mode']){const box=await page.locator(selector).boundingBox();expect(box.x).toBeGreaterThanOrEqual(0);expect(box.x+box.width).toBeLessThanOrEqual(1280);expect(box.y+box.height).toBeLessThanOrEqual(720);}
  await page.screenshot({path:'/tmp/herochess-interface-desktop.png',fullPage:true});
  await page.setViewportSize({width:1440,height:900});await page.screenshot({path:'/tmp/herochess-interface-wide.png',fullPage:true});
- await page.setViewportSize({width:390,height:844});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.screenshot({path:'/tmp/herochess-interface-mobile.png',fullPage:true});
+ await page.setViewportSize({width:390,height:844});await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.screenshot({path:'/tmp/herochess-interface-mobile.png',fullPage:true});
  await page.locator('#new-button').click();await expect(page.locator('#new-dialog')).toBeVisible();await page.screenshot({path:'/tmp/herochess-interface-dialog.png'});
 });
 
@@ -78,17 +78,17 @@ test('old card saves are preserved separately when balance rules change',async({
  expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('herochess-cards-v2')).version)).toBe(2);
 });
 
-test('ordinary moves need no card selection and cycle the leftmost card',async({page})=>{
+test('ordinary moves keep the entire hand through CPU reply, reload and undo',async({page})=>{
  await page.goto('/');await page.locator('#view-2d').click();
  const before=await page.locator('.spell-card').evaluateAll(cards=>cards.map(c=>c.dataset.card));
  await page.locator('[data-square="12"]').click();await expect(page.locator('[data-square="28"]')).toHaveClass(/legal/);
  await expect(page.locator('[data-square="28"]')).not.toHaveClass(/power-move/);
  await page.locator('[data-square="28"]').click();await expect(page.locator('#move-count')).toHaveText('02',{timeout:15000});
  const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('herochess-cards-v2')));
- expect(saved.state.hands.w.slice(0,2)).toEqual(before.slice(1));expect(saved.state.hands.w).toHaveLength(3);
- await page.locator('#undo-button').click();expect(await page.locator('.spell-card').evaluateAll(cards=>cards.map(c=>c.dataset.card))).toEqual(before);
+ expect(saved.state.hands.w).toEqual(before);expect(saved.state.hands.w).toHaveLength(3);
+ await page.reload();expect(await page.locator('#hand .spell-card').evaluateAll(cards=>cards.map(c=>c.dataset.card))).toEqual(before);await page.locator('#undo-button').click();expect(await page.locator('.spell-card').evaluateAll(cards=>cards.map(c=>c.dataset.card))).toEqual(before);
 });
-test('choosing another card after discard mode activates its power immediately',async({page})=>{
+test('choosing another card after cancelling activates its power immediately',async({page})=>{
  await fixture(page,'tower',[[27,'q','w'],[59,'r','b']]);await page.locator('#view-2d').click();
  await page.locator('[data-slot="0"]').click();await page.locator('#normal-mode').click();
  await page.locator('[data-slot="1"]').click();await expect(page.locator('[data-slot="1"]')).toHaveAttribute('data-action','power');

@@ -1,15 +1,15 @@
 # Arcana Deck balance pass
 
-This is a rules/design audit with deterministic legal-position tests, not a claim of measured competitive balance. Further playtesting should track how often cards are used versus discarded, whether they produce captures or escapes, and win rates by starting hand and player side.
+This is a rules/design audit with deterministic legal-position tests, not a claim of measured competitive balance. Further playtesting should track how often cards are used versus held, whether they produce captures or escapes, and win rates by starting hand and player side.
 
 ## Turn and draw economy
 
-- Each action consumes exactly one card: use its power **instead of** a normal move, or discard it to make a normal move. No free spell plus move combinations.
-- With no card selected, a normal move automatically discards the leftmost card. Selecting a card activates its power directly; the secondary discard action lets the player choose a different card to cycle.
-- Draw one replacement after acting; each player holds three. There is no additional start-of-turn draw, so there is no overflow/discard loophole.
+- Each turn is either a normal move (no card spent) or a card power instead of a normal move (one card spent). No free spell plus move combinations.
+- Normal moves preserve both hands and the draw pile. Selecting a card activates its power directly; cancelling returns to a normal move without spending it.
+- Draw one replacement only after using a power; each player holds three. There is no additional start-of-turn draw, so there is no overflow/discard loophole.
 - Both sides draw from the same shuffled 40-card pool: 7 Standard spells × 3 copies, 8 Powerful × 2, 3 Exceptional × 1. The initial pool is 52.5% Standard, 40% Powerful, 7.5% Exceptional. These are pool proportions, not fixed independent draw probabilities.
 - Exceptional reach is deliberately scarce. Pawn-focused spells are common alternatives to spending a scarce Tower Road on the same maneuver. A higher tier indicates broader potential, not a universally correct choice.
-- Discarding always buys a normal move and a replacement. Situational cards never force a wasted turn. Holding a rare card costs one of only three hand slots.
+- A situational card can be held indefinitely while you move normally. There is no free discard or reroll. Holding a card occupies one of three slots, so it limits your access to fresh powers.
 - Used cards recycle only when the draw pile empties. Undo restores the exact deck, hands and board. CPU search uses the visible hands and never predicts the hidden draw order.
 
 ## All 18 roles
@@ -27,7 +27,7 @@ This is a rules/design audit with deterministic legal-position tests, not a clai
 | Safe Retreat | Pull a piece backwards through blockers while keeping it near the battle. | Same file, 1–3 squares towards home, empty destination. |
 | Sidewinder | Three-square lateral jump crosses a pawn wall or captures behind a screen. | Exactly three sideways; cannot fine-tune position. |
 | Marching Orders | Common pawn acceleration and promotion tempo; can advance three squares. | Pawn only, forward clear path; two-square advances allow en passant. |
-| Spearpoint | Break a pawn blockade by capturing the piece immediately ahead. | Pawn only, must capture; useless without pawns and safely discardable. |
+| Spearpoint | Break a pawn blockade by capturing the piece immediately ahead. | Pawn only, must capture; unusable without pawns; remains held. |
 | King’s Footwork | Precise one-square corrections, sideways pawn captures and bishop color changes. | One square only; despite its name it does not empower kings. |
 | Close Quarters | Swap adjacent allies to extract a trapped piece or bring another into attack. | Both squares must have allies; no kings or frozen pieces; no back-rank pawn swaps. |
 | Homeward | Rescue a far-away piece to any empty home-rank square. | Gives up advanced territory; often unavailable in a crowded opening. |

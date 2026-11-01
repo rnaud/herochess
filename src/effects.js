@@ -19,7 +19,7 @@ export class GameEffects {
     animate(e,[{opacity:0,transform:'translate(-50%,-50%) scale(.2)'},{opacity:1,offset:.15},{opacity:0,transform:`translate(calc(-50% + ${Math.cos(angle)*reach}px),calc(-50% + ${Math.sin(angle)*reach-20}px)) rotate(${i*47}deg) scale(.2)`}],{duration:540+ (i%3)*70,delay});
    }
   };
-  if(source&&state.mode==='cards'){
+  if(source&&state.mode==='cards'&&move.usePower){
    const rect=source.getBoundingClientRect();
    if(rect.bottom>0&&rect.top<innerHeight&&rect.right>0&&rect.left<innerWidth){
     const ghost=source.cloneNode(true);ghost.removeAttribute('id');ghost.removeAttribute('data-slot');ghost.removeAttribute('aria-pressed');ghost.classList.add('card-burn');ghost.classList.remove('chosen');ghost.disabled=true;ghost.tabIndex=-1;

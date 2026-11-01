@@ -7,9 +7,9 @@ A JavaScript + Three.js card-chess game: standard pieces, a three-card hand, and
 ## The turn loop
 
 1. Select a piece to move normally, or click a card to activate its power directly.
-2. Normal moves automatically discard your leftmost card. To choose a different discard, select it and click **Discard this card instead**. Click a selected card again to cancel.
+2. Normal moves keep your entire hand. Click a selected card again, or use **Cancel power**, to return to a normal move.
 3. Select a piece and a legal destination. Shield and freeze cards need just one target; swaps need two friendly pieces.
-4. The used/discarded card goes into the shared discard pile. Draw a replacement immediately, so you always hold three; that replacement is available on your next turn.
+4. Only a used power card goes into the shared discard pile. Draw a replacement immediately, so you always hold three; that replacement is available on your next turn.
 
 Both players start with three cards and see each other's hands. There is no extra opening draw. The shared shuffled deck contains three copies of each Standard card, two of each Powerful card, and one of each Exceptional card (40 total). When it empties, the discard pile is shuffled back into the draw pile. Undo restores the exact cards, pile order, and position. The draw order is hidden from both players, including the CPU.
 
@@ -40,7 +40,7 @@ Unless a card restricts its target type, it applies to any friendly non-king pie
 
 ## Chess rules
 
-Card movement lasts for one action. A pawn borrowing a rook slide remains a pawn afterward, including for attack/check detection. Kings cannot receive powers, be frozen or shielded, or be captured. No action may leave your king in check. Cards in a hand do not themselves attack a king; check uses ordinary piece attacks on the resulting board. Checkmate considers all legal card actions and all discard-for-normal-move options in the current hand.
+Card movement lasts for one action. A pawn borrowing a rook slide remains a pawn afterward, including for attack/check detection. Kings cannot receive powers, be frozen or shielded, or be captured. No action may leave your king in check. Cards in a hand do not themselves attack a king; check uses ordinary piece attacks on the resulting board. Checkmate considers all legal card actions and all ordinary chess moves.
 
 Shields and freezes expire after the following turn, including if that player uses another effect card. Frozen pieces still give check, so freezing a checking piece does not evade check. Shielded pieces still block and attack normally.
 
@@ -58,7 +58,7 @@ The 50-move draw and stalemate remain. Repetition includes the complete position
 
 ## CPU
 
-The worker receives public board state and both visible hands, **not the actual deck, shuffle seed, or history containing that order**. It searches legal card actions and discard choices with iterative-deepening alpha-beta search, move ordering, material/position evaluation, and bounded capture/check continuation on stronger levels. It consumes known cards during search but does not predict unknown replacement draws. This is a lightweight tactical opponent, not an exact chance-tree solver or a tournament engine.
+The worker receives public board state and both visible hands, **not the actual deck, shuffle seed, or history containing that order**. It searches legal card actions and ordinary moves with iterative-deepening alpha-beta search, move ordering, material/position evaluation, and bounded capture/check continuation on stronger levels. It consumes known cards during search but does not predict unknown replacement draws. This is a lightweight tactical opponent, not an exact chance-tree solver or a tournament engine.
 
 Apprentice searches one ply for up to 0.6 seconds; Tactician up to three plies for 1.8 seconds; Strategist up to four for 4 seconds. Search depth depends on branching and device speed. Every actual CPU action is revalidated against the real game state before it is applied.
 
@@ -87,7 +87,7 @@ The GitHub Actions workflow tests, builds, and publishes to GitHub Pages on push
 
 ## Design research
 
-Physical card-chess games already exist. Steve Jackson Games’ **Knightmare Chess** uses cards to modify chess rules; its official FAQ describes a limit of one card on a player's turn. That supplied a useful precedent for a single-card action economy. This game uses its own 18-card names and wording, a fixed three-card hand, public hands, explicit discard-for-normal-move rules, and a simplified timing model. No card artwork or card text was copied.
+Physical card-chess games already exist. Steve Jackson Games’ **Knightmare Chess** uses cards to modify chess rules; its official FAQ describes a limit of one card on a player's turn. That supplied a useful precedent for a single-card action economy. This game uses its own 18-card names and wording, a fixed three-card hand, public hands, persistent hands between normal moves, and a simplified timing model. No card artwork or card text was copied.
 
 - [Knightmare Chess — publisher](https://www.sjgames.com/knightmare/)
 - [Official rules](https://www.sjgames.com/knightmare/img/knightmare-chess-rules.pdf)
@@ -117,8 +117,8 @@ The new tabletop and Automaton portrait were generated with the built-in tool; t
 
 Balance rationale and card-by-card roles: [balance review](BALANCE.md).
 
-Normal moves require no card selection and automatically discard/replace the leftmost card. Clicking a card activates its power directly; click again to cancel. To choose a different discard for a normal move, select that card and use “Discard this card instead.”
+Normal moves require no card selection and keep all cards. Clicking a card activates its power directly; click again or use “Cancel power” to cancel. Only used power cards are replaced.
 
 ### Action feedback
 
-Played powers burn their card with a glowing edge and embers; ordinary discards fade to ash. Board feedback follows the action: family-colored trails and departure rings, capture shockwaves, a piercing beam, shield pulses, and frost crystals. Frozen 3D pieces use a faceted ice shell. Effects work for both players and in both board views. Reduced-motion preference skips transient effects, and undo/new match cancels and cleans them up immediately.
+Played powers burn their card with a glowing edge and embers; normal moves leave the hand untouched. Board feedback follows the action: family-colored trails and departure rings, capture shockwaves, a piercing beam, shield pulses, and frost crystals. Frozen 3D pieces use a faceted ice shell. Effects work for both players and in both board views. Reduced-motion preference skips transient effects, and undo/new match cancels and cleans them up immediately.
