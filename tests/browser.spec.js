@@ -46,3 +46,23 @@ test('WebGL failure uses a playable 2D fallback',async({page})=>{
  await page.addInitScript(()=>{const original=HTMLCanvasElement.prototype.getContext;HTMLCanvasElement.prototype.getContext=function(type,...args){return type.includes('webgl')?null:original.call(this,type,...args);};});
  await page.goto('/');await expect(page.locator('#flat-board')).toBeVisible();await expect(page.locator('#view-3d')).toBeDisabled();await page.locator('[data-square="12"]').click();await page.locator('[data-square="28"]').click();await expect(page.locator('#move-count')).toHaveText('02',{timeout:15000});
 });
+test('Oracle explains blocked diagonals and can slide once its pawn moves',async({page})=>{
+ await page.goto('/');await page.getByRole('button',{name:/Oracle: Phase step/}).click();await expect(page.locator('#status-detail')).toContainText('Your own pieces block every diagonal');
+ await page.evaluate(async()=>{const {initialState,positionKey}=await import('/src/engine.js');const s=initialState();s.board[27]=s.board[11];s.board[11]=null;s.history=[positionKey(s)];localStorage.setItem('herochess-v2',JSON.stringify({version:2,state:s,human:'w',snapshots:[],journal:[],level:'1'}));});
+ await page.reload();await page.locator('#view-2d').click();await page.locator('[data-square="2"]').click();await expect(page.locator('[data-square="38"]')).toHaveClass(/legal/);await page.locator('[data-square="38"]').click();await expect(page.locator('#flat-board')).toHaveAttribute('data-animating','move');await expect(page.locator('[data-square="38"]')).toHaveAttribute('aria-label',/White Oracle/);await expect(page.locator('#move-count')).toHaveText('02');
+});
+test('3D captures animate and restarting cancels a moving piece safely',async({page})=>{
+ const errors=[];page.on('pageerror',error=>errors.push(error.message));await page.goto('/');
+ await page.evaluate(async()=>{const {initialState,positionKey}=await import('/src/engine.js');const s=initialState();s.board=Array(64).fill(null);for(const [i,type,color] of [[0,'k','w'],[63,'k','b'],[18,'o','w'],[45,'q','b']])s.board[i]={type,color};s.rights='';s.history=[positionKey(s)];localStorage.setItem('herochess-v2',JSON.stringify({version:2,state:s,human:'w',snapshots:[],journal:[],level:'1'}));});
+ await page.reload();await page.locator('#view-2d').click();await page.locator('[data-square="18"]').click();await page.locator('#view-3d').click();
+ // Invoke the selected square's UI handler while retaining the 3D view.
+ await page.locator('[data-square="45"]').evaluate(button=>button.click());await expect(page.locator('#board-view')).toHaveAttribute('data-animating','capture');
+ await page.screenshot({path:'/tmp/herochess-capture.png',fullPage:true});
+ await expect(page.locator('#move-count')).toHaveText('01');await expect(page.locator('#status-detail')).toContainText('Checkmate');await expect(page.locator('#board-view')).not.toHaveAttribute('data-animating');
+ await page.locator('#new-button').click();await page.getByRole('button',{name:'Let’s play'}).click();await page.locator('#view-2d').click();await page.locator('[data-square="12"]').click();await page.locator('[data-square="28"]').click();await expect(page.locator('#flat-board')).toHaveAttribute('data-animating','move');
+ await page.locator('#new-button').click();await page.getByRole('button',{name:'Let’s play'}).click();await expect(page.locator('#move-count')).toHaveText('00');await expect(page.locator('#flat-board')).not.toHaveAttribute('data-animating');expect(errors).toEqual([]);
+});
+test('undo cancels active motion and reduced-motion play remains functional',async({page})=>{
+ await page.goto('/');await page.locator('#view-2d').click();await page.locator('[data-square="12"]').click();await page.locator('[data-square="28"]').click();await expect(page.locator('#flat-board')).toHaveAttribute('data-animating','move');await page.locator('#undo-button').click();await expect(page.locator('#move-count')).toHaveText('00');await expect(page.locator('#flat-board')).not.toHaveAttribute('data-animating');await expect(page.locator('body > .flat-piece')).toHaveCount(0);await expect(page.locator('[data-square="12"]')).toHaveAttribute('aria-label',/White Pawn/);
+ await page.emulateMedia({reducedMotion:'reduce'});await page.locator('[data-square="12"]').click();await page.locator('[data-square="28"]').click();await expect(page.locator('#move-count')).toHaveText('02');await expect(page.locator('#flat-board')).not.toHaveAttribute('data-animating');
+});

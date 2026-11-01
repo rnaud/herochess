@@ -18,9 +18,13 @@ In Hero mode, each army replaces its a-file rook, b-file knight, and c-file bish
 
 Ivory’s heroes have blue bodies; Obsidian’s heroes have orange bodies. Their bases keep their army’s color. Hero cards show each piece’s current square and explain its normal moves and extra power. Select a hero to see normal destinations as green dots and extra power destinations as blue rings.
 
+The Oracle’s bishop slides need a clear diagonal: its own pawns block both forward diagonals at the start. Selecting it shows available bishop moves and knight jumps, and explains blocked diagonals.
+
 All jumps ignore intervening pieces. Powers are unlimited, always active, and identical for both sides. Heroes can capture on their destinations but cannot land on allies. All pieces must respect king safety. Bastions can castle from their original rook squares.
 
 Castling, en passant, and four promotion choices are supported. Stalemate, threefold repetition, the 50-move rule, and basic insufficient-material positions automatically draw. Promotions use standard pieces. In the 2D view, use Tab or arrow keys to focus a square and Enter or Space to select it. The 2D board also works when WebGL is unavailable.
+
+Moves animate in both 3D and 2D: sliding pieces glide, jumping pieces arc over the board, and captures dissolve. Castling moves both pieces together. Reduced-motion preferences skip these effects. Undo and new matches safely cancel animations.
 
 Undo takes back the player's last turn and the CPU reply, including while the CPU is thinking. The current match and undo history save locally in this browser. No account or server is required.
 

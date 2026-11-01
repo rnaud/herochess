@@ -83,6 +83,45 @@ export class ChessBoard {
   }
   return group;
  }
+ cancelAnimation(){this.finishAnimation?.();}
+ animateMove(state,move){
+  this.cancelAnimation();
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches)return Promise.resolve();
+  const moving=this.pieceMeshes.find(mesh=>mesh.userData.square===move.from);
+  if(!moving)return Promise.resolve();
+  const piece=state.board[move.from];
+  const capturedSquare=move.special==='ep'?move.to+(piece.color==='w'?-8:8):move.to;
+  const victim=this.pieceMeshes.find(mesh=>mesh.userData.square===capturedSquare);
+  const rook=move.special==='castle'?this.pieceMeshes.find(mesh=>mesh.userData.square===(move.to>move.from?move.from+3:move.from-4)):null;
+  const start=new THREE.Vector3(...world(move.from)),end=new THREE.Vector3(...world(move.to));
+  const rookStart=rook?.position.clone(),rookEnd=rook?new THREE.Vector3(...world(move.to>move.from?move.from+1:move.from-1)):null;
+  const jump=piece.type==='n'||isHeroPowerMove(state,move)||piece.type==='h';
+  const originals=[];
+  victim?.traverse(object=>{if(object.isMesh){const original=object.material;object.material=original.clone();object.material.transparent=true;originals.push([object,original]);}});
+  const burst=new THREE.Group();burst.position.set(...world(capturedSquare));burst.position.y=.12;
+  if(victim){
+   const material=new THREE.MeshBasicMaterial({color:0xffd48c,transparent:true,opacity:0});
+   for(let i=0;i<12;i++){const spark=new THREE.Mesh(new THREE.OctahedronGeometry(.045),material);burst.add(spark);}
+   this.scene.add(burst);
+  }
+  this.container.dataset.animating=victim?'capture':'move';this.marks.visible=false;
+  return new Promise(resolve=>{
+   let frame;const began=performance.now(),duration=victim?760:520;
+   const finish=()=>{cancelAnimationFrame(frame);this.finishAnimation=null;delete this.container.dataset.animating;this.marks.visible=true;
+    for(const [object,original] of originals){object.material.dispose();object.material=original;}
+    this.scene.remove(burst);for(const spark of burst.children)spark.geometry.dispose();burst.children[0]?.material.dispose();resolve();};
+   this.finishAnimation=finish;
+   const tick=now=>{
+    const t=Math.min((now-began)/duration,1),travel=Math.min(t/(victim ? 0.72 : 1),1),ease=travel*travel*(3-2*travel);
+    moving.position.lerpVectors(start,end,ease);moving.position.y=Math.sin(travel*Math.PI)*(jump?1.15:.16);
+    if(rook)rook.position.lerpVectors(rookStart,rookEnd,ease);
+    if(victim){const impact=Math.max(0,(t-.55)/.45);victim.scale.setScalar((state.board[capturedSquare]?.type==='p' ? 0.8 : 1)*(1-impact*.9));victim.position.y=-impact*.35;victim.rotation.z=impact*.8;for(const [object] of originals)object.material.opacity=1-impact;
+     burst.children.forEach((spark,i)=>{const angle=i*Math.PI*2/12;spark.position.set(Math.cos(angle)*impact*.9,Math.sin(impact*Math.PI)*.45,Math.sin(angle)*impact*.9);spark.material.opacity=impact>0?1-impact:0;});
+    }
+    this.render();if(t<1)frame=requestAnimationFrame(tick);else finish();
+   };frame=requestAnimationFrame(tick);
+  });
+ }
  update(state,selected,moves){
   for(const m of this.pieceMeshes){this.scene.remove(m);m.traverse(o=>{if(o.geometry)o.geometry.dispose();});}this.pieceMeshes=[];
   state.board.forEach((p,i)=>{if(!p)return;const m=this.piece(p.type,p.color);m.position.set(...world(i));m.userData.square=i;this.scene.add(m);this.pieceMeshes.push(m);});

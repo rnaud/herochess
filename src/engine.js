@@ -7,7 +7,7 @@ export const PIECES = {
  b: {name:'Bishop',value:335,rays:DIAG}, r: {name:'Rook',value:500,rays:ORTH},
  q: {name:'Queen',value:950,rays:[...ORTH,...DIAG]}, k: {name:'King',value:20000,steps:[...ORTH,...DIAG]},
  h: {name:'Double Knight',title:'Far leap',value:620,base:'n',steps:[...KNIGHT,[2,3],[3,2],[-2,3],[-3,2],[2,-3],[3,-2],[-2,-3],[-3,-2]],description:'A knight with a longer reach. Also leaps 3 squares in one direction and 2 across. Every leap ignores intervening pieces.'},
- o: {name:'Oracle',title:'Phase step',value:750,base:'b',rays:DIAG,steps:KNIGHT,description:'A bishop that sees another path. Slides diagonally or leaps like a knight, even through a crowded board.'},
+ o: {name:'Oracle',title:'Phase step',value:750,base:'b',rays:DIAG,steps:KNIGHT,description:'Slides along clear diagonals like a bishop, stopping at the first piece. Also jumps like a knight; only these jumps can pass over pieces.'},
  s: {name:'Bastion',title:'Rift jump',value:650,base:'r',rays:ORTH,steps:DIAG.map(([x,y])=>[x*2,y*2]),description:'A rook with an unexpected angle. Also jumps exactly 2 squares diagonally, ignoring the square between.'},
 };
 export const opposite = c => c === 'w' ? 'b' : 'w';
