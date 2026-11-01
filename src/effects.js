@@ -1,4 +1,5 @@
 import {CARDS} from './cards.js';
+import {actionTiming} from './motion.js';
 
 // Presentation only: one cancellable group per action, shared by 2D and 3D.
 export class GameEffects {
@@ -14,7 +15,8 @@ export class GameEffects {
  }
  play(state,move,source,point,human){
   if(matchMedia('(prefers-reduced-motion: reduce)').matches)return Promise.resolve();
-  const layer=document.createElement('div');layer.className='game-fx';layer.setAttribute('aria-hidden','true');
+  const timing=actionTiming(state,move),family=CARDS[move.card]?.family;
+  const layer=document.createElement('div');layer.className='game-fx';layer.dataset.family=move.usePower?family:'normal';layer.dataset.impact=timing.impact;layer.setAttribute('aria-hidden','true');
   layer.dataset.effect=move.usePower?(move.special||CARDS[move.card]?.kind.toLowerCase()||'power'):'move';
   const color=move.special==='freeze'||move.freezeTarget!==undefined?'#b5eeff':move.special==='shield'?'#8acfff':({offense:'#ffba6a',defense:'#8acfff',mobility:'#94efba',tactics:'#d5acff'}[CARDS[move.card]?.family]||'#edcf94');
   layer.style.setProperty('--fx-color',color);document.body.append(layer);
@@ -47,19 +49,24 @@ export class GameEffects {
     label.textContent=`${state.turn===human?'YOU':'CPU'} · ${move.promotion?'PROMOTION':move.usePower?CARDS[move.card].name:capture?'CAPTURE':'CASTLE'}`;
     animate(label,[{opacity:0,transform:'translate(-50%,10px) scale(.8)'},{opacity:1,transform:'translate(-50%,0) scale(1)',offset:.2},{opacity:1,offset:.7},{opacity:0,transform:'translate(-50%,-16px) scale(1)'}],{duration:900});
    }
-   const delay=effect?100:capture?350:280,impact=move.freezeTarget!==undefined?point(move.freezeTarget):to;
+   const delay=timing.impact,impact=move.freezeTarget!==undefined?point(move.freezeTarget):to;
    if(move.usePower&&move.from!==move.to){
     const trail=node('fx-trail',from.x,from.y),dx=to.x-from.x,dy=to.y-from.y;
-    if(CARDS[move.card]?.kind==='Capture'){trail.classList.add('fx-beam');trail.style.width=Math.hypot(dx,dy)+'px';trail.style.transform=`rotate(${Math.atan2(dy,dx)}rad)`;animate(trail,[{opacity:0},{opacity:1,offset:.35},{opacity:0}],{duration:460});}
-    else animate(trail,[{opacity:0,transform:'translate(-50%,-50%) scale(.4)'},{opacity:1,offset:.2},{opacity:0,transform:`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px)) scale(1.5)`}],{duration:520});
-    const portal=node('fx-ring',from.x,from.y);animate(portal,[{opacity:.8,transform:'translate(-50%,-50%) scale(.2)'},{opacity:0,transform:'translate(-50%,-50%) scale(1.3)'}],{duration:480});
+    if(CARDS[move.card]?.kind==='Capture'){trail.classList.add('fx-beam');trail.style.width=Math.hypot(dx,dy)+'px';trail.style.transform=`rotate(${Math.atan2(dy,dx)}rad)`;animate(trail,[{opacity:0},{opacity:1,offset:.35},{opacity:0}],{duration:timing.travel,delay:timing.anticipation});}
+    else animate(trail,[{opacity:0,transform:'translate(-50%,-50%) scale(.4)'},{opacity:1,offset:.2},{opacity:0,transform:`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px)) scale(1.5)`}],{duration:timing.travel,delay:timing.anticipation});
+    const portal=node('fx-ring',from.x,from.y);animate(portal,[{opacity:.8,transform:'translate(-50%,-50%) scale(.2)'},{opacity:0,transform:'translate(-50%,-50%) scale(1.3)'}],{duration:timing.travel,delay:timing.anticipation});
    }
    const ring=node('fx-ring',impact.x,impact.y);if(capture)ring.classList.add('fx-impact');else if(!move.usePower)ring.classList.add('fx-step');
    animate(ring,[{opacity:0,transform:'translate(-50%,-50%) scale(.2)'},{opacity:.95,offset:.15},{opacity:0,transform:`translate(-50%,-50%) scale(${capture?2:1.5})`}],{duration:move.usePower||capture?550:350,delay});
    if(capture){const shock=node('fx-shock',to.x,to.y);animate(shock,[{opacity:0,transform:'translate(-50%,-50%) scale(.2)'},{opacity:.8,offset:.1},{opacity:0,transform:'translate(-50%,-50%) scale(2.5)'}],{duration:480,delay:delay+70});}
    if(effect){
     const shell=node(move.special==='freeze'||move.freezeTarget!==undefined?'fx-frost':'fx-shield',impact.x,impact.y);shell.textContent=move.special==='freeze'||move.freezeTarget!==undefined?'❄':'◇';
-    animate(shell,[{opacity:0,transform:'translate(-50%,-50%) scale(.3)'},{opacity:.9,transform:'translate(-50%,-50%) scale(1.1)',offset:.4},{opacity:0,transform:'translate(-50%,-70%) scale(1.2)'}],{duration:800});
+    animate(shell,[{opacity:0,transform:'translate(-50%,-50%) scale(.3)'},{opacity:.9,transform:'translate(-50%,-50%) scale(1.1)',offset:.4},{opacity:0,transform:'translate(-50%,-70%) scale(1.2)'}],{duration:600,delay});
+   }
+   if(move.usePower){
+    const sigil=node('fx-family-sigil',impact.x,impact.y);sigil.textContent={offense:'✧',defense:'⬡',mobility:'◌',tactics:'✦'}[family];
+    const spin=family==='tactics'?135:family==='offense'?-35:0;
+    animate(sigil,[{opacity:0,transform:'translate(-50%,-50%) scale(.25) rotate(0deg)'},{opacity:.85,offset:.25},{opacity:0,transform:`translate(-50%,-50%) scale(1.4) rotate(${spin}deg)`}],{duration:550,delay});
    }
    if(move.usePower||capture)sparks(impact.x,impact.y,capture?28:16,delay,move.special==='freeze'||move.freezeTarget!==undefined);
   }

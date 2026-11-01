@@ -3,6 +3,8 @@ import {CARDS,CARD_IDS,FAMILIES,POWER_TIERS,uniqueDeck} from './cards.js';
 import {ChessBoard} from './board.js';
 import {GameEffects} from './effects.js';
 import {GameSound} from './sound.js';
+import {actionTiming} from './motion.js';
+let impactTimer=null,flatCleanup=null;
 const effects=new GameEffects(),sound=new GameSound();
 for(const event of ['pointerdown','keydown'])document.addEventListener(event,()=>sound.unlock(),{capture:true});
 function renderSound(){const button=document.getElementById('sound-button');button.textContent=sound.enabled?'♪ On':'♪ Off';button.setAttribute('aria-label',sound.enabled?'Mute sound effects':'Enable sound effects');button.setAttribute('aria-pressed',String(sound.enabled));}
@@ -26,7 +28,7 @@ try{board=new ChessBoard($('board-view'),selectSquare);board.flip(flipped);}catc
 function save(){try{localStorage.setItem(SAVE_KEY,JSON.stringify({version:3,state,human,snapshots,journal,rewindsUsed,rewindReady,level:$('difficulty').value}));}catch{}}
 function stopCPU(){requestId++;worker?.terminate();worker=null;thinking=false;}
 function motionControls(){for(const id of ['flip-button','view-2d','difficulty'])$(id).disabled=animating;$('view-3d').disabled=animating||!board;}
-function cancelPresentation(){transitionId++;sound.stop();effects.cancel();board?.cancelAnimation();flatAnimations.forEach(a=>a.cancel());flatAnimations=[];animating=false;motionControls();}
+function cancelPresentation(){transitionId++;clearTimeout(impactTimer);dealAnimations.forEach(a=>a.cancel());sound.stop();effects.cancel();board?.cancelAnimation();flatAnimations.forEach(a=>a.cancel());flatAnimations=[];flatCleanup?.();flatCleanup=null;animating=false;motionControls();}
 function resetSelection(){pendingFreeze=null;inspectedSquare=null;$('piece-status').hidden=true;selected=null;slot=null;moves=[];usePower=true;}
 function choice(){return state.mode==='cards'?{slot:slot??0,usePower:slot!==null&&usePower}:null;}
 function available(from=null){const actions=legalMoves(state,from,choice());return pendingFreeze===null?actions:actions.filter(m=>m.freezeTarget===pendingFreeze);}
@@ -48,6 +50,7 @@ async function animateFlat(state,move){
  }
 
  if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+ const timing=actionTiming(state,move);
  const flat=$('flat-board'),origin=flat.querySelector(`[data-square="${move.from}"] .flat-piece`),destination=flat.querySelector(`[data-square="${move.to}"] .flat-piece`);
  if(!origin||!destination)return;
  const ghosts=[],hidden=[];
@@ -55,22 +58,23 @@ async function animateFlat(state,move){
  const capturedSquare=move.special==='ep'?move.to+(state.turn==='w'?-8:8):move.to;
  const victim=move.special!=='swap'&&state.board[capturedSquare]?flat.querySelector(`[data-square="${capturedSquare}"] .flat-piece`):null;
  const animations=[];
- const travel=(element,target)=>{const {ghost,rect}=ghostFor(element),end=target.getBoundingClientRect(),dx=end.left-rect.left,dy=end.top-rect.top;const jump=move.usePower&&move.freezeTarget===undefined?['Leap','Travel'].includes(CARDS[move.card]?.kind):state.board[move.from].type==='n';animations.push(ghost.animate([{transform:'translate(0,0)'},{transform:`translate(${dx*.5}px,${dy*.5-(jump?28:8)}px) scale(1.12)`,offset:.5},{transform:`translate(${dx}px,${dy}px)`}],{duration:520,easing:'ease-in-out',fill:'forwards'}));};
- if(victim){const {ghost}=ghostFor(victim);animations.push(ghost.animate([{opacity:1,transform:'scale(1)'},{opacity:0,transform:'scale(1.65) rotate(20deg)',filter:'blur(5px)'}],{delay:320,duration:350,fill:'forwards',easing:'ease-out'}));}
+ const travel=(element,target)=>{const {ghost,rect}=ghostFor(element),end=target.getBoundingClientRect(),dx=end.left-rect.left,dy=end.top-rect.top;const jump=move.usePower&&move.freezeTarget===undefined?['Leap','Travel'].includes(CARDS[move.card]?.kind):state.board[move.from].type==='n';animations.push(ghost.animate([{transform:'translate(0,0)'},{transform:`translate(${dx*.5}px,${dy*.5-(jump?28:8)}px) scale(1.12)`,offset:.5},{transform:`translate(${dx}px,${dy}px)`}],{delay:timing.anticipation,duration:timing.travel,easing:'ease-in-out',fill:'both'}));};
+ if(victim){const {ghost}=ghostFor(victim);animations.push(ghost.animate([{opacity:1,transform:'scale(1)'},{opacity:0,transform:'scale(1.65) rotate(20deg)',filter:'blur(5px)'}],{delay:timing.impact,duration:300,fill:'both',easing:'ease-out'}));}
  travel(origin,destination);
  if(move.special==='swap')travel(destination,origin);
  if(move.special==='castle'){const rookFrom=move.to>move.from?move.from+3:move.from-4,rookTo=move.to>move.from?move.from+1:move.from-1;travel(flat.querySelector(`[data-square="${rookFrom}"] .flat-piece`),flat.querySelector(`[data-square="${rookTo}"] .flat-piece`));}
  flatAnimations=animations;flat.dataset.animating=victim?'capture':'move';
+ flatCleanup=()=>{ghosts.forEach(ghost=>ghost.remove());hidden.forEach(element=>element.style.visibility='');delete flat.dataset.animating;};
  await Promise.allSettled(animations.map(animation=>animation.finished));
- ghosts.forEach(ghost=>ghost.remove());hidden.forEach(element=>element.style.visibility='');delete flat.dataset.animating;flatAnimations=[];
+ flatAnimations=[];
 }
 async function commit(move){
  const before=state,text=moveLabel(state,move),id=++transitionId;
  effects.cancel();if(before.turn===human)rewindReady=true;
- sound.play(move.usePower?'power':move.special==='castle'?'castle':move.special==='ep'||(state.board[move.to]&&move.special!=='swap')?'capture':'move',CARDS[move.card]?.family);snapshots.push(state);state=applyMove(state,move);const end=outcome(state);journal.push(text+(end.reason==='Checkmate'?' #':inCheck(state)?' +':''));resetSelection();save();animating=true;motionControls();renderRewind();$('thinking-overlay').hidden=true;
+ const timing=actionTiming(before,move);if(move.usePower)sound.play('power',CARDS[move.card]?.family);clearTimeout(impactTimer);impactTimer=setTimeout(()=>{if(id===transitionId)sound.play(timing.capture?'capture':move.special==='castle'?'castle':'move');},matchMedia('(prefers-reduced-motion: reduce)').matches?0:timing.impact);snapshots.push(state);state=applyMove(state,move);const end=outcome(state);journal.push(text+(end.reason==='Checkmate'?' #':inCheck(state)?' +':''));resetSelection();save();animating=true;motionControls();renderRewind();$('thinking-overlay').hidden=true;
  const source=before.turn===human?$('hand').children[move.slot]:$('cpu-hand').children[move.slot];
  const point=square=>{if(view==='3d'&&board)return board.screenPoint(square);const rect=$('flat-board').querySelector(`[data-square="${square}"]`)?.getBoundingClientRect();return rect?{x:rect.left+rect.width/2,y:rect.top+rect.height/2}:null;};
- try{await Promise.all([effects.play(before,move,source,point,human),view==='3d'&&board?board.animateMove(before,move):animateFlat(before,move)]);}finally{if(id===transitionId){animating=false;motionControls();render();if(!end.over&&state.turn!==human)startCPU();}}
+ try{await Promise.all([effects.play(before,move,source,point,human),view==='3d'&&board?board.animateMove(before,move):animateFlat(before,move)]);}finally{if(id===transitionId){flatCleanup?.();flatCleanup=null;render();if(move.usePower&&!matchMedia('(prefers-reduced-motion: reduce)').matches){const card=(before.turn===human?$('hand'):$('cpu-hand')).children[move.slot];if(card){const a=card.animate([{opacity:0,transform:'translateY(24px) scale(.9)'},{opacity:1,transform:'translateY(0) scale(1)'}],{duration:300,easing:'ease-out'});a.id='replacement-deal';dealAnimations=[a];sound.play('draw');await Promise.allSettled([a.finished]);}}if(id===transitionId){animating=false;motionControls();render();if(!end.over&&state.turn!==human)startCPU();}}}
 }
 function renderPieceStatus(){
  const square=inspectedSquare,p=square===null?null:state.board[square];
@@ -121,7 +125,7 @@ function dealHand(){
 }
 function renderHand(){
  dealAnimations.forEach(animation=>animation.cancel());dealAnimations=[];
- document.body.dataset.mode=state.mode;
+ document.body.dataset.mode=state.mode;document.body.dataset.cardSelected=String(slot!==null);
  const active=slot===null?null:CARDS[state.hands[human][slot]];
  $('selected-card-art').hidden=!active;$('selected-card-placeholder').hidden=!!active;
  if(active)$('selected-card-art').src=cardArt(state.hands[human][slot]);
@@ -176,7 +180,7 @@ function render(){
  $('status-title').textContent=title;$('status-detail').textContent=detail;renderHand();
  const effects=[];if(state.shield)effects.push(`${squareName(state.shield.square)} is shielded: cannot be captured this turn.`);if(state.freeze)effects.push(`${squareName(state.freeze.square)} is frozen: cannot move this turn, but still attacks.`);$('effects').textContent=effects.join(' ')||'No lasting effects.';
  let marks=moves;if(slot!==null&&CARDS[state.hands[human][slot]].effect==='freeze'&&pendingFreeze===null)marks=[...new Set(available().map(m=>m.freezeTarget))].map(to=>({to,usePower:true}));else if(selected===null&&state.mode==='cards'&&slot!==null&&usePower&&CARDS[state.hands[human][slot]].effect==='shield')marks=available();
- board?.update(pendingFreeze===null?state:{...state,freeze:{square:pendingFreeze,color:opposite(human)}},selected,marks);renderFlat(marks);renderJournal();renderCaptures();setView(view);
+ board?.update(pendingFreeze===null?state:{...state,freeze:{square:pendingFreeze,color:opposite(human)}},selected,marks);renderFlat(marks);renderJournal();renderCaptures();renderCPURecap();setView(view);
 }
 function renderFlat(marks){
  const checked=inCheck(state),focused=document.activeElement?.dataset.square,flat=$('flat-board');flat.replaceChildren();
@@ -185,6 +189,16 @@ function renderFlat(marks){
  if(focused!==undefined&&view==='2d')flat.querySelector(`[data-square="${focused}"]`)?.focus();
 }
 function renderJournal(){const container=$('journal');container.replaceChildren();$('move-count').textContent=String(journal.length).padStart(2,'0');if(!journal.length){container.innerHTML='<p class="empty-journal">The first card is yours to play.</p>';return;}journal.forEach((text,i)=>{const row=document.createElement('div');row.className='turn-entry';row.textContent=`${Math.floor(i/2)+1}${i%2?' …':' .'} ${text}`;container.append(row);});container.scrollTop=container.scrollHeight;}
+function renderCPURecap(){
+ const index=snapshots.findLastIndex(s=>s.turn!==human),panel=$('cpu-recap');panel.hidden=index<0;
+ if(index<0)return;
+ const before=snapshots[index],after=snapshots[index+1]||state,m=after.lastMove;if(!m)return;
+ const piece=PIECES[before.board[m.from]?.type]?.name||'Piece',captured=m.special==='ep'?'Pawn':PIECES[before.board[m.to]?.type]?.name;
+ const action=m.special==='shield'?`Shielded its ${piece.toLowerCase()} on ${squareName(m.from)}.`:m.special==='swap'?`Swapped ${squareName(m.from)} and ${squareName(m.to)}.`:`${piece} ${squareName(m.from)} → ${squareName(m.to)}${captured?` · captured your ${captured.toLowerCase()}`:''}.${m.freezeTarget!==undefined?` Froze your piece on ${squareName(m.freezeTarget)}.`:''}`;
+ $('cpu-recap-title').textContent=m.usePower?`CPU played ${CARDS[m.card].name}`:'CPU moved';
+ $('cpu-recap-detail').textContent=action;
+ panel.dataset.family=m.usePower?CARDS[m.card].family:'normal';
+}
 function renderCaptures(){const captured={w:[],b:[]};snapshots.forEach((before,i)=>{const next=snapshots[i+1]||state,m=next.lastMove;if(!m||['shield','freeze','swap'].includes(m.special))return;const p=m.special==='ep'?{type:'p'}:before.board[m.to];if(p)captured[before.turn].push(glyph[p.type]);});$('white-captured').textContent=captured[human].join('');$('black-captured').textContent=captured[opposite(human)].join('');}
 function setView(next){view=next;$('board-view').hidden=next!=='3d';$('flat-board').hidden=next!=='2d';$('view-3d').setAttribute('aria-pressed',String(next==='3d'));$('view-2d').setAttribute('aria-pressed',String(next==='2d'));if(next==='3d')board?.resize();positionCheckMarker();}
 $('normal-mode').onclick=()=>selectCard(null);

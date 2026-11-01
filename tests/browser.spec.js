@@ -216,3 +216,30 @@ test.describe('opponent inspection',()=>{
 });
 
 });
+
+test('mobile tray keeps all cards and board visible, expands rules, and classic removes the tray',async({page})=>{
+ await page.setViewportSize({width:390,height:844});await page.goto('/');await page.emulateMedia({reducedMotion:'reduce'});
+ for(const index of [0,1,2])await expect(page.locator('#hand .spell-card').nth(index)).toBeInViewport();
+ const board=await page.locator('.board-shell').boundingBox(),hand=await page.locator('#hand-panel').boundingBox();expect(board.y+board.height).toBeLessThan(hand.y);
+ await page.locator('#hand .spell-card').nth(0).click();await expect(page.locator('#card-instruction')).toBeVisible();
+ const expanded=await page.locator('#hand-panel').boundingBox(),selectedBoard=await page.locator('.board-shell').boundingBox();expect(selectedBoard.y+selectedBoard.height).toBeLessThan(expanded.y);
+ await page.screenshot({path:'/tmp/herochess-polish-mobile.png'});
+ for(const height of [740,667]){await page.setViewportSize({width:375,height});const b=await page.locator('.board-shell').boundingBox(),h=await page.locator('#hand-panel').boundingBox();expect(b.y+b.height).toBeLessThan(h.y);await expect(page.locator('#normal-mode')).toBeInViewport();}await page.setViewportSize({width:390,height:844});
+ await page.locator('#normal-mode').click();await expect(page.locator('.spell-workspace')).toBeHidden();
+ await page.locator('#new-button').click();await page.locator('input[value="classic"]').check();await page.getByRole('button',{name:'Deal & play'}).click();await expect(page.locator('#hand-panel')).toBeHidden();
+});
+
+test('capture impact shares board timing, replacement is dealt, and CPU recap survives reload and rewind',async({page})=>{
+ await fixture(page,'comet',[[18,'n','w'],[44,'q','b']]);
+ await page.evaluate(()=>{window.__deals=[];const original=Element.prototype.animate;Element.prototype.animate=function(frames,options){if(this.matches?.('#hand .spell-card'))window.__deals.push({card:this.dataset.card,options});return original.call(this,frames,options);};});
+ await page.locator('#view-2d').click();await page.locator('[data-slot="0"]').click();await page.locator('[data-square="18"]').click();await page.locator('[data-square="44"]').click();
+ const timing=await page.locator('.game-fx:not(.rewind-fx)').evaluate(layer=>({impact:Number(layer.dataset.impact),ring:layer.querySelector('.fx-impact').getAnimations()[0].effect.getTiming().delay}));expect(timing.impact).toBe(620);expect(timing.ring).toBe(timing.impact);
+ await expect(page.locator('#move-count')).toHaveText('02',{timeout:15000});await expect(page.locator('#cpu-recap')).toBeVisible();const recap=await page.locator('#cpu-recap').textContent();
+ expect(await page.evaluate(()=>window.__deals.some(d=>d.options.duration===300))).toBe(true);await page.reload();await expect(page.locator('#cpu-recap')).toHaveText(recap);await page.locator('#undo-button').click();await expect(page.locator('#cpu-recap')).toBeHidden();
+});
+
+test('2D pieces stay at their destination while impact finishes; rewind clears the staged pieces',async({page})=>{
+ await fixture(page,'comet',[[18,'n','w'],[44,'q','b']]);await page.locator('#view-2d').click();await page.locator('[data-slot="0"]').click();await page.locator('[data-square="18"]').click();await page.locator('[data-square="44"]').click();
+ await page.evaluate(()=>{document.querySelector('.game-fx').getAnimations({subtree:true}).forEach(a=>a.pause());document.querySelectorAll('body > .flat-piece').forEach(piece=>piece.getAnimations().forEach(a=>a.finish()));});
+ await expect(page.locator('body > .flat-piece')).toHaveCount(2);await expect(page.locator('[data-square="18"] .flat-piece')).toHaveCSS('visibility','hidden');await page.locator('#undo-button').click();await expect(page.locator('body > .flat-piece')).toHaveCount(0);await expect(page.locator('#move-count')).toHaveText('00');
+});

@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { PIECES,inCheck } from './engine.js';
 import {CARDS} from './cards.js';
+import {actionTiming} from './motion.js';
+import {RoomEnvironment} from 'three/addons/environments/RoomEnvironment.js';
 const isHeroPowerMove=(_state,move)=>!!move.usePower;
 const world = i => [i%8-3.5,0,3.5-(i>>3)];
 export class ChessBoard {
@@ -13,10 +15,11 @@ export class ChessBoard {
   this.renderer.toneMapping=THREE.ACESFilmicToneMapping;this.renderer.toneMappingExposure=1.03;this.renderer.outputColorSpace=THREE.SRGBColorSpace;this.renderer.setClearColor(0,0);
   container.appendChild(this.renderer.domElement);
   this.camera=new THREE.OrthographicCamera(-6,6,5,-5,.1,100);
-  this.scene.add(new THREE.HemisphereLight(0xf6f4df,0x302a24,2.1));
-  const key=new THREE.DirectionalLight(0xffd3a0,3.5);key.position.set(-3,10,5);key.castShadow=true;key.shadow.mapSize.set(2048,2048);Object.assign(key.shadow.camera,{left:-7,right:7,top:7,bottom:-7,near:.5,far:25});key.shadow.normalBias=.035;key.shadow.bias=-.0004;key.shadow.radius=3;this.scene.add(key);
-  const fill=new THREE.DirectionalLight(0xd5dce4,1.6);fill.position.set(5,5,-6);this.scene.add(fill);
-  this.materials={white:new THREE.MeshStandardMaterial({color:0xe4ddc6,roughness:.32,metalness:.12}),black:new THREE.MeshStandardMaterial({color:0x292725,roughness:.3,metalness:.32}),gold:new THREE.MeshStandardMaterial({color:0xd6b876,metalness:.65,roughness:.3}),whiteHero:new THREE.MeshStandardMaterial({color:0x187be0,metalness:.15,roughness:.34}),blackHero:new THREE.MeshStandardMaterial({color:0xec6718,metalness:.15,roughness:.34})};
+  const pmrem=new THREE.PMREMGenerator(this.renderer),room=new RoomEnvironment();this.environment=pmrem.fromScene(room,.08);this.scene.environment=this.environment.texture;this.scene.environmentIntensity=.3;room.dispose();pmrem.dispose();
+  this.scene.add(new THREE.HemisphereLight(0xfff4df,0x292b34,1.65));
+  const key=new THREE.DirectionalLight(0xffe6c4,2.2);key.position.set(-3,14,3);key.castShadow=true;key.shadow.mapSize.set(2048,2048);Object.assign(key.shadow.camera,{left:-7,right:7,top:7,bottom:-7,near:.5,far:25});key.shadow.normalBias=.035;key.shadow.bias=-.0004;key.shadow.radius=5;key.shadow.intensity=.45;this.scene.add(key);
+  const fill=new THREE.DirectionalLight(0xd5e2f2,1.25);fill.position.set(5,5,-6);this.scene.add(fill);
+  this.materials={white:new THREE.MeshPhysicalMaterial({color:0xe4ddc6,roughness:.24,metalness:.08,clearcoat:.35,clearcoatRoughness:.25}),black:new THREE.MeshPhysicalMaterial({color:0x1b2229,roughness:.25,metalness:.3,clearcoat:.4,clearcoatRoughness:.2}),gold:new THREE.MeshStandardMaterial({color:0xd6b876,metalness:.65,roughness:.3}),whiteHero:new THREE.MeshStandardMaterial({color:0x187be0,metalness:.15,roughness:.34}),blackHero:new THREE.MeshStandardMaterial({color:0xec6718,metalness:.15,roughness:.34})};
   const base=new THREE.Mesh(new THREE.BoxGeometry(8.7,.32,8.7),new THREE.MeshStandardMaterial({color:0x514134,metalness:.25,roughness:.45}));base.position.y=-.23;base.receiveShadow=true;this.scene.add(base);
   const trim=new THREE.Mesh(new THREE.BoxGeometry(8.72,.045,8.72),this.materials.gold);trim.position.y=-.35;this.scene.add(trim);
   const lower=new THREE.Mesh(new THREE.BoxGeometry(8.85,.14,8.85),new THREE.MeshStandardMaterial({color:0x26201b,roughness:.6}));lower.position.y=-.45;this.scene.add(lower);
@@ -25,9 +28,9 @@ export class ChessBoard {
   const stoneCanvas=document.createElement('canvas');stoneCanvas.width=256;stoneCanvas.height=256;
   const stoneContext=stoneCanvas.getContext('2d'),pixels=stoneContext.createImageData(256,256);
   for(let y=0;y<256;y++)for(let x=0;x<256;x++){
-   const wave=Math.sin(x*.045+Math.sin(y*.032)*2.3),vein=Math.pow(Math.abs(wave),22);
+   const wave=Math.sin(x*.018+y*.014+Math.sin(y*.021)*2.3+Math.sin(x*.067)*.25),vein=Math.pow(Math.abs(wave),22);
    const grain=(Math.sin(x*127.1+y*311.7)*43758.5453)%1;
-   const shade=239-vein*7+grain*3,i=(y*256+x)*4;
+   const shade=242-vein*4+grain*1.5,i=(y*256+x)*4;
    pixels.data[i]=shade;pixels.data[i+1]=shade;pixels.data[i+2]=shade;pixels.data[i+3]=255;
   }
   stoneContext.putImageData(pixels,0,0);const stoneMap=new THREE.CanvasTexture(stoneCanvas);stoneMap.colorSpace=THREE.SRGBColorSpace;
@@ -36,7 +39,7 @@ export class ChessBoard {
   }
 
 
-  const light=new THREE.MeshStandardMaterial({color:0xd3bb94,roughness:.65,map:stoneMap});const dark=new THREE.MeshStandardMaterial({color:0x686054,roughness:.55,map:stoneMap});
+  const light=new THREE.MeshStandardMaterial({color:0xd8cbb1,roughness:.42,map:stoneMap,bumpMap:stoneMap,bumpScale:.008});const dark=new THREE.MeshStandardMaterial({color:0x39413f,roughness:.4,map:stoneMap,bumpMap:stoneMap,bumpScale:.008});
   for(let i=0;i<64;i++){
    const square=new THREE.Mesh(new THREE.BoxGeometry(.996,.075,.996),((i%8+(i>>3))%2===0)?dark:light);square.position.set(...world(i));square.position.y=-.035;square.receiveShadow=true;square.userData.square=i;this.scene.add(square);this.squares.push(square);
   }
@@ -55,13 +58,13 @@ export class ChessBoard {
    const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:false}));sprite.position.set(...pos);sprite.scale.set(.28,.28,1);this.labels.add(sprite);
   }
  }
- resize(){const w=this.container.clientWidth,h=this.container.clientHeight;if(!w||!h)return;this.renderer.setSize(w,h,false);const aspect=w/h;const extent=Math.max(4.65,4.65/aspect);this.camera.left=-extent*aspect;this.camera.right=extent*aspect;this.camera.top=extent;this.camera.bottom=-extent;this.camera.position.set(0,17,this.flipped?-6.8:6.8);this.camera.lookAt(0,0,0);this.camera.updateProjectionMatrix();this.render();}
+ resize(){const w=this.container.clientWidth,h=this.container.clientHeight;if(!w||!h)return;this.renderer.setSize(w,h,false);const aspect=w/h;const extent=Math.max(4.65,4.65/aspect);this.camera.left=-extent*aspect;this.camera.right=extent*aspect;this.camera.top=extent;this.camera.bottom=-extent;this.camera.position.set(0,17,this.flipped?-9:9);this.camera.lookAt(0,0,0);this.camera.updateProjectionMatrix();this.render();}
  flip(value=!this.flipped){this.flipped=value;this.makeLabels();this.resize();}
  pick(event){const r=this.container.getBoundingClientRect();this.pointer.set((event.clientX-r.left)/r.width*2-1,-(event.clientY-r.top)/r.height*2+1);this.raycaster.setFromCamera(this.pointer,this.camera);const hits=this.raycaster.intersectObjects([...this.pieceMeshes,...this.squares],true);for(const hit of hits){let obj=hit.object;while(obj){if(obj.userData.square!==undefined)return obj.userData.square;obj=obj.parent;}}return null;}
  mesh(geometry,material,parent,x=0,y=0,z=0){const m=new THREE.Mesh(geometry,material);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m;}
  piece(type,color){
   const group=new THREE.Group(),hero=!!PIECES[type].base,baseMat=color==='w'?this.materials.white:this.materials.black,mat=hero?(color==='w'?this.materials.whiteHero:this.materials.blackHero):baseMat,gold=this.materials.gold,kind=PIECES[type].base||type;
-  const lathe=points=>new THREE.LatheGeometry(points.map(([r,y])=>new THREE.Vector2(r,y)),32);
+  const lathe=points=>new THREE.LatheGeometry(new THREE.SplineCurve(points.map(([r,y])=>new THREE.Vector2(r,y))).getPoints(72),48);
   this.mesh(lathe([[0,0],[.29,0],[.33,.045],[.33,.09],[.29,.14],[.27,.16],[.27,.2],[.21,.23],[.17,.31],[.13,.48],[.16,.54],[.2,.56],[.2,.61],[0,.61]]),mat,group);
   this.mesh(new THREE.TorusGeometry(.276,.018,8,48),hero?gold:mat,group,0,.18).rotation.x=Math.PI/2;
   if(kind==='p'){this.mesh(new THREE.SphereGeometry(.2,24,16),mat,group,0,.7);group.scale.setScalar(.8);}
@@ -77,8 +80,8 @@ export class ChessBoard {
    this.mesh(new THREE.SphereGeometry(.055,16,12),gold,group,0,1.16);
   }
   if(kind==='n'){
-   const shape=new THREE.Shape();shape.moveTo(-.22,.57);shape.lineTo(-.2,.86);shape.lineTo(-.08,1.12);shape.lineTo(.01,1.28);shape.lineTo(.08,1.12);shape.lineTo(.2,1.07);shape.lineTo(.35,.85);shape.lineTo(.31,.73);shape.lineTo(.12,.77);shape.lineTo(.02,.86);shape.lineTo(.05,.64);shape.closePath();
-   const geo=new THREE.ExtrudeGeometry(shape,{depth:.24,bevelEnabled:true,bevelSegments:2,steps:1,bevelSize:.035,bevelThickness:.035});geo.translate(0,0,-.12);this.mesh(geo,mat,group);
+   const shape=new THREE.Shape();shape.moveTo(-.22,.57);shape.bezierCurveTo(-.27,.85,-.2,1.08,-.07,1.18);shape.lineTo(-.025,1.32);shape.quadraticCurveTo(.045,1.3,.075,1.15);shape.bezierCurveTo(.18,1.13,.22,1.02,.32,.94);shape.quadraticCurveTo(.42,.86,.33,.77);shape.quadraticCurveTo(.24,.72,.12,.83);shape.quadraticCurveTo(-.01,.91,.03,.66);shape.closePath();
+   const geo=new THREE.ExtrudeGeometry(shape,{depth:.24,bevelEnabled:true,bevelSegments:5,steps:1,bevelSize:.045,bevelThickness:.045});geo.translate(0,0,-.12);this.mesh(geo,mat,group);
    for(const z of [-.155,.155])this.mesh(new THREE.SphereGeometry(.025,12,8),hero?gold:this.materials.black,group,.12,1,z);
    group.rotation.y=color==='w'?.15:Math.PI+.15;
   }
@@ -133,16 +136,16 @@ export class ChessBoard {
   }
   this.container.dataset.animating=victim?'capture':'move';this.marks.visible=false;
   return new Promise(resolve=>{
-   let frame;const began=performance.now(),duration=victim?760:520;
+   let frame;const began=performance.now(),timing=actionTiming(state,move),duration=timing.duration;
    const finish=()=>{cancelAnimationFrame(frame);this.finishAnimation=null;delete this.container.dataset.animating;this.marks.visible=true;
     for(const [object,original] of originals){object.material.dispose();object.material=original;}
     this.scene.remove(burst);for(const spark of burst.children)spark.geometry.dispose();burst.children[0]?.material.dispose();resolve();};
    this.finishAnimation=finish;
    const tick=now=>{
-    const t=Math.min((now-began)/duration,1),travel=Math.min(t/(victim ? 0.72 : 1),1),ease=travel*travel*(3-2*travel);
+    const elapsed=now-began,t=Math.min(elapsed/duration,1),travel=Math.max(0,Math.min((elapsed-timing.anticipation)/timing.travel,1)),ease=travel*travel*(3-2*travel);
     moving.position.lerpVectors(start,end,ease);moving.position.y=Math.sin(travel*Math.PI)*(jump?1.15:.16);
     if(rook)rook.position.lerpVectors(rookStart,rookEnd,ease);if(partner){partner.position.lerpVectors(end,start,ease);partner.position.y=Math.sin(travel*Math.PI)*.7;}
-    if(victim){const impact=Math.max(0,(t-.55)/.45);victim.scale.setScalar((state.board[capturedSquare]?.type==='p' ? 0.8 : 1)*(1-impact*.9));victim.position.y=-impact*.35;victim.rotation.z=impact*.8;for(const [object] of originals)object.material.opacity=1-impact;
+    if(victim){const impact=Math.max(0,Math.min((elapsed-timing.impact)/300,1));victim.scale.setScalar((state.board[capturedSquare]?.type==='p' ? 0.8 : 1)*(1-impact*.9));victim.position.y=-impact*.35;victim.rotation.z=impact*.8;for(const [object] of originals)object.material.opacity=1-impact;
      burst.children.forEach((spark,i)=>{const angle=i*Math.PI*2/12;spark.position.set(Math.cos(angle)*impact*.9,Math.sin(impact*Math.PI)*.45,Math.sin(angle)*impact*.9);spark.material.opacity=impact>0?1-impact:0;});
     }
     this.render();if(t<1)frame=requestAnimationFrame(tick);else finish();

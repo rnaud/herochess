@@ -14,6 +14,7 @@ export class GameSound {
   if(!this.enabled||this.context?.state!=='running')return;
   try{
    if(kind==='select')this.tone(660,880,0,.065,'sine',.12);
+   else if(kind==='draw')this.tone(240,120,0,.09,'triangle',.18);
    else if(kind==='deal')for(let i=0;i<3;i++)this.tone(180+i*45,100,i*.17,.075,'triangle',.18);
    else if(kind==='move'){this.tone(180,75,0,.085,'triangle',.65);this.tone(650,350,.03,.055,'sine',.12);}
    else if(kind==='rewind'){[880,660,440,220].forEach((f,i)=>this.tone(f,f*.6,i*.09,.3,'sine',.3));}
