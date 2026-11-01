@@ -5,6 +5,7 @@ This is a rules/design audit with deterministic legal-position tests, not a clai
 ## Turn and draw economy
 
 - Each action consumes exactly one card: use its power **instead of** a normal move, or discard it to make a normal move. No free spell plus move combinations.
+- With no card selected, a normal move automatically discards the leftmost card. Selecting a card activates its power directly; the secondary discard action lets the player choose a different card to cycle.
 - Draw one replacement after acting; each player holds three. There is no additional start-of-turn draw, so there is no overflow/discard loophole.
 - Both sides draw from the same shuffled 40-card pool: 7 Standard spells × 3 copies, 8 Powerful × 2, 3 Exceptional × 1. The initial pool is 52.5% Standard, 40% Powerful, 7.5% Exceptional. These are pool proportions, not fixed independent draw probabilities.
 - Exceptional reach is deliberately scarce. Pawn-focused spells are common alternatives to spending a scarce Tower Road on the same maneuver. A higher tier indicates broader potential, not a universally correct choice.

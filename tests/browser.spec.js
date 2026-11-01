@@ -1,5 +1,5 @@
 import {test,expect} from '@playwright/test';
-async function normalMove(page,from=12,to=28){await page.locator('[data-slot="0"]').click();await page.locator('#normal-mode').click();await page.locator('[data-square="'+from+'"]').click();await page.locator('[data-square="'+to+'"]').click();}
+async function normalMove(page,from=12,to=28){await page.locator('[data-square="'+from+'"]').click();await page.locator('[data-square="'+to+'"]').click();}
 async function fixture(page,card,pieces){await page.goto('/');await page.evaluate(async({card,pieces})=>{const {initialState,positionKey}=await import('/src/engine.js');const s=initialState('cards',42);s.board=Array(64).fill(null);for(const [i,type,color] of [[0,'k','w'],[63,'k','b'],...pieces])s.board[i]={type,color};s.rights='';s.hands.w=[card,'ward','frost'];s.hands.b=['step','retreat','flank'];s.history=[positionKey(s)];localStorage.setItem('herochess-cards-v2',JSON.stringify({version:2,state:s,human:'w',snapshots:[],journal:[],level:'1'}));},{card,pieces});await page.reload();}
 test('three-card hand, 18-card library, CPU reply, exact undo and reload',async({page})=>{
  const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto('/');await expect(page.locator('#board-view canvas')).toBeVisible();await expect(page.locator('.spell-card')).toHaveCount(3);await expect(page.locator('.cpu-card')).toHaveCount(3);await page.locator('.cpu-card summary').first().click();await expect(page.locator('.cpu-card p').first()).toBeVisible();await page.locator('.cpu-card summary').first().click();await page.screenshot({path:'/tmp/herochess-cards-desktop.png',fullPage:true});
@@ -37,10 +37,10 @@ test('families and power tiers are explicit and library filters compose',async({
 test('spell workbench fits a laptop and shows exact rules for the selected card',async({page})=>{
  await page.setViewportSize({width:1440,height:900});await page.goto('/');await page.locator('[data-slot="0"]').click();await page.screenshot({path:'/tmp/herochess-interface-complete.png',fullPage:true});
  await page.setViewportSize({width:1280,height:720});await fixture(page,'ward',[[27,'q','w'],[59,'r','b']]);
- await expect(page.locator('#power-mode')).toBeDisabled();await expect(page.locator('#normal-mode')).toBeDisabled();
+ await expect(page.locator('#power-mode')).toHaveCount(0);await expect(page.locator('#normal-mode')).toBeHidden();
  await page.locator('[data-slot="0"]').click();await expect(page.locator('#selected-card-title')).toHaveText('Glass Aegis');await expect(page.locator('#selected-card-art')).toBeVisible();await expect(page.locator('#selected-card-meta')).toContainText('Defense');await expect(page.locator('#card-instruction')).toContainText('It cannot be captured during the opponent’s next turn.');
- await expect(page.locator('#power-mode')).toBeEnabled();await page.locator('#normal-mode').click();await expect(page.locator('#card-instruction')).toContainText('Discard Glass Aegis');await page.locator('#power-mode').click();
- for(const selector of ['#board-view','[data-slot="0"]','[data-slot="1"]','[data-slot="2"]','#power-mode','#normal-mode']){const box=await page.locator(selector).boundingBox();expect(box.x).toBeGreaterThanOrEqual(0);expect(box.x+box.width).toBeLessThanOrEqual(1280);expect(box.y+box.height).toBeLessThanOrEqual(720);}
+ await expect(page.locator('#card-instruction')).toContainText('Click a highlighted target');await page.locator('#normal-mode').click();await expect(page.locator('#card-instruction')).toContainText('Discard Glass Aegis');await page.locator('[data-slot="0"]').click();await page.locator('[data-slot="0"]').click();
+ for(const selector of ['#board-view','[data-slot="0"]','[data-slot="1"]','[data-slot="2"]','#normal-mode']){const box=await page.locator(selector).boundingBox();expect(box.x).toBeGreaterThanOrEqual(0);expect(box.x+box.width).toBeLessThanOrEqual(1280);expect(box.y+box.height).toBeLessThanOrEqual(720);}
  await page.screenshot({path:'/tmp/herochess-interface-desktop.png',fullPage:true});
  await page.setViewportSize({width:1440,height:900});await page.screenshot({path:'/tmp/herochess-interface-wide.png',fullPage:true});
  await page.setViewportSize({width:390,height:844});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.screenshot({path:'/tmp/herochess-interface-mobile.png',fullPage:true});
@@ -53,7 +53,7 @@ test('clicking a selected card clears its targets and restores the unselected st
  await page.locator('[data-slot="0"]').click();await expect(page.locator('.flat-square.legal')).not.toHaveCount(0);
  await page.locator('[data-slot="0"]').click();await expect(page.locator('.spell-card[aria-pressed="true"]')).toHaveCount(0);
  await expect(page.locator('.flat-square.legal')).toHaveCount(0);await expect(page.locator('#selected-card-art')).toBeHidden();
- await expect(page.locator('#power-mode')).toBeDisabled();await expect(page.locator('#normal-mode')).toBeDisabled();
+ await expect(page.locator('#power-mode')).toHaveCount(0);await expect(page.locator('#normal-mode')).toBeHidden();
  await expect(page.locator('#move-count')).toHaveText('00');expect(await page.locator('.spell-card strong').allTextContents()).toEqual(hand);
  await page.locator('[data-slot="0"]').press('Enter');await expect(page.locator('[data-slot="0"]')).toHaveAttribute('aria-pressed','true');
  await page.locator('[data-slot="0"]').press('Enter');await expect(page.locator('[data-slot="0"]')).toHaveAttribute('aria-pressed','false');
@@ -76,4 +76,22 @@ test('old card saves are preserved separately when balance rules change',async({
  await page.locator('#new-button').click();await page.getByRole('button',{name:'Deal & play'}).click();
  expect(await page.evaluate(()=>localStorage.getItem('herochess-cards-v1'))).toBe('previous-card-match');
  expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('herochess-cards-v2')).version)).toBe(2);
+});
+
+test('ordinary moves need no card selection and cycle the leftmost card',async({page})=>{
+ await page.goto('/');await page.locator('#view-2d').click();
+ const before=await page.locator('.spell-card').evaluateAll(cards=>cards.map(c=>c.dataset.card));
+ await page.locator('[data-square="12"]').click();await expect(page.locator('[data-square="28"]')).toHaveClass(/legal/);
+ await expect(page.locator('[data-square="28"]')).not.toHaveClass(/power-move/);
+ await page.locator('[data-square="28"]').click();await expect(page.locator('#move-count')).toHaveText('02',{timeout:15000});
+ const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('herochess-cards-v2')));
+ expect(saved.state.hands.w.slice(0,2)).toEqual(before.slice(1));expect(saved.state.hands.w).toHaveLength(3);
+ await page.locator('#undo-button').click();expect(await page.locator('.spell-card').evaluateAll(cards=>cards.map(c=>c.dataset.card))).toEqual(before);
+});
+test('choosing another card after discard mode activates its power immediately',async({page})=>{
+ await fixture(page,'tower',[[27,'q','w'],[59,'r','b']]);await page.locator('#view-2d').click();
+ await page.locator('[data-slot="0"]').click();await page.locator('#normal-mode').click();
+ await page.locator('[data-slot="1"]').click();await expect(page.locator('[data-slot="1"]')).toHaveAttribute('data-action','power');
+ await expect(page.locator('#card-instruction')).toContainText('Click a highlighted target');
+ await page.locator('[data-square="27"]').click();await expect(page.locator('#effects')).toContainText('shielded');
 });

@@ -6,8 +6,8 @@ A JavaScript + Three.js card-chess game: standard pieces, a three-card hand, and
 
 ## The turn loop
 
-1. Choose one of your three cards.
-2. Use its power **instead of** your normal move, or choose **Discard & make a normal move**.
+1. Select a piece to move normally, or click a card to activate its power directly.
+2. Normal moves automatically discard your leftmost card. To choose a different discard, select it and click **Discard this card instead**. Click a selected card again to cancel.
 3. Select a piece and a legal destination. Shield and freeze cards need just one target; swaps need two friendly pieces.
 4. The used/discarded card goes into the shared discard pile. Draw a replacement immediately, so you always hold three; that replacement is available on your next turn.
 
@@ -116,3 +116,5 @@ The full game interface was redesigned from a [built-in image-generation referen
 The new tabletop and Automaton portrait were generated with the built-in tool; the existing varied card illustrations are retained. [Exact prompts and asset paths](art-direction/interface-v3-prompts.md) document the generation. Card summaries help scanning; the selected panel, card atlas and accessible names retain the full rules.
 
 Balance rationale and card-by-card roles: [balance review](BALANCE.md).
+
+Normal moves require no card selection and automatically discard/replace the leftmost card. Clicking a card activates its power directly; click again to cancel. To choose a different discard for a normal move, select that card and use “Discard this card instead.”
