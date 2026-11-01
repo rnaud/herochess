@@ -9,7 +9,7 @@ const cardArt=id=>`${import.meta.env.BASE_URL}art/realms/${id}.jpg`;
 const familyBadge=c=>`<span class="family-badge" data-family="${c.family}"><span aria-hidden="true">${FAMILIES[c.family].icon}</span> ${FAMILIES[c.family].name}</span>`;
 const tierBadge=c=>`<span class="tier-badge" data-tier="${c.tier}" aria-label="${POWER_TIERS[c.tier].name}, power tier ${c.tier} of 3"><span aria-hidden="true">${POWER_TIERS[c.tier].stars}</span> ${POWER_TIERS[c.tier].name}</span>`;
 const glyph={p:'♟',n:'♞',b:'♝',r:'♜',q:'♛',k:'♚'};
-let resumed=false,dealAnimations=[];
+let resumed=false,dealAnimations=[],inspectedSquare=null;
 let state=initialState(),human='w',snapshots=[],journal=[],selected=null,slot=null,usePower=true,moves=[],worker=null,requestId=0,thinking=false,animating=false,transitionId=0,flatAnimations=[],board=null,view='3d',flipped=false,level='2';
 try{const saved=JSON.parse(localStorage.getItem(SAVE_KEY));if(saved?.version===2&&saved.state?.board?.length===64&&saved.state.board.every(p=>p===null||PIECES[p.type])&&saved.state.hands?.w?.length===3&&saved.state.hands?.b?.length===3&&[...saved.state.hands.w,...saved.state.hands.b,...saved.state.deck,...saved.state.discard].every(id=>CARDS[id])&&['w','b'].includes(saved.human)){
  resumed=true;state=saved.state;human=saved.human;snapshots=saved.snapshots;journal=saved.journal;level=saved.level||'2';flipped=human==='b';
@@ -20,7 +20,7 @@ function save(){try{localStorage.setItem(SAVE_KEY,JSON.stringify({version:2,stat
 function stopCPU(){requestId++;worker?.terminate();worker=null;thinking=false;}
 function motionControls(){for(const id of ['flip-button','view-2d','difficulty'])$(id).disabled=animating;$('view-3d').disabled=animating||!board;}
 function cancelPresentation(){transitionId++;effects.cancel();board?.cancelAnimation();flatAnimations.forEach(a=>a.cancel());flatAnimations=[];animating=false;motionControls();}
-function resetSelection(){selected=null;slot=null;moves=[];usePower=true;}
+function resetSelection(){inspectedSquare=null;$('piece-status').hidden=true;selected=null;slot=null;moves=[];usePower=true;}
 function choice(){return state.mode==='cards'?{slot:slot??0,usePower:slot!==null&&usePower}:null;}
 function available(from=null){return legalMoves(state,from,choice());}
 function startCPU(){
@@ -63,8 +63,22 @@ async function commit(move){
  const point=square=>{if(view==='3d'&&board)return board.screenPoint(square);const rect=$('flat-board').querySelector(`[data-square="${square}"]`)?.getBoundingClientRect();return rect?{x:rect.left+rect.width/2,y:rect.top+rect.height/2}:null;};
  try{await Promise.all([effects.play(before,move,source,point),view==='3d'&&board?board.animateMove(before,move):animateFlat(before,move)]);}finally{if(id===transitionId){animating=false;motionControls();render();if(!end.over&&state.turn!==human)startCPU();}}
 }
+function renderPieceStatus(){
+ const square=inspectedSquare,p=square===null?null:state.board[square];
+ const descriptions=[];
+ if(p&&state.shield?.square===square)descriptions.push('<strong>◇ Shielded · Glass Aegis</strong><p>This piece cannot be captured. It still attacks and blocks paths normally.</p>');
+ if(p&&state.freeze?.square===square)descriptions.push('<strong>❄ Frozen · Winter Seal</strong><p>This piece cannot move or swap, including by a card power. It still attacks and blocks paths, so it can still give check.</p>');
+ $('piece-status').hidden=!descriptions.length;
+ if(!descriptions.length)return;
+ $('piece-status-title').textContent=`${p.color==='w'?'White':'Black'} ${PIECES[p.type].name} · ${squareName(square)}`;
+ $('piece-status-details').innerHTML=descriptions.join('')+`<p class="status-expiry">Expires after ${state.turn==='w'?'White':'Black'} completes this turn, even if they use a card.</p>`;
+}
+$('close-piece-status').onclick=()=>{inspectedSquare=null;renderPieceStatus();};
+document.addEventListener('keydown',event=>{if(event.key==='Escape'){inspectedSquare=null;renderPieceStatus();}});
 function selectSquare(square){
- if(animating||thinking||state.turn!==human||outcome(state).over)return;
+ if(animating)return;
+ inspectedSquare=square;renderPieceStatus();
+ if(thinking||state.turn!==human||outcome(state).over)return;
  const card=state.mode==='cards'&&slot!==null&&usePower?CARDS[state.hands[human][slot]]:null;
  if(card?.effect){const action=available(square).find(m=>m.special===card.effect);if(action)commit(action);else $('card-instruction').textContent='That is not a legal target. Kings cannot receive powers; your king must remain safe.';return;}
  const options=moves.filter(m=>m.to===square);
@@ -92,6 +106,8 @@ function renderHand(){
  $('selected-card-art').hidden=!active;$('selected-card-placeholder').hidden=!!active;
  if(active)$('selected-card-art').src=cardArt(state.hands[human][slot]);
  $('selected-card-title').textContent=active?active.name:'Normal chess move';
+ $('selected-card-example').hidden=slot===null||state.hands[human][slot]!=='pierce';
+ $('selected-card-example').innerHTML=slot!==null&&state.hands[human][slot]==='pierce'?veilExample():'';
  $('selected-card-meta').innerHTML=active?`${familyBadge(active)} ${tierBadge(active)}`:'';
 
  $('hand-panel').hidden=state.mode!=='cards';$('cpu-hand-panel').hidden=state.mode!=='cards';
@@ -106,6 +122,7 @@ function renderHand(){
  $('card-instruction').textContent=thinking?'The Automaton is choosing from its visible hand…':instruction;
 }
 function render(){
+ renderPieceStatus();
  const end=outcome(state);$('turn-number').textContent=`ROUND ${String(state.fullmove).padStart(2,'0')}`;$('mode-label').textContent=state.mode==='cards'?'CARD CHESS':'CLASSIC CHESS';$('turn-chip').textContent=end.over?'GAME OVER':state.turn===human?'YOUR TURN':'CPU TURN';$('thinking-overlay').hidden=!thinking;$('player-caption').textContent=human==='w'?'IVORY · WHITE':'OBSIDIAN · BLACK';$('opponent-side').textContent=human==='w'?'OBSIDIAN':'IVORY';$('undo-button').disabled=!snapshots.some(s=>s.turn===human);motionControls();
  let title=end.over?(end.winner?(end.winner===human?'A winning hand.':'The Automaton prevails.'):'An even ending.'):thinking?'Reading the possibilities.':inCheck(state)?'Your king is in check.':state.mode==='cards'?'Your hand. Your move.':'Your next move.';
  let detail=end.over?`${end.reason}. Deal a new game to play again.`:thinking?'The CPU searches normal moves and card actions. It cannot see the draw pile.':inCheck(state)?'Escape check with a normal move or a card power.':state.mode==='cards'?'Move a piece, or click a card for its power. Normal moves keep all your cards.':'Select a piece, then a highlighted square.';
@@ -132,12 +149,13 @@ $('new-button').onclick=()=>{$('side').value=human;$('new-form').elements.mode.v
 $('new-form').onsubmit=e=>{e.preventDefault();cancelPresentation();stopCPU();const data=new FormData(e.target);state=initialState(data.get('mode'));human=data.get('side');snapshots=[];journal=[];resetSelection();flipped=human==='b';board?.flip(flipped);$('new-dialog').close();$('save-notice').hidden=true;$('cpu-caption').textContent='CARD-AWARE CPU';save();render();startCPU();dealHand();};
 $('guide-button').onclick=()=>$('guide-dialog').showModal();$('library-button').onclick=()=>$('library-dialog').showModal();
 for(const button of document.querySelectorAll('.close-dialog'))button.onclick=()=>button.closest('dialog').close();
+function veilExample(){return '<div class="veil-example" aria-label="Example: rook a1 jumps pawn a3 to capture an enemy knight on a6. The pawn stays on a3."><div class="veil-diagram" aria-hidden="true"><span>♜<small>Your rook<br>a1</small></span><b>→</b><span>♟<small>Blocker<br>a3 · stays</small></span><b>→</b><span>♞<small>Enemy<br>a6 · captured</small></span></div><p>Your rook lands on a6. The pawn on a3 stays. All other squares between them must be empty.</p></div>';}
 function renderLibrary(){
  const family=$('family-filter').value,tier=$('tier-filter').value;
  const ids=CARD_IDS.filter(id=>(!family||CARDS[id].family===family)&&(!tier||String(CARDS[id].tier)===tier));
  $('library-count').textContent=`${ids.length} of ${CARD_IDS.length} spells`;
  $('library-empty').hidden=ids.length>0;
- $('card-library').innerHTML=ids.map(id=>{const c=CARDS[id];return `<article class="library-card" data-card="${id}" data-tier="${c.tier}"><div class="library-family">${familyBadge(c)}<small>${c.kind} · ${POWER_TIERS[c.tier].copies} ${POWER_TIERS[c.tier].copies===1?'copy':'copies'} / deck</small></div><img class="library-art" src="${cardArt(id)}" alt="" width="900" height="600" loading="lazy"><span aria-hidden="true">${c.icon}</span><h3>${c.name}</h3><div class="library-rating">${tierBadge(c)}</div><p>${c.text}</p></article>`;}).join('');
+ $('card-library').innerHTML=ids.map(id=>{const c=CARDS[id];return `<article class="library-card" data-card="${id}" data-tier="${c.tier}"><div class="library-family">${familyBadge(c)}<small>${c.kind} · ${POWER_TIERS[c.tier].copies} ${POWER_TIERS[c.tier].copies===1?'copy':'copies'} / deck</small></div><img class="library-art" src="${cardArt(id)}" alt="" width="900" height="600" loading="lazy"><span aria-hidden="true">${c.icon}</span><h3>${c.name}</h3><div class="library-rating">${tierBadge(c)}</div><p>${c.text}</p>${id==='pierce'?veilExample():''}</article>`;}).join('');
 }
 $('card-legend').innerHTML=`<summary>Card families & power tiers</summary><div class="family-key">${Object.entries(FAMILIES).map(([id,f])=>`<div>${familyBadge({family:id})}<span>${f.text}</span></div>`).join('')}</div><div class="tier-key"><b>Frame color = power tier</b>${Object.keys(POWER_TIERS).map(tier=>tierBadge({tier})).join('')}</div><p>Silver = Standard · Blue = Powerful · Gold = Exceptional. Tiers rate a spell’s general potential, not the best move in every position. New matches use 40 cards: 3 copies of each Standard, 2 of each Powerful, and 1 of each Exceptional spell. Gold cards are rarer.</p>`;
 $('family-filter').innerHTML='<option value="">All families</option>'+Object.entries(FAMILIES).map(([id,f])=>`<option value="${id}">${f.name}</option>`).join('');

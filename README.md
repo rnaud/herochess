@@ -122,3 +122,5 @@ Normal moves require no card selection and keep all cards. Clicking a card activ
 ### Action feedback
 
 Played powers burn their card with a glowing edge and embers; normal moves leave the hand untouched. Board feedback follows the action: family-colored trails and departure rings, capture shockwaves, a piercing beam, shield pulses, and frost crystals. Frozen 3D pieces use a faceted ice shell. Effects work for both players and in both board views. Reduced-motion preference skips transient effects, and undo/new match cancels and cleans them up immediately.
+
+Click a shielded or frozen piece to inspect its status on the board, including the restriction and exact expiry turn. This works for either side, during CPU thinking, and with 2D keyboard controls. Close the panel with × or Escape. Through the Veil includes a labeled capture example in the selected-card panel and atlas.

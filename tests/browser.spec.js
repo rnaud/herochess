@@ -112,3 +112,25 @@ test('3D spell capture has board feedback and reduced motion skips all transient
  await page.emulateMedia({reducedMotion:'reduce'});await page.locator('#view-2d').click();await page.locator('[data-slot="0"]').click();await page.locator('[data-square="18"]').click();await page.locator('[data-square="44"]').click();
  await expect(page.locator('#move-count')).toHaveText('02',{timeout:15000});await expect(page.locator('.game-fx')).toHaveCount(0);await expect(page.locator('body > .flat-piece')).toHaveCount(0);
 });
+
+test('clicking affected pieces explains their status and does not spend a card',async({page})=>{
+ await fixture(page,'ward',[[9,'q','w'],[27,'r','b']]);
+ await page.evaluate(()=>{const saved=JSON.parse(localStorage.getItem('herochess-cards-v2'));saved.state.shield={square:27,color:'b'};localStorage.setItem('herochess-cards-v2',JSON.stringify(saved));});await page.reload();
+ await page.locator('[data-square="27"]').evaluate(b=>b.click());await expect(page.locator('#piece-status')).toBeVisible();await expect(page.locator('#piece-status-title')).toHaveText('Black Rook · d4');await expect(page.locator('#piece-status')).toContainText('cannot be captured');await expect(page.locator('#piece-status')).toContainText('White completes this turn');await expect(page.locator('#move-count')).toHaveText('00');
+ await page.screenshot({path:'/tmp/herochess-piece-status.png',fullPage:true});await page.locator('#close-piece-status').click();await expect(page.locator('#piece-status')).toBeHidden();
+ await page.evaluate(()=>{const saved=JSON.parse(localStorage.getItem('herochess-cards-v2'));saved.state.shield=null;saved.state.freeze={square:9,color:'w'};localStorage.setItem('herochess-cards-v2',JSON.stringify(saved));});await page.reload();await page.locator('#view-2d').click();
+ await page.locator('[data-square="9"]').press('Enter');await expect(page.locator('#piece-status')).toContainText('cannot move or swap');await expect(page.locator('#piece-status')).toContainText('still give check');await expect(page.locator('.flat-square.legal')).toHaveCount(0);
+ await page.keyboard.press('Escape');await expect(page.locator('#piece-status')).toBeHidden();await page.locator('[data-square="9"]').click();await page.locator('[data-square="0"]').click();await expect(page.locator('#piece-status')).toBeHidden();await expect(page.locator('.flat-square.legal')).not.toHaveCount(0);
+});
+test('statuses can be inspected during the CPU turn',async({page})=>{
+ await fixture(page,'ward',[[9,'q','w'],[27,'r','b']]);
+ await page.evaluate(()=>{const saved=JSON.parse(localStorage.getItem('herochess-cards-v2'));saved.state.turn='b';saved.state.shield={square:9,color:'w'};localStorage.setItem('herochess-cards-v2',JSON.stringify(saved));});
+ await page.addInitScript(()=>{window.Worker=class{postMessage(){}terminate(){}};});await page.reload();await expect(page.locator('#thinking-overlay')).toBeVisible();
+ await page.locator('[data-square="9"]').evaluate(b=>b.click());await expect(page.locator('#piece-status')).toContainText('Black completes this turn');await expect(page.locator('#move-count')).toHaveText('00');
+});
+test('Through the Veil includes an explicit capture example in hand and atlas',async({page})=>{
+ await fixture(page,'pierce',[[18,'b','w'],[27,'p','w'],[45,'q','b']]);await page.locator('[data-slot="0"]').click();
+ await expect(page.locator('#card-instruction')).toContainText('jumped piece stays');await expect(page.locator('#selected-card-example')).toBeVisible();await expect(page.locator('#selected-card-example')).toContainText('Your rook lands on a6');
+ await page.setViewportSize({width:390,height:844});await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ await page.screenshot({path:'/tmp/veil-mobile-fixed.png',fullPage:true});await page.locator('#library-button').click();await expect(page.locator('.library-card[data-card="pierce"] .veil-example')).toContainText('The pawn on a3 stays');
+});
