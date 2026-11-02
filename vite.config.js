@@ -1,2 +1,3 @@
 import { defineConfig } from 'vite';
-export default defineConfig({ base: './' });
+import {offlineApp} from './scripts/pwa.js';
+export default defineConfig({ base: './',plugins:[offlineApp()] });

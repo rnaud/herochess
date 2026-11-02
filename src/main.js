@@ -1,3 +1,5 @@
+import {Controller} from './controller.js';
+import {setupInstall} from './install.js';
 import './style.css';
 import {CARDS,CARD_IDS,FAMILIES,POWER_TIERS,uniqueDeck} from './cards.js';
 import {ChessBoard} from './board.js';
@@ -247,3 +249,10 @@ $('reset-filters').onclick=()=>{$('family-filter').value='';$('tier-filter').val
 $('card-key-button').onclick=()=>{$('library-dialog').showModal();$('card-legend').open=true;$('card-legend').scrollIntoView({block:'nearest'});};
 renderLibrary();
 render();startCPU();if(!resumed)dealHand();
+
+setupInstall();
+const controller=new Controller({
+ flipped:()=>flipped,select:selectSquare,unlock:()=>sound.unlock(),
+ cancel:()=>{if(animating)return;if(cpuSlot!==null){cpuSlot=null;cpuPiece=null;}else if(slot!==null){selectCard(null);return;}else{selected=null;moves=[];inspectedSquare=null;}render();},
+ point:square=>{if(view==='3d'&&board)return board.screenPoint(square);const r=$('flat-board').querySelector(`[data-square="${square}"]`)?.getBoundingClientRect();return r?{x:r.left+r.width/2,y:r.top+r.height/2}:null;}
+});
