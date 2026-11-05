@@ -8,26 +8,32 @@ import {actionTiming} from './motion.js';
 import {opponentPreview} from './preview.js';
 import {pixelUrl} from './pixels.js';
 import {loadStats,statsLine,recordResult,dailySummary} from './stats.js';
+import {PixelFX} from './pixel-fx.js';
 let cpuSlot=null,cpuPiece=null;
 let impactTimer=null,flatCleanup=null,boardPresentation=null,boardDirty=false;
-const effects=new GameEffects(),sound=new GameSound();
+const effects=new GameEffects(),sound=new GameSound();let pixelFx=null;let fxIntensity='full';let resultTimer=null;
 for(const event of ['pointerdown','keydown'])document.addEventListener(event,()=>sound.unlock(),{capture:true});
 function renderSound(){const button=document.getElementById('sound-button');button.textContent=sound.enabled?'♪ On':'♪ Off';button.setAttribute('aria-label',sound.enabled?'Mute sound effects':'Enable sound effects');button.setAttribute('aria-pressed',String(sound.enabled));}
 document.getElementById('sound-button').onclick=async()=>{await sound.toggle();renderSound();};renderSound();
 import {PIECES,initialState,legalMoves,applyMove,outcome,moveLabel,squareName,opposite,inCheck,positionKey} from './engine.js';
 const $=id=>document.getElementById(id),SAVE_KEY='herochess-cards-v2';
+try{fxIntensity=localStorage.getItem('herochess-fx')||'full';}catch{}
+if(!['full','subtle','off'].includes(fxIntensity))fxIntensity='full';
+document.body.dataset.fx=fxIntensity;
+pixelFx=new PixelFX($('fx-layer'),document.querySelector('.board-shell'));
+pixelFx.setIntensity(fxIntensity);
 const cardArt=(id,size=960)=>`${import.meta.env.BASE_URL}art/realms/${id}-${size}.webp`;
 const familyBadge=c=>`<span class="family-badge" data-family="${c.family}"><span aria-hidden="true">${FAMILIES[c.family].icon}</span> ${FAMILIES[c.family].name}</span>`;
 const tierBadge=c=>`<span class="tier-badge" data-tier="${c.tier}" aria-label="${POWER_TIERS[c.tier].name}, power tier ${c.tier} of 3"><span aria-hidden="true">${POWER_TIERS[c.tier].stars}</span> ${POWER_TIERS[c.tier].name}</span>`;
 let resumed=false,dealAnimations=[],inspectedSquare=null,checkKey='',checkAlertAnimation=null,rewindsUsed=0,rewindReady=true,pendingFreeze=null,handOpen=false,exchangesUsed=0,pendingCardFocus=false,resultShown=false,resultRecorded=false,hotseat=false,dailyMode=false,hintsUsed=0,hintMove=null,hintText='',hintWorker=null,hintRequest=0;
-matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change',event=>{if(event.matches){checkAlertAnimation?.cancel();effects.cancel();}});
+matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change',event=>{if(event.matches){checkAlertAnimation?.cancel();effects.cancel();pixelFx?.cancel();}});
 let state=initialState(),human='w',snapshots=[],journal=[],selected=null,slot=null,usePower=true,moves=[],worker=null,requestId=0,thinking=false,animating=false,transitionId=0,flatAnimations=[],board=null,view='2d',flipped=false,level='2',boardFailed=false,boardLoading=null,viewRequest=0;
 try{const saved=JSON.parse(localStorage.getItem(SAVE_KEY));if([2,3].includes(saved?.version)&&saved.state?.board?.length===64&&saved.state.board.every(p=>p===null||PIECES[p.type])&&saved.state.hands?.w?.length===3&&saved.state.hands?.b?.length===3&&[...saved.state.hands.w,...saved.state.hands.b,...saved.state.deck,...saved.state.discard].every(id=>CARDS[id])&&['w','b'].includes(saved.human)){
  resumed=true;human=saved.human;rewindsUsed=Number.isInteger(saved.rewindsUsed)?Math.max(0,Math.min(3,saved.rewindsUsed)):0;rewindReady=saved.rewindReady!==false;exchangesUsed=saved.exchangesUsed===1?1:0;hintsUsed=Number.isInteger(saved.hintsUsed)?Math.max(0,Math.min(3,saved.hintsUsed)):0;dailyMode=!!saved.dailyMode;hotseat=!!saved.hotseat;resultRecorded=!!saved.resultRecorded;if(hotseat){human='w';flipped=false;document.body.dataset.hotseat='true';$('cpu-caption').textContent='PASS & PLAY';}
  const upgrade=s=>{const next=uniqueDeck(s,human);next.history=[positionKey(next)];return next;};
  state=saved.version===2?upgrade(saved.state):saved.state;snapshots=saved.version===2?saved.snapshots.map(upgrade):saved.snapshots;journal=saved.journal;level=saved.level||'2';flipped=human==='b';
 }else if((localStorage.getItem('herochess-v2')||localStorage.getItem('herochess-cards-v1')))$('save-notice').hidden=false;}catch{}
-$('difficulty').value=level;$('mobile-difficulty').value=level;
+$('difficulty').value=level;$('mobile-difficulty').value=level;$('fx-intensity').value=fxIntensity;
 function canUseWebGL(){try{const c=document.createElement('canvas');return !!((window.WebGLRenderingContext||window.WebGL2RenderingContext)&&(c.getContext('webgl2')||c.getContext('webgl')));}catch{return false;}}
 if(!canUseWebGL())boardFailed=true;
 async function ensureBoard(){
@@ -39,7 +45,7 @@ async function ensureBoard(){
 function save(){try{localStorage.setItem(SAVE_KEY,JSON.stringify({version:3,state,human,snapshots,journal,rewindsUsed,rewindReady,exchangesUsed,hintsUsed,dailyMode,hotseat,resultRecorded,level:$('difficulty').value}));}catch{}}
 function stopCPU(){requestId++;worker?.terminate();worker=null;thinking=false;}
 function motionControls(){for(const id of ['flip-button','view-2d','difficulty'])$(id).disabled=animating;$('view-3d').disabled=animating||boardFailed;$('view-3d').title=boardFailed?'3D is unavailable in this browser; the pixel board is in use.':'Switch to the 3D table';}
-function cancelPresentation(){transitionId++;clearTimeout(impactTimer);dealAnimations.forEach(a=>a.cancel());sound.stop();effects.cancel();board?.cancelAnimation();flatAnimations.forEach(a=>a.cancel());flatAnimations=[];flatCleanup?.();flatCleanup=null;animating=false;motionControls();}
+function cancelPresentation(){transitionId++;document.body.dataset.animating='false';clearTimeout(impactTimer);clearTimeout(resultTimer);resultTimer=null;pixelFx?.cancel();dealAnimations.forEach(a=>a.cancel());sound.stop();effects.cancel();board?.cancelAnimation();flatAnimations.forEach(a=>a.cancel());flatAnimations=[];flatCleanup?.();flatCleanup=null;animating=false;motionControls();}
 function resetSelection(){cancelHint();cpuSlot=null;cpuPiece=null;pendingFreeze=null;inspectedSquare=null;$('piece-status').hidden=true;selected=null;slot=null;moves=[];usePower=true;}
 function choice(){return state.mode==='cards'?{slot:slot??0,usePower:slot!==null&&usePower}:null;}
 const youSide=()=>hotseat?state.turn:human;
@@ -74,7 +80,7 @@ async function animateFlat(state,move){
  const flat=$('flat-board'),origin=flat.querySelector(`[data-square="${move.from}"] .flat-piece`),destination=flat.querySelector(`[data-square="${move.to}"] .flat-piece`);
  if(!origin||!destination)return;
  const ghosts=[],hidden=[];
- const ghostFor=(element)=>{const rect=element.getBoundingClientRect(),ghost=element.cloneNode(true),style=getComputedStyle(element);Object.assign(ghost.style,{position:'fixed',left:rect.left+'px',top:rect.top+'px',width:rect.width+'px',height:rect.height+'px',margin:'0',zIndex:'100',pointerEvents:'none',font:style.font,color:style.color,textShadow:style.textShadow,display:'grid',placeItems:'center'});document.body.append(ghost);ghosts.push(ghost);hidden.push(element);element.style.visibility='hidden';return {ghost,rect};};
+ const ghostFor=(element)=>{const rect=element.getBoundingClientRect(),shell=$('flat-board').closest('.board-shell'),shellRect=shell.getBoundingClientRect(),ghost=element.cloneNode(true),style=getComputedStyle(element);Object.assign(ghost.style,{position:'absolute',left:(rect.left-shellRect.left)+'px',top:(rect.top-shellRect.top)+'px',width:rect.width+'px',height:rect.height+'px',margin:'0',zIndex:'4',pointerEvents:'none',font:style.font,color:style.color,textShadow:style.textShadow,display:'grid',placeItems:'center'});shell.append(ghost);ghosts.push(ghost);hidden.push(element);element.style.visibility='hidden';return {ghost,rect};};
  const capturedSquare=move.special==='ep'?move.to+(state.turn==='w'?-8:8):move.to;
  const victim=move.special!=='swap'&&state.board[capturedSquare]?flat.querySelector(`[data-square="${capturedSquare}"] .flat-piece`):null;
  const animations=[];
@@ -90,11 +96,23 @@ async function animateFlat(state,move){
 }
 async function commit(move){
  const before=state,text=moveLabel(state,move),id=++transitionId;
+ const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches,fxOn=fxIntensity!=='off'&&!reduced;
+ const oldShield=before.shield?.square??null,oldFreeze=before.freeze?.square??null;
  effects.cancel();if(hotseat||before.turn===human)rewindReady=true;
- const timing=actionTiming(before,move);if(move.usePower)sound.play('power',CARDS[move.card]?.family);clearTimeout(impactTimer);impactTimer=setTimeout(()=>{if(id===transitionId)sound.play(timing.capture?'capture':move.special==='castle'?'castle':'move');},matchMedia('(prefers-reduced-motion: reduce)').matches?0:timing.impact);snapshots.push(state);state=applyMove(state,move);const end=outcome(state);journal.push(text+(end.reason==='Checkmate'?' #':inCheck(state)?' +':''));resetSelection();save();animating=true;motionControls();renderRewind();$('thinking-overlay').hidden=true;
+ const timing=actionTiming(before,move),capturedSquare=move.special==='ep'?move.to+(before.turn==='w'?-8:8):move.to,capturedPiece=before.board[capturedSquare];
+ if(move.usePower)sound.play('power',CARDS[move.card]?.family);
+ clearTimeout(impactTimer);
+ impactTimer=setTimeout(()=>{if(id===transitionId){sound.play(timing.capture?'capture':move.special==='castle'?'castle':'move');if(timing.capture&&capturedPiece?.type)sound.impact(capturedPiece.type);}},reduced?0:timing.impact);
+ snapshots.push(state);state=applyMove(state,move);const end=outcome(state);
+ journal.push(text+(end.reason==='Checkmate'?' #':inCheck(state)?' +':''));resetSelection();save();animating=true;motionControls();renderRewind();$('thinking-overlay').hidden=true;document.body.dataset.animating='true';$('status-title').textContent='Playing the action…';$('status-detail').textContent=text;
  const source=before.turn===human?$('hand').children[move.slot]:$('cpu-hand').children[move.slot];
- const point=square=>{if(view==='3d'&&board)return board.screenPoint(square);const rect=$('flat-board').querySelector(`[data-square="${square}"]`)?.getBoundingClientRect();return rect?{x:rect.left+rect.width/2,y:rect.top+rect.height/2}:null;};
- try{await Promise.all([effects.play(before,move,source,point,human),view==='3d'&&board?board.animateMove(before,move):animateFlat(before,move)]);}finally{if(id===transitionId){flatCleanup?.();flatCleanup=null;render();if(move.usePower&&!matchMedia('(prefers-reduced-motion: reduce)').matches){const card=(before.turn===human?$('hand'):$('cpu-hand')).children[move.slot];if(card){const a=card.animate([{opacity:0,transform:'translateY(24px) scale(.9)'},{opacity:1,transform:'translateY(0) scale(1)'}],{duration:300,easing:'ease-out'});a.id='replacement-deal';dealAnimations=[a];sound.play('draw');await Promise.allSettled([a.finished]);}}if(id===transitionId){animating=false;motionControls();render();if(!end.over&&state.turn!==human)startCPU();}}}
+ if(fxOn){
+  pixelFx.play(before,move,screenPoint);
+  if(oldShield!==null&&state.shield?.square!==oldShield)pixelFx.shieldBreak(oldShield,screenPoint(oldShield));
+  if(oldFreeze!==null&&state.freeze?.square!==oldFreeze)pixelFx.thaw(oldFreeze,screenPoint(oldFreeze));
+ }
+ const fxPlay=fxOn?effects.play(before,move,source,screenPoint,human):Promise.resolve();
+ try{await Promise.all([fxPlay,view==='3d'&&board?board.animateMove(before,move):animateFlat(before,move)]);}finally{if(id===transitionId){flatCleanup?.();flatCleanup=null;render();if(move.usePower&&!reduced){const card=(before.turn===human?$('hand'):$('cpu-hand')).children[move.slot];if(card){const a=card.animate([{opacity:0,transform:'translateY(24px) scale(.9)'},{opacity:1,transform:'translateY(0) scale(1)'}],{duration:300,easing:'ease-out'});a.id='replacement-deal';dealAnimations=[a];sound.play('draw');await Promise.allSettled([a.finished]);}}if(id===transitionId){animating=false;document.body.dataset.animating='false';motionControls();render();if(fxOn&&!end.over)pixelFx.turn(state.turn);if(!end.over&&state.turn!==human)startCPU();}}}
 }
 function renderPieceStatus(){
  const square=inspectedSquare,p=square===null?null:state.board[square];
@@ -215,6 +233,7 @@ function positionCheckMarker(){
  else{const r=$('flat-board').querySelector(`[data-square="${square}"]`)?.getBoundingClientRect();if(r)point={x:r.left+r.width/2,y:r.top+r.height/2};}
  if(point){marker.style.left=(point.x-shell.left)+'px';marker.style.top=(point.y-shell.top)+'px';}
 }
+function screenPoint(square){if(view==='3d'&&board)return board.screenPoint(square);const r=$('flat-board').querySelector(`[data-square="${square}"]`)?.getBoundingClientRect();return r?{x:r.left+r.width/2,y:r.top+r.height/2}:null;}
 function renderRewind(){
  const remaining=3-rewindsUsed,button=$('undo-button');button.disabled=remaining===0||!rewindReady||outcome(state).over||(hotseat?!snapshots.length:!snapshots.some(s=>s.turn===human));
  $('rewind-count').textContent=String(remaining);
@@ -223,13 +242,13 @@ function renderRewind(){
 }
 function renderCheck(end){
  const checked=inCheck(state),mate=end.reason==='Checkmate';
- document.body.dataset.check=checked?'true':'false';$('check-banner').hidden=!checked;$('check-marker').hidden=!checked;
+ document.body.dataset.check=checked?'true':'false';document.body.dataset.checkmate=checked?String(mate):'false';$('check-banner').hidden=!checked;$('check-marker').hidden=!checked;
  if(!checked){checkKey='';checkAlertAnimation?.cancel();return;}
  const heading=mate?'CHECKMATE':'CHECK';if($('check-heading').textContent!==heading)$('check-heading').textContent=heading;
  const message=mate?(hotseat?`${end.winner==='w'?'White':'Black'} delivered checkmate.`:(end.winner===human?'You win. The Automaton has no escape.':'Your king has no escape. The Automaton wins.')):(hotseat?`The ${state.turn==='w'?'White':'Black'} king is under attack.`:(state.turn===human?'Your king is under attack. Get out of check.':'The Automaton’s king is under attack.'));
  if($('check-message').textContent!==message)$('check-message').textContent=message;
  const key=`${state.turn}:${state.fullmove}:${state.lastMove?.from}:${state.lastMove?.to}`;
- if(key!==checkKey){sound.play(mate?'mate':'check');checkKey=key;checkAlertAnimation?.cancel();if(!matchMedia('(prefers-reduced-motion: reduce)').matches)checkAlertAnimation=$('check-banner').animate([{opacity:0,transform:'translateY(-12px) scale(.94)'},{opacity:1,transform:'translateY(0) scale(1.03)',offset:.7},{opacity:1,transform:'translateY(0) scale(1)'}],{duration:420,easing:'ease-out'});}
+ if(key!==checkKey){sound.play(mate?'mate':'check');checkKey=key;const king=state.board.findIndex(p=>p?.type==='k'&&p.color===state.turn),pt=king>=0?screenPoint(king):null;if(pt)pixelFx?.check(king,mate,pt);checkAlertAnimation?.cancel();if(!matchMedia('(prefers-reduced-motion: reduce)').matches)checkAlertAnimation=$('check-banner').animate([{opacity:0,transform:'translateY(-12px) scale(.94)'},{opacity:1,transform:'translateY(0) scale(1.03)',offset:.7},{opacity:1,transform:'translateY(0) scale(1)'}],{duration:420,easing:'ease-out'});}
 }
 new ResizeObserver(()=>requestAnimationFrame(positionCheckMarker)).observe($('board-view').closest('.board-shell'));
 function dailySeed(){const d=new Date();return (Number(`${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`))>>>0;}
@@ -275,10 +294,16 @@ function resultContent(end){
  const detail=end.reason==='Checkmate'?(hotseat?`${winner==='w'?'White':'Black'} delivered checkmate.`:(winner===human?'You delivered checkmate.':'Your king has no escape.')):`${end.reason}.`;
  return {title,outcome,eyebrow,detail,powers,stats};
 }
+function scheduleResult(end){
+ if(resultShown)return;
+ resultShown=true;
+ const delay=fxIntensity==='full'&&!matchMedia('(prefers-reduced-motion: reduce)').matches?520:0;
+ if(delay)resultTimer=setTimeout(()=>{resultTimer=null;openResult(end);},delay);else openResult(end);
+}
 function openResult(end){
- if(resultShown||animating)return;resultShown=true;
+ if($('result-dialog').open)return;
  const info=resultContent(end),dialog=$('result-dialog');
- $('result-title').textContent=info.title;$('result-detail').textContent=info.detail;$('result-eyebrow').textContent=info.eyebrow;
+ dialog.dataset.result=info.outcome;$('result-title').textContent=info.title;$('result-detail').textContent=info.detail;$('result-eyebrow').textContent=info.eyebrow;
  $('result-stats').innerHTML=`<div><b>${journal.length}</b><span>plies</span></div><div><b>${info.powers.length}</b><span>powers played</span></div><div><b>${rewindsUsed}</b><span>rewinds used</span></div><div><b>${hotseat?'Local':['','Apprentice','Tactician','Strategist'][Number($('difficulty').value)]||'CPU'}</b><span>${hotseat?'two players':'opponent'}</span></div>`;
  let record=loadStats();
  if(!hotseat&&!resultRecorded){
@@ -303,7 +328,7 @@ $('result-rematch').onclick=()=>{ $('result-dialog').close(); if(dailyMode)start
 function render(){
  renderPieceStatus();
  const you=youSide(),opp=opposite(you),end=outcome(state),sideName=you==='w'?'WHITE':'BLACK',oppName=opp==='w'?'WHITE':'BLACK';
- renderCheck(end);if(end.over)openResult(end);
+ renderCheck(end);if(end.over)scheduleResult(end);
  $('turn-number').textContent=`ROUND ${String(state.fullmove).padStart(2,'0')}`;
  $('mode-label').textContent=state.mode==='cards'?'CARD CHESS':'CLASSIC CHESS';
  $('turn-chip').textContent=end.over?'GAME OVER':inCheck(state)?(hotseat?`${sideName} IN CHECK`:(state.turn===human?'YOU ARE IN CHECK':'CPU IN CHECK')):hotseat?`${sideName} TO MOVE`:(state.turn===human?'YOUR TURN':'CPU TURN');
@@ -356,7 +381,7 @@ function renderCaptures(){const captured={w:[],b:[]};snapshots.forEach((before,i
 async function setView(next){
  const request=++viewRequest;
  if(next==='3d'){const ok=await ensureBoard();if(request!==viewRequest)return;if(!ok)next='2d';}
- view=next;$('board-view').hidden=next!=='3d';$('flat-board').hidden=next!=='2d';$('view-3d').setAttribute('aria-pressed',String(next==='3d'));$('view-2d').setAttribute('aria-pressed',String(next==='2d'));
+ view=next;document.body.dataset.view=next;$('board-view').hidden=next!=='3d';$('flat-board').hidden=next!=='2d';$('view-3d').setAttribute('aria-pressed',String(next==='3d'));$('view-2d').setAttribute('aria-pressed',String(next==='2d'));
  if(next==='3d'&&board){if(boardDirty&&boardPresentation){board.update(...boardPresentation);boardDirty=false;}board.resize();}
  positionCheckMarker();motionControls();
 }
@@ -372,6 +397,7 @@ $('view-3d').onclick=()=>setView('3d');$('view-2d').onclick=()=>setView('2d');$(
 $('undo-button').onclick=()=>{if(rewindsUsed>=3||!rewindReady)return;let index=snapshots.length-1;if(!hotseat)while(index>=0&&snapshots[index].turn!==human)index--;if(index<0)return;cancelPresentation();stopCPU();state=snapshots[index];snapshots=snapshots.slice(0,index);journal=journal.slice(0,index);rewindsUsed++;rewindReady=false;resetSelection();save();render();sound.play('rewind');effects.rewind($('board-view').closest('.board-shell').getBoundingClientRect(),3-rewindsUsed);};
 $('difficulty').onchange=()=>{save();if(!hotseat&&state.turn!==human&&!outcome(state).over)startCPU();};
 $('mobile-difficulty').onchange=()=>{$('difficulty').value=$('mobile-difficulty').value;$('difficulty').onchange();};
+$('fx-intensity').onchange=()=>{fxIntensity=$('fx-intensity').value;try{localStorage.setItem('herochess-fx',fxIntensity);}catch{}document.body.dataset.fx=fxIntensity;pixelFx.setIntensity(fxIntensity);sound.play('select');if(fxIntensity!=='off')setTimeout(()=>pixelFx.preview('#f0d59b'),60);};
 function startMatch({mode='cards',side='w',level:nextLevel=null,hs=false,seed=undefined,daily=false}={}){
  cancelPresentation();stopCPU();
  const nextSide=hs?'w':(side||human),lv=nextLevel||$('difficulty').value||'2';

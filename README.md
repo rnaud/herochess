@@ -58,6 +58,9 @@ The 50-move draw and stalemate remain. Repetition includes the complete position
 - In Pixel, Tab, arrows or a gamepad move the focus; Enter/Space selects a square. Choosing a card moves focus to the first actionable piece or target.
 - A first-game coach explains normal moves, temporary cards and effect expiry; it can be replayed from **How to play**.
 - **Hint** spends one of three per-match hints and asks the same search worker for a strong action.
+- A hybrid particle layer adds clouds of pixel debris, dust, sparks, frost crystals, portals, beams and shield hexes over both views. Board effects can be set to **Full**, **Subtle** or **Off** under **How to play**; reduced-motion preferences always win.
+- Captures add hit impact, debris by material (wood, air, glass, stone, gold), screen shake and layered sound. Check draws a red vignette and king pulse; checkmate topples the king and delays the result dialog so the moment reads.
+- Turn changes pulse the board edge in ivory or obsidian; legal targets pulse while a card is selected.
 - A finished match opens a result dialog with rematch, board review, shareable text, and a local record (wins, streak, powers used).
 - **Pass & play** lets two people share the device. Both hands are public, so no hidden-information mode is needed.
 - **Daily Arcana** starts a date-seeded card match at Tactician level; the same daily deal is reproducible from the date.
@@ -84,7 +87,7 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-Use `PLAYWRIGHT_CHANNEL=chrome npm run test:e2e` to test an installed Chrome. Tests cover all 18 effects, deck conservation/reshuffling, three-card hands, king safety, ordinary chess perft, CPU card usage and hidden-draw independence, animations, saving, undo, mobile layout, keyboard/fallback controls, the 320 px tray, dead-card exchange, hotseat, daily mode, hints, the result record and first-game coach.
+Use `PLAYWRIGHT_CHANNEL=chrome npm run test:e2e` to test an installed Chrome. Tests cover all 18 effects, deck conservation/reshuffling, three-card hands, king safety, ordinary chess perft, CPU card usage and hidden-draw independence, animations, saving, undo, mobile layout, keyboard/fallback controls, the 320 px tray, dead-card exchange, hotseat, daily mode, hints, the result record, first-game coach, the particle layer and the effects intensity setting.
 
 - `src/cards.js`: card definitions, deterministic shuffle, hand cycling and the once-per-match exchange.
 - `src/engine.js`: standard chess rules, card actions, effects, turn application and results.
@@ -92,6 +95,7 @@ Use `PLAYWRIGHT_CHANNEL=chrome npm run test:e2e` to test an installed Chrome. Te
 - `src/piece-model.js` / `src/pixels.js` / `src/pixel-pieces.js`: the sculpted models, and the generated 32 px pixel pieces used in both views.
 - `src/board.js`: the lazily loaded 3D table, picking, motion, capture and effect visuals.
 - `src/stats.js`: local record and daily bookkeeping.
+- `src/pixel-fx.js` / `src/fx-specs.js`: the hybrid particle/signature effects layer and its palettes.
 - `src/main.js`: card hand, board controls, library, journal, coach and saves.
 - `tools/piecegen.html` + `scripts/bake-pixels.mjs`: re-bake the pixel pieces after changing the models.
 

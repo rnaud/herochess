@@ -10,6 +10,17 @@ export class GameSound {
  tone(frequency,end,delay,duration,type='sine',volume=.3){
   const c=this.context,osc=c.createOscillator(),gain=c.createGain(),t=c.currentTime+delay;osc.type=type;osc.frequency.setValueAtTime(frequency,t);osc.frequency.exponentialRampToValueAtTime(end,t+duration);gain.gain.setValueAtTime(.001,t);gain.gain.exponentialRampToValueAtTime(volume,t+.008);gain.gain.exponentialRampToValueAtTime(.001,t+duration);osc.connect(gain);gain.connect(this.master);this.nodes.add(osc);osc.onended=()=>{this.nodes.delete(osc);osc.disconnect();gain.disconnect();};osc.start(t);osc.stop(t+duration+.01);
  }
+
+ impact(material='stone',strength=1){
+  if(!this.enabled||this.context?.state!=='running')return;
+  try{
+   const base={wood:150,air:260,glass:820,stone:110,gold:760,deep:80}[material]||130;
+   this.tone(base,base*.28,0,.09,'triangle',.28*strength);
+   this.tone(base*1.8,base*.45,.012,.055,'square',.06*strength);
+   if(material==='glass')this.tone(1600,700,.02,.1,'sine',.12*strength);
+   if(material==='gold')this.tone(1200,600,.03,.12,'sine',.1*strength);
+  }catch{}
+ }
  play(kind,family){
   if(!this.enabled||this.context?.state!=='running')return;
   try{

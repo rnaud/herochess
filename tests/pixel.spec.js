@@ -76,3 +76,28 @@ test('hint spends a charge and highlights a suggested action',async({page})=>{
  await fresh(page);await page.locator('#hint-button').click();await expect(page.locator('#hint-count')).toHaveText('2',{timeout:20000});
  await expect(page.locator('.flat-square.hint')).not.toHaveCount(0);await expect(page.locator('#status-title')).toHaveText('Hint');
 });
+test('capture particle effects respond to the intensity setting',async({page})=>{
+ await fresh(page);
+ await page.evaluate(async()=>{
+  const {initialState,positionKey}=await import('/src/engine.js');
+  const s=initialState('cards',42);s.board=Array(64).fill(null);
+  for(const [i,type,color] of [[4,'k','w'],[55,'k','b'],[0,'r','w'],[56,'q','b']])s.board[i]={type,color};
+  s.rights='';s.turn='w';s.hist=[positionKey(s)];s.history=[positionKey(s)];
+  localStorage.setItem('herochess-cards-v2',JSON.stringify({version:3,state:s,human:'w',snapshots:[],journal:[],level:'1',rewindsUsed:0,rewindReady:true,exchangesUsed:0,hotseat:false,resultRecorded:false}));
+ });
+ await page.reload();await page.waitForTimeout(400);
+ await page.locator('[data-square="0"]').click();await page.locator('[data-square="56"]').click();
+ await expect(page.locator('#fx-layer')).toHaveAttribute('data-active','true');
+ await expect(page.locator('.game-fx')).not.toHaveCount(0);
+ await page.waitForTimeout(2600);
+ await page.locator('#guide-button').click();await page.locator('#fx-intensity').selectOption('off');await page.locator('#guide-dialog .close-dialog').click();
+ await page.reload();await page.waitForTimeout(400);
+ await expect(page.locator('#fx-intensity')).toHaveValue('off');
+ await page.locator('[data-square="4"]').click();await page.locator('[data-square="12"]').click();await page.waitForTimeout(700);
+ await expect(page.locator('#fx-layer')).toHaveAttribute('data-active','false');await expect(page.locator('.game-fx')).toHaveCount(0);
+});
+test('reduced motion disables particles as well as DOM effects',async({page})=>{
+ await fresh(page);await page.emulateMedia({reducedMotion:'reduce'});
+ await page.locator('[data-square="12"]').click();await page.locator('[data-square="28"]').click();await page.waitForTimeout(800);
+ await expect(page.locator('#fx-layer')).toHaveAttribute('data-active','false');await expect(page.locator('.game-fx')).toHaveCount(0);
+});
