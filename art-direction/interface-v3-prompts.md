@@ -12,13 +12,13 @@ Saved reference: `interface-reference-v3.png`. The concept is a layout/style ref
 
 Use case: stylized-concept. Asset type: subtle full-screen tabletop material for the Herochess fantasy game UI. Produce a dark oxblood burgundy leather and worn velvet tabletop, nearly black edges, faint embossed medieval botanical filigree in the corners, fine tactile grain, warm muted directional light. Flat overhead material plane, no perspective. Quiet uniform center and no focal subject; this is a restrained background texture underneath many readable UI panels. Very dark, low contrast, premium handmade fantasy board-game surface. Landscape 16:10. Absolutely no text, no cards, no chess pieces, no interface, no borders, no objects.
 
-Saved game asset: `../public/art/interface/tabletop.jpg`.
+Saved game asset: `../public/art/interface/tabletop.webp`.
 
 ## Automaton portrait prompt
 
 Use case: stylized-concept. Asset type: square opponent avatar for a refined fantasy chess game. Close-up painted portrait of The Automaton, an ancient sentient brass chess strategist: elegant aged bronze faceplate like a knight's visor, two dim amethyst eyes, intricate engraved crown-like brow, dark oxblood mantle, black background. Regal intelligent and mysterious, not threatening, beautifully modeled realistic oil painting with restrained brushwork, warm ivory rim light, antique brass highlights. Strong readable silhouette and face at tiny 64px avatar size. Centered head and shoulders filling square crop. No text, no border, no chessboard, no glowing background.
 
-Saved game asset: `../public/art/interface/automaton.jpg`.
+Saved game asset: `../public/art/interface/automaton.webp`.
 
 ## Implementation
 

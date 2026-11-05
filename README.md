@@ -1,6 +1,6 @@
 # Herochess — The Arcana Deck
 
-A JavaScript + Three.js card-chess game: standard pieces, a three-card hand, and 18 temporary powers.
+A JavaScript card-chess game: a pixel board (with an optional Three.js table), standard pieces, a three-card hand, and 18 temporary powers.
 
 **[Play online](https://rnaud.github.io/herochess/)**
 
@@ -10,8 +10,9 @@ A JavaScript + Three.js card-chess game: standard pieces, a three-card hand, and
 2. Normal moves keep your entire hand. Click a selected card again, or use **Cancel power**, to return to a normal move.
 3. Select a piece and a legal destination. Shield needs one target. Winter Seal needs an enemy target followed by a normal move; swaps need two friendly pieces.
 4. Only a used power card goes into the shared discard pile. Draw a replacement immediately, so you always hold three; that replacement is available on your next turn.
+5. A card with no legal target is marked **No target yet**. You can still move normally. Once per match you may exchange one such card: the old card goes to the bottom of the deck and you draw a fresh one, without spending your move.
 
-Both players start with three cards and see each other's hands. There is no extra opening draw. The shared shuffled deck contains one copy of each of the 18 cards. When it empties, the discard pile is shuffled back into the draw pile. Undo restores the exact cards, pile order, and position. The draw order is hidden from both players, including the CPU.
+Both players start with three cards and see each other's hands. There is no extra opening draw. The shared shuffled deck contains one copy of each of the 18 cards. When it empties, the discard pile is shuffled back into the draw pile. Rewind restores the cards, pile order and position for the last action; exchange and hint charges are not refunded. The draw order is hidden from both players, including the CPU.
 
 ## The 18 cards
 
@@ -50,17 +51,24 @@ The 50-move draw and stalemate remain. Repetition includes the complete position
 
 ## Interface and saves
 
-- 3D and keyboard-accessible 2D boards, move/capture animations, and reduced-motion support.
+- The **Pixel** board is the default: keyboard-accessible, 32×32 pixel pieces generated from the sculpted models, and no WebGL needed. **Table** is an optional, lazily loaded 3D view.
+- Move/capture animations in both views, plus reduced-motion support.
 - Three difficulty levels, playing either side, exact undo, and local autosave.
-- Read all 18 cards from **The 18 cards** in the header.
-- In 2D, Tab or arrows focus squares; Enter/Space selects them.
-- Saves use `herochess-cards-v2`. The earlier permanent-hero edition’s `herochess-v2` save is left untouched, but its rules are incompatible with this edition and it is not loaded into card matches.
+- Read all 18 cards from **Card atlas** in the header.
+- In Pixel, Tab, arrows or a gamepad move the focus; Enter/Space selects a square. Choosing a card moves focus to the first actionable piece or target.
+- A first-game coach explains normal moves, temporary cards and effect expiry; it can be replayed from **How to play**.
+- **Hint** spends one of three per-match hints and asks the same search worker for a strong action.
+- A finished match opens a result dialog with rematch, board review, shareable text, and a local record (wins, streak, powers used).
+- **Pass & play** lets two people share the device. Both hands are public, so no hidden-information mode is needed.
+- **Daily Arcana** starts a date-seeded card match at Tactician level; the same daily deal is reproducible from the date.
+- Fonts and artwork are self-hosted: WOFF2 for the UI and WebP at 480/960 px for the cards. The Three.js chunk is only fetched when **Table** is opened.
+- Saves use `herochess-cards-v2` (version 3). They now also remember rewinds, hints, exchanges, pass-and-play and daily mode. Rewind restores the last action, but once-per-match exchange and hint charges are not refunded. The earlier permanent-hero edition’s `herochess-v2` save is left untouched and is not loaded into card matches.
 
 ## CPU
 
 The worker receives public board state and both visible hands, **not the actual deck, shuffle seed, or history containing that order**. It searches legal card actions and ordinary moves with iterative-deepening alpha-beta search, move ordering, material/position evaluation, and bounded capture/check continuation on stronger levels. It consumes known cards during search but does not predict unknown replacement draws. This is a lightweight tactical opponent, not an exact chance-tree solver or a tournament engine.
 
-Apprentice searches one ply for up to 0.6 seconds; Tactician up to three plies for 1.8 seconds; Strategist up to four for 4 seconds. Search depth depends on branching and device speed. Every actual CPU action is revalidated against the real game state before it is applied.
+Apprentice searches one ply for up to 0.6 seconds; Tactician up to three plies for 1.8 seconds; Strategist up to four for 4 seconds. Search depth depends on branching and device speed. Every actual CPU action is revalidated against the real game state before it is applied. Pass & play never starts the worker.
 
 ## Development
 
@@ -71,17 +79,21 @@ npm ci
 npm run dev
 npm test
 npm run build
+npm run format   # Prettier 3 via npx
 npx playwright install chromium
 npm run test:e2e
 ```
 
-Use `PLAYWRIGHT_CHANNEL=chrome npm run test:e2e` to test an installed Chrome. Tests cover all 18 effects, deck conservation/reshuffling, three-card hands, king safety, ordinary chess perft, CPU card usage and hidden-draw independence, animations, saving, undo, mobile layout, and keyboard/fallback controls.
+Use `PLAYWRIGHT_CHANNEL=chrome npm run test:e2e` to test an installed Chrome. Tests cover all 18 effects, deck conservation/reshuffling, three-card hands, king safety, ordinary chess perft, CPU card usage and hidden-draw independence, animations, saving, undo, mobile layout, keyboard/fallback controls, the 320 px tray, dead-card exchange, hotseat, daily mode, hints, the result record and first-game coach.
 
-- `src/cards.js`: card definitions, deterministic shuffle and hand cycling.
+- `src/cards.js`: card definitions, deterministic shuffle, hand cycling and the once-per-match exchange.
 - `src/engine.js`: standard chess rules, card actions, effects, turn application and results.
-- `src/ai.js` / `src/ai-worker.js`: public-information CPU search off the main thread.
-- `src/board.js`: procedural 3D models, picking, motion, capture and effect visuals.
-- `src/main.js`: card hand, board controls, library, journal and saves.
+- `src/ai.js` / `src/ai-worker.js`: public-information CPU search off the main thread, shared by Hint.
+- `src/piece-model.js` / `src/pixels.js` / `src/pixel-pieces.js`: the sculpted models, and the generated 32 px pixel pieces used in both views.
+- `src/board.js`: the lazily loaded 3D table, picking, motion, capture and effect visuals.
+- `src/stats.js`: local record and daily bookkeeping.
+- `src/main.js`: card hand, board controls, library, journal, coach and saves.
+- `tools/piecegen.html` + `scripts/bake-pixels.mjs`: re-bake the pixel pieces after changing the models.
 
 The GitHub Actions workflow tests, builds, and publishes to GitHub Pages on pushes to `master`. Vite uses relative asset URLs for the `/herochess/` project path.
 
@@ -97,7 +109,7 @@ The permanent-hero editions remain recoverable in Git history. This edition has 
 
 ### Artwork and interface
 
-The Shattered Court uses 18 distinct Midjourney paintings: different characters, environments, palettes and moods connected by a hand-painted fantasy illustration style. Each card has its own frame accent. The complete interface uses an illustrated citadel backdrop, a textured stone board, brass ornament, opponent spell disclosures, and a three-card hand beneath the battlefield.
+The Shattered Court uses 18 distinct Midjourney paintings: different characters, environments, palettes and moods connected by a hand-painted fantasy illustration style. Each card has its own frame accent. The current build ships optimized WebP derivatives; the original JPEGs remain in Git history. The complete interface uses an illustrated citadel backdrop, a textured stone board, brass ornament, opponent spell disclosures, and a three-card hand beneath the battlefield.
 
 See [art direction](art-direction/README.md), [full-screen reference](art-direction/site-reference-v2.png) and [prompts / provenance](art-direction/prompts-v2.json). Optimized local images live in `public/art/realms/`; no Midjourney connection is needed to play. The earlier monochromatic concept remains documented as a superseded reference.
 
@@ -113,7 +125,7 @@ Families and tiers are declared in `src/cards.js` and appear in both hands and t
 
 The full game interface was redesigned from a [built-in image-generation reference](art-direction/interface-reference-v3.png), implemented with responsive HTML/CSS and the existing Three.js game. The desktop layout places the board and opponent hand on the left, and all three player cards, exact selected-spell rules, action modes, effects and recent moves on the right. A laptop layout check verifies that the board and all primary spell controls fit at 1280 × 720. Smaller screens stack the table and workbench, with swipeable cards.
 
-The new tabletop and Automaton portrait were generated with the built-in tool; the existing varied card illustrations are retained. [Exact prompts and asset paths](art-direction/interface-v3-prompts.md) document the generation. Card summaries help scanning; the selected panel, card atlas and accessible names retain the full rules.
+The new tabletop and Automaton portrait were generated with the built-in tool; the existing varied card illustrations are retained. The chess pieces are now 32×32 pixel-art sprites baked from the original sculpted models. The UI fonts are self-hosted WOFF2 (Cormorant Garamond and DM Sans, OFL). [Exact prompts and asset paths](art-direction/interface-v3-prompts.md) document the generation. Card summaries help scanning; the selected panel, card atlas and accessible names retain the full rules.
 
 Balance rationale and card-by-card roles: [balance review](BALANCE.md).
 
@@ -121,9 +133,9 @@ Normal moves require no card selection and keep all cards. Clicking a card activ
 
 ### Action feedback
 
-Played powers burn their card with a glowing edge and embers; normal moves leave the hand untouched. Board feedback follows the action: family-colored trails and departure rings, capture shockwaves, a piercing beam, shield pulses, and frost crystals. Frozen 3D pieces use a faceted ice shell. Effects work for both players and in both board views. Reduced-motion preference skips transient effects, and undo/new match cancels and cleans them up immediately.
+Played powers burn their card with a glowing edge and embers; normal moves leave the hand untouched. Board feedback follows the action: family-colored trails and departure rings, capture shockwaves, a piercing beam, shield pulses, and frost crystals. Frozen pieces use a faceted ice shell in the Table view and a frost outline in Pixel. Effects work for both players and in both views. Reduced-motion preference skips transient effects, and undo/new match cancels and cleans them up immediately.
 
-Click a shielded or frozen piece to inspect its status on the board, including the restriction and exact expiry turn. This works for either side, during CPU thinking, and with 2D keyboard controls. Close the panel with × or Escape. Through the Veil includes a labeled capture example in the selected-card panel and atlas.
+Click a shielded or frozen piece to inspect its status on the board, including the restriction and exact expiry turn. This works for either side, during CPU thinking, and with Pixel keyboard controls. Close the panel with × or Escape. Through the Veil includes a labeled capture example in the selected-card panel and atlas.
 
 Check now has a persistent board banner, a highlighted king square and red king ring, and matching status/turn labels. These distinguish your king from the CPU's king and check from checkmate. The warning stays visible while selecting pieces/cards, clears after escape, and returns on undo. Reduced motion keeps a static warning. Ordinary moves have landing pulses; captures and spells have stronger impact rings and actor-labeled callouts.
 

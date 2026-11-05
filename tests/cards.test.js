@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {CARDS,CARD_IDS,POWER_TIERS,cycleCard,uniqueDeck} from '../src/cards.js';
+import {CARDS,CARD_IDS,POWER_TIERS,cycleCard,exchangeCard,uniqueDeck} from '../src/cards.js';
 import {initialState,legalMoves,applyMove,inCheck,outcome,positionKey,squareIndex as sq} from '../src/engine.js';
 import {chooseMove} from '../src/ai.js';
 function pos(card,pieces,extra={}){const s={...initialState('cards',123),board:Array(64).fill(null),rights:'',...extra};for(const [at,p] of Object.entries({a1:'wk',h8:'bk',...pieces}))s.board[sq(at)]=p?{color:p[0],type:p[1]}:null;s.hands={w:[card,'ward','frost'],b:['saddle','step','blink']};s.history=[positionKey(s)];return s;}
@@ -65,4 +65,17 @@ test('CPU uses Winter Seal while capturing and normal castling/promotion remain 
  const s=pos('frost',{d4:'wr',d5:'bq',g7:'br'});const result=chooseMove(s,{maxDepth:1,timeMs:4000,quiescence:false});assert.equal(result.move.card,'frost');assert.equal(result.move.from,sq('d4'));assert.equal(result.move.to,sq('d5'));assert.equal(result.move.freezeTarget,sq('g7'));
  const castle=pos('frost',{a1:null,e1:'wk',h1:'wr',b7:'bp'},{rights:'K'}),castling=legalMoves(castle,null,{slot:0,usePower:true}).find(m=>m.special==='castle'&&m.freezeTarget===sq('b7'));assert.ok(castling);assert.equal(applyMove(castle,castling).board[sq('f1')].type,'r');
  const promotion=pos('frost',{b7:'wp',h6:'br'});assert.equal(legalMoves(promotion,null,{slot:0,usePower:true}).filter(m=>m.from===sq('b7')&&m.to===sq('b8')&&m.freezeTarget===sq('h6')).length,4);
+});
+
+
+test('a once-per-match exchange swaps a held card without breaking deck conservation',()=>{
+ const s=initialState('cards',42),before=JSON.stringify(s),next=exchangeCard(s,0);
+ assert.notEqual(next.hands.w[2],s.hands.w[0]);
+ assert.equal(next.hands.w.length,3);assert.equal(next.deck.length,s.deck.length);
+ assert.equal(next.discard.length,s.discard.length);assert.equal(JSON.stringify(s),before);
+ const pool=[...next.hands.w,...next.hands.b,...next.deck,...next.discard];
+ assert.equal(pool.length,18);assert.equal(new Set(pool).size,18);
+ const emptyDeck={...s,deck:[],discard:s.deck.slice()},shuffled=exchangeCard(emptyDeck,1);
+ assert.equal(shuffled.hands.w.length,3);assert.equal(shuffled.deck.length,emptyDeck.discard.length);
+ assert.equal(exchangeCard(s,99),s);assert.equal(exchangeCard({...s,mode:'classic'},0).hands,{...s,mode:'classic'}.hands);
 });

@@ -1,6 +1,6 @@
 import {test,expect} from '@playwright/test';
 async function press(page,index){await page.evaluate(i=>window.testPad.buttons[i].pressed=true,index);await page.waitForTimeout(80);await page.evaluate(i=>window.testPad.buttons[i].pressed=false,index);await page.waitForTimeout(80);}
-test.beforeEach(async({page})=>{await page.addInitScript(()=>{window.testPad={connected:true,mapping:'standard',index:0,buttons:Array.from({length:17},()=>({pressed:false})),axes:[0,0,0,0]};Object.defineProperty(navigator,'getGamepads',{value:()=>[window.testPad]});});});
+test.beforeEach(async({page})=>{await page.addInitScript(()=>{try{localStorage.setItem('herochess-coach-v1','done');}catch{}});await page.addInitScript(()=>{window.testPad={connected:true,mapping:'standard',index:0,buttons:Array.from({length:17},()=>({pressed:false})),axes:[0,0,0,0]};Object.defineProperty(navigator,'getGamepads',{value:()=>[window.testPad]});});});
 test('controller moves a piece, chooses and cancels a card, navigates dialogs and disconnects',async({page})=>{
  await page.goto('/');await page.emulateMedia({reducedMotion:'reduce'});await expect(page.locator('#controller-hint')).toContainText('Controller');
  await press(page,5);await expect(page.locator('#hand .controller-focus')).toHaveCount(1);await press(page,0);await expect(page.locator('#hand [aria-pressed=true]')).toHaveCount(1);await press(page,1);await expect(page.locator('#hand [aria-pressed=true]')).toHaveCount(0);

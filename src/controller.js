@@ -11,7 +11,7 @@ export class Controller {
  dialog(){return document.querySelector('dialog[open]');}
  elements(){
   const dialog=this.dialog(),zone=this.zones()[this.zone];
-  const selector=dialog?'button,input,select,summary':({'Your cards':'#hand .spell-card','CPU cards':'#cpu-hand summary','Board controls':'.board-toolbar button,#close-cpu-preview','Menu':'.header-actions button'}[zone]);
+  const selector=dialog?'button,input,select,summary':({'Your cards':'#hand-toggle,#hand .spell-card','CPU cards':'#cpu-hand summary','Board controls':'.board-toolbar button,#close-cpu-preview','Menu':'.header-actions button'}[zone]);
   return selector?[...(dialog||document).querySelectorAll(selector)].filter(e=>!e.disabled&&e.getClientRects().length&&getComputedStyle(e).visibility!=='hidden'):[];
  }
  square(){return this.api.flipped()?this.row*8+7-this.col:(7-this.row)*8+this.col;}

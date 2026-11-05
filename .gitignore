@@ -4,3 +4,6 @@ dist/
 .env*
 playwright-report/
 test-results/
+.pnpm-store/
+.shot.mjs
+coverage/

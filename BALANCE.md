@@ -9,8 +9,10 @@ This is a rules/design audit with deterministic legal-position tests, not a clai
 - Draw one replacement only after using a power; each player holds three. There is no additional start-of-turn draw, so there is no overflow/discard loophole.
 - Both sides draw from the same shuffled 18-card pool with one copy of every spell. No card can be duplicated in either hand, the deck, or the used-card pile.
 - All cards now have equal copy counts. A higher tier indicates broader potential, not draw rarity or a universally correct choice. Holding any one spell keeps that unique copy out of the opponent’s hand until it is spent and recycled.
-- A situational card can be held indefinitely while you move normally. There is no free discard or reroll. Holding a card occupies one of three slots, so it limits your access to fresh powers.
-- Used cards recycle only when the draw pile empties. Undo restores the exact deck, hands and board. CPU search uses the visible hands and never predicts the hidden draw order.
+- A situational card can be held indefinitely while you move normally. There is no unlimited discard or reroll. Holding a card occupies one of three slots, so it limits your access to fresh powers.
+- In 2,000 simulated opening deals, 54.4% of hands contained at least one card with no legal action, 22% of dealt cards were dead on move one, and 0.6% of hands were entirely dead. Homeward, Safe Retreat, Spearpoint and Sidewinder are always dead in the initial position. Those cards become available as the position opens.
+- Dead cards are now marked **No target yet**, and selecting one keeps normal moves available instead of trapping the player in power mode. Once per match, a player may exchange one dead card; the old card goes to the bottom of the deck. This is a limited remedy, not a free redraw, so holding a situational card still has a cost.
+- Used cards recycle only when the draw pile empties. Undo restores the deck, hands and board for the last action; exchange and hint charges are deliberately not refunded. CPU search uses the visible hands and never predicts the hidden draw order.
 
 ## All 18 roles
 

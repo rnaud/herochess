@@ -38,6 +38,17 @@ export const DECK_LIST=CARD_IDS.slice();
 // A reproducible singleton deck; game state stores the sequence for undo.
 export function shuffle(cards,seed){const a=cards.slice();let n=seed>>>0||1;for(let i=a.length-1;i>0;i--){n^=n<<13;n^=n>>>17;n^=n<<5;const j=(n>>>0)%(i+1);[a[i],a[j]]=[a[j],a[i]];}return {cards:a,seed:n>>>0};}
 export function deal(seed){const shuffled=shuffle(DECK_LIST,seed);return {hands:{w:shuffled.cards.slice(0,3),b:shuffled.cards.slice(3,6)},deck:shuffled.cards.slice(6),discard:[],rng:shuffled.seed};}
+export function exchangeCard(state,slot){
+ if(state.mode!=='cards')return state;
+ const hand=state.hands[state.turn];if(!Number.isInteger(slot)||slot<0||slot>=hand.length)return state;
+ let deck=state.deck.slice(),discard=state.discard.slice(),rng=state.rng;
+ if(!deck.length){if(!discard.length)return state;const next=shuffle(discard,rng);deck=next.cards;discard=[];rng=next.seed;}
+ const hands={w:state.hands.w.slice(),b:state.hands.b.slice()},side=hands[state.turn];
+ const [old]=side.splice(slot,1),fresh=deck.shift();
+ if(!fresh)return state;
+ side.push(fresh);deck.push(old);
+ return {...state,hands,deck,discard,rng};
+}
 export function cycleCard(state,slot){
  if(state.mode!=='cards')return state;
  const hands={w:state.hands.w.slice(),b:state.hands.b.slice()},hand=hands[state.turn];

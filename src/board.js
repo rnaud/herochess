@@ -3,8 +3,11 @@ import { PIECES,inCheck } from './engine.js';
 import {CARDS} from './cards.js';
 import {actionTiming} from './motion.js';
 import {RoomEnvironment} from 'three/addons/environments/RoomEnvironment.js';
+import {createPieceMaterials} from './piece-model.js';
+import {pixelCanvas} from './pixels.js';
 const isHeroPowerMove=(_state,move)=>!!move.usePower;
 const world = i => [i%8-3.5,0,3.5-(i>>3)];
+const SPRITE_HEIGHT={p:.82,n:1.0,b:1.08,r:1.0,q:1.18,k:1.24};
 export class ChessBoard {
  constructor(container,onSelect){
   this.container=container;this.onSelect=onSelect;this.flipped=false;this.pieceMeshes=[];this.disposed=false;
@@ -19,7 +22,9 @@ export class ChessBoard {
   this.scene.add(new THREE.HemisphereLight(0xfff4df,0x292b34,1.65));
   const key=new THREE.DirectionalLight(0xffe6c4,2.2);key.position.set(-3,14,3);key.castShadow=true;key.shadow.mapSize.set(2048,2048);Object.assign(key.shadow.camera,{left:-7,right:7,top:7,bottom:-7,near:.5,far:25});key.shadow.normalBias=.035;key.shadow.bias=-.0004;key.shadow.radius=5;key.shadow.intensity=.45;this.scene.add(key);
   const fill=new THREE.DirectionalLight(0xd5e2f2,1.25);fill.position.set(5,5,-6);this.scene.add(fill);
-  this.materials={white:new THREE.MeshPhysicalMaterial({color:0xe4ddc6,roughness:.24,metalness:.08,clearcoat:.35,clearcoatRoughness:.25}),black:new THREE.MeshPhysicalMaterial({color:0x1b2229,roughness:.25,metalness:.3,clearcoat:.4,clearcoatRoughness:.2}),gold:new THREE.MeshStandardMaterial({color:0xd6b876,metalness:.65,roughness:.3}),whiteHero:new THREE.MeshStandardMaterial({color:0x187be0,metalness:.15,roughness:.34}),blackHero:new THREE.MeshStandardMaterial({color:0xec6718,metalness:.15,roughness:.34})};
+  this.materials=createPieceMaterials();
+  this.pieceTextures={};for(const color of ['w','b'])for(const type of Object.keys(SPRITE_HEIGHT)){const texture=new THREE.CanvasTexture(pixelCanvas(type,color));texture.magFilter=THREE.NearestFilter;texture.minFilter=THREE.NearestFilter;texture.generateMipmaps=false;texture.colorSpace=THREE.SRGBColorSpace;this.pieceTextures[color+type]=texture;}
+  this.shadowTexture=(()=>{const c=document.createElement('canvas');c.width=32;c.height=16;const x=c.getContext('2d');for(let y=0;y<16;y++)for(let i=0;i<32;i++){const dx=(i-15.5)/15.5,dy=(y-7.5)/7.5,d=dx*dx+dy*dy;if(d<1){x.fillStyle=d<.5?'rgba(0,0,0,.52)':'rgba(0,0,0,.24)';x.fillRect(i,y,1,1);}}const t=new THREE.CanvasTexture(c);t.magFilter=THREE.NearestFilter;t.minFilter=THREE.NearestFilter;t.generateMipmaps=false;return t;})();
   const base=new THREE.Mesh(new THREE.BoxGeometry(8.7,.32,8.7),new THREE.MeshStandardMaterial({color:0x514134,metalness:.25,roughness:.45}));base.position.y=-.23;base.receiveShadow=true;this.scene.add(base);
   const trim=new THREE.Mesh(new THREE.BoxGeometry(8.72,.045,8.72),this.materials.gold);trim.position.y=-.35;this.scene.add(trim);
   const lower=new THREE.Mesh(new THREE.BoxGeometry(8.85,.14,8.85),new THREE.MeshStandardMaterial({color:0x26201b,roughness:.6}));lower.position.y=-.45;this.scene.add(lower);
@@ -61,45 +66,13 @@ export class ChessBoard {
  resize(){const w=this.container.clientWidth,h=this.container.clientHeight;if(!w||!h)return;this.renderer.setSize(w,h,false);const aspect=w/h;const extent=Math.max(4.65,4.65/aspect);this.camera.left=-extent*aspect;this.camera.right=extent*aspect;this.camera.top=extent;this.camera.bottom=-extent;this.camera.position.set(0,17,this.flipped?-9:9);this.camera.lookAt(0,0,0);this.camera.updateProjectionMatrix();this.render();}
  flip(value=!this.flipped){this.flipped=value;this.makeLabels();this.resize();}
  pick(event){const r=this.container.getBoundingClientRect();this.pointer.set((event.clientX-r.left)/r.width*2-1,-(event.clientY-r.top)/r.height*2+1);this.raycaster.setFromCamera(this.pointer,this.camera);const hits=this.raycaster.intersectObjects([...this.pieceMeshes,...this.squares],true);for(const hit of hits){let obj=hit.object;while(obj){if(obj.userData.square!==undefined)return obj.userData.square;obj=obj.parent;}}return null;}
- mesh(geometry,material,parent,x=0,y=0,z=0){const m=new THREE.Mesh(geometry,material);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m;}
  piece(type,color){
-  const group=new THREE.Group(),hero=!!PIECES[type].base,baseMat=color==='w'?this.materials.white:this.materials.black,mat=hero?(color==='w'?this.materials.whiteHero:this.materials.blackHero):baseMat,gold=this.materials.gold,kind=PIECES[type].base||type;
-  const lathe=points=>new THREE.LatheGeometry(new THREE.SplineCurve(points.map(([r,y])=>new THREE.Vector2(r,y))).getPoints(40),40);
-  this.mesh(lathe([[0,0],[.29,0],[.33,.045],[.33,.09],[.29,.14],[.27,.16],[.27,.2],[.21,.23],[.17,.31],[.13,.48],[.16,.54],[.2,.56],[.2,.61],[0,.61]]),mat,group);
-  this.mesh(new THREE.TorusGeometry(.276,.018,8,48),hero?gold:mat,group,0,.18).rotation.x=Math.PI/2;
-  if(kind==='p'){this.mesh(new THREE.SphereGeometry(.2,24,16),mat,group,0,.7);group.scale.setScalar(.8);}
-  if(kind==='r'){
-   this.mesh(new THREE.CylinderGeometry(.25,.2,.27,24),mat,group,0,.73);
-   this.mesh(new THREE.CylinderGeometry(.29,.25,.08,24),mat,group,0,.89);
-   for(let j=0;j<6;j++){const a=j*Math.PI/3;const block=this.mesh(new THREE.BoxGeometry(.13,.16,.13),mat,group,Math.sin(a)*.22,1,Math.cos(a)*.22);block.rotation.y=a;}
-  }
-  if(kind==='b'){
-   this.mesh(new THREE.SphereGeometry(.22,24,20),mat,group,0,.78).scale.set(1,1.35,1);
-   this.mesh(new THREE.ConeGeometry(.12,.23,24),mat,group,0,1.02);
-   const slit=this.mesh(new THREE.BoxGeometry(.025,.28,.065),hero?gold:this.materials.black,group,.06,.9,.19);slit.rotation.z=-.35;
-   this.mesh(new THREE.SphereGeometry(.055,16,12),gold,group,0,1.16);
-  }
-  if(kind==='n'){
-   const shape=new THREE.Shape();shape.moveTo(-.22,.57);shape.bezierCurveTo(-.27,.85,-.2,1.08,-.07,1.18);shape.lineTo(-.025,1.32);shape.quadraticCurveTo(.045,1.3,.075,1.15);shape.bezierCurveTo(.18,1.13,.22,1.02,.32,.94);shape.quadraticCurveTo(.42,.86,.33,.77);shape.quadraticCurveTo(.24,.72,.12,.83);shape.quadraticCurveTo(-.01,.91,.03,.66);shape.closePath();
-   const geo=new THREE.ExtrudeGeometry(shape,{depth:.24,bevelEnabled:true,bevelSegments:5,steps:1,bevelSize:.045,bevelThickness:.045});geo.translate(0,0,-.12);this.mesh(geo,mat,group);
-   for(const z of [-.155,.155])this.mesh(new THREE.SphereGeometry(.025,12,8),hero?gold:this.materials.black,group,.12,1,z);
-   group.rotation.y=color==='w'?.15:Math.PI+.15;
-  }
-  if(kind==='q'){
-   this.mesh(new THREE.CylinderGeometry(.25,.13,.35,24),mat,group,0,.8);
-   this.mesh(new THREE.TorusGeometry(.23,.035,8,32),mat,group,0,1).rotation.x=Math.PI/2;
-   for(let j=0;j<7;j++){const a=j*Math.PI*2/7;this.mesh(new THREE.SphereGeometry(.055,12,8),mat,group,Math.sin(a)*.22,1.1,Math.cos(a)*.22);this.mesh(new THREE.ConeGeometry(.045,.16,12),mat,group,Math.sin(a)*.22,1.04,Math.cos(a)*.22);}
-   this.mesh(new THREE.SphereGeometry(.08,16,12),gold,group,0,1.08);
-  }
-  if(kind==='k'){
-   this.mesh(new THREE.CylinderGeometry(.22,.14,.33,24),mat,group,0,.79);this.mesh(new THREE.SphereGeometry(.17,24,16),mat,group,0,1);
-   this.mesh(new THREE.BoxGeometry(.09,.34,.09),mat,group,0,1.24);this.mesh(new THREE.BoxGeometry(.27,.08,.09),mat,group,0,1.28);
-  }
-  if(hero){
-   this.mesh(new THREE.CylinderGeometry(.334,.334,.105,32),baseMat,group,0,.055);
-   this.mesh(new THREE.TorusGeometry(.33,.022,10,48),gold,group,0,.07).rotation.x=Math.PI/2;
-   this.mesh(new THREE.OctahedronGeometry(.075),color==='w'?this.materials.whiteHero:this.materials.blackHero,group,0,.33,.165);
-  }
+  const group=new THREE.Group(),height=SPRITE_HEIGHT[type]||.85;
+  const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:this.pieceTextures[color+type],transparent:true,alphaTest:.42,depthWrite:true}));
+  sprite.center.set(.5,0);sprite.scale.set(height,height,1);sprite.position.y=.045;sprite.userData.disposableMaterial=true;group.add(sprite);
+  const shadow=new THREE.Mesh(new THREE.PlaneGeometry(height*.86,height*.34),new THREE.MeshBasicMaterial({map:this.shadowTexture,transparent:true,opacity:.62,depthWrite:false}));
+  shadow.rotation.x=-Math.PI/2;shadow.position.y=.012;shadow.renderOrder=1;shadow.userData.disposableMaterial=true;group.add(shadow);
+  group.userData.sprite=sprite;
   return group;
  }
  screenPoint(square){
@@ -127,7 +100,7 @@ export class ChessBoard {
   const rookStart=rook?.position.clone(),rookEnd=rook?new THREE.Vector3(...world(move.to>move.from?move.from+1:move.from-1)):null;
   const jump=move.usePower&&move.freezeTarget===undefined?['Leap','Travel'].includes(CARDS[move.card]?.kind):piece.type==='n';
   const originals=[];
-  victim?.traverse(object=>{if(object.isMesh){const original=object.material;object.material=original.clone();object.material.transparent=true;originals.push([object,original]);}});
+  victim?.traverse(object=>{if((object.isMesh||object.isSprite)&&object.material){const original=object.material;object.material=original.clone();object.material.transparent=true;originals.push([object,original]);}});
   const burst=new THREE.Group();burst.position.set(...world(capturedSquare));burst.position.y=.12;
   if(victim){
    const material=new THREE.MeshBasicMaterial({color:0xffd48c,transparent:true,opacity:0});
@@ -153,7 +126,7 @@ export class ChessBoard {
   });
  }
  update(state,selected,moves,preview=false){
-  for(const m of this.pieceMeshes){this.scene.remove(m);m.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.userData.disposableMaterial)o.material.dispose();});}this.pieceMeshes=[];
+  for(const m of this.pieceMeshes){this.scene.remove(m);m.traverse(o=>{if(o.isMesh&&o.geometry)o.geometry.dispose();if(o.userData.disposableMaterial)o.material.dispose();});}this.pieceMeshes=[];
   state.board.forEach((p,i)=>{if(!p)return;const m=this.piece(p.type,p.color);m.position.set(...world(i));m.userData.square=i;
    if(state.shield?.square===i||state.freeze?.square===i){const shell=new THREE.Mesh(state.freeze?.square===i?new THREE.IcosahedronGeometry(.7,0):new THREE.SphereGeometry(.62,24,16),new THREE.MeshBasicMaterial({color:state.freeze?.square===i?0xb5eeff:0x8ad8ff,transparent:true,opacity:.25,depthWrite:false}));shell.position.y=.6;shell.scale.y=1.25;shell.userData.disposableMaterial=true;m.add(shell);}
    this.scene.add(m);this.pieceMeshes.push(m);});
