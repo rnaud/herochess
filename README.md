@@ -61,9 +61,14 @@ The 50-move draw and stalemate remain. Repetition includes the complete position
 - A hybrid particle layer adds clouds of pixel debris, dust, sparks, frost crystals, portals, beams and shield hexes over both views. Board effects can be set to **Full**, **Subtle** or **Off** under **How to play**; reduced-motion preferences always win.
 - Captures add hit impact, debris by material (wood, air, glass, stone, gold), screen shake and layered sound. Check draws a red vignette and king pulse; checkmate topples the king and delays the result dialog so the moment reads.
 - Turn changes pulse the board edge in ivory or obsidian; legal targets pulse while a card is selected.
-- A finished match opens a result dialog with rematch, board review, shareable text, and a local record (wins, streak, powers used).
+- A finished match opens a result dialog with rematch, match review, shareable text, and a local record (wins, streak, powers used).
 - **Pass & play** lets two people share the device. Both hands are public, so no hidden-information mode is needed.
 - **Daily Arcana** starts a date-seeded card match at Tactician level; the same daily deal is reproducible from the date.
+- **Match Review** walks every saved position with a mini board, material count, the move list and a scrubber; it is available from the result dialog and from Recent moves on desktop. Review never changes the game.
+- **Arcana Trials** are six curated mate-in-one positions, each built around a different card (Tower Road, Homeward, Through the Veil, Comet Leap, Borrowed Saddle, Winter Seal). Failed attempts cost nothing; solved trials are saved locally and can be continued from the next position.
+- **Record & trophies** keeps a local career profile: win rate, best and daily streaks, per-card usage, recent matches and seven achievements. It is available from **Record** in the header or the new-match dialog.
+- **Threat Radar** is a board toggle that marks every square the opponent controls, outlines your attacked pieces in red, highlights pins in gold and reports material pressure. It switches to the Pixel board if needed; it is a reading aid, not an engine evaluation.
+- **Ambient score** is an optional generative WebAudio bed. It follows calm, tension, victory and defeat moods and has separate music/effects volume controls. It is off by default and starts only after interaction; the ♪ button still mutes effects. Settings live under **How to play → Audio**.
 - Fonts and artwork are self-hosted: WOFF2 for the UI and WebP at 480/960 px for the cards. The Three.js chunk is only fetched when **Table** is opened.
 - Saves use `herochess-cards-v2` (version 3). They now also remember rewinds, hints, exchanges, pass-and-play and daily mode. Rewind restores the last action, but once-per-match exchange and hint charges are not refunded. The earlier permanent-hero edition’s `herochess-v2` save is left untouched and is not loaded into card matches.
 
@@ -87,14 +92,16 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-Use `PLAYWRIGHT_CHANNEL=chrome npm run test:e2e` to test an installed Chrome. Tests cover all 18 effects, deck conservation/reshuffling, three-card hands, king safety, ordinary chess perft, CPU card usage and hidden-draw independence, animations, saving, undo, mobile layout, keyboard/fallback controls, the 320 px tray, dead-card exchange, hotseat, daily mode, hints, the result record, first-game coach, the particle layer and the effects intensity setting.
+Use `PLAYWRIGHT_CHANNEL=chrome npm run test:e2e` to test an installed Chrome. Tests cover all 18 effects, deck conservation/reshuffling, three-card hands, king safety, ordinary chess perft, CPU card usage and hidden-draw independence, animations, saving, undo, mobile layout, keyboard/fallback controls, the 320 px tray, dead-card exchange, hotseat, daily mode, hints, the result record, first-game coach, the particle layer, the effects intensity setting, match review positions, threat data, all six trials and the trophy rules.
 
 - `src/cards.js`: card definitions, deterministic shuffle, hand cycling and the once-per-match exchange.
 - `src/engine.js`: standard chess rules, card actions, effects, turn application and results.
 - `src/ai.js` / `src/ai-worker.js`: public-information CPU search off the main thread, shared by Hint.
 - `src/piece-model.js` / `src/pixels.js` / `src/pixel-pieces.js`: the sculpted models, and the generated 32 px pixel pieces used in both views.
 - `src/board.js`: the lazily loaded 3D table, picking, motion, capture and effect visuals.
-- `src/stats.js`: local record and daily bookkeeping.
+- `src/stats.js`: local record, matches, trophies and daily bookkeeping.
+- `src/review.js` / `src/radar.js` / `src/trials.js` / `src/record.js`: review positions, threat data, the six curated trials and the career-record renderer.
+- `src/sound.js`: synthesized effects and the opt-in generative ambient score.
 - `src/pixel-fx.js` / `src/fx-specs.js`: the hybrid particle/signature effects layer and its palettes.
 - `src/main.js`: card hand, board controls, library, journal, coach and saves.
 - `tools/piecegen.html` + `scripts/bake-pixels.mjs`: re-bake the pixel pieces after changing the models.

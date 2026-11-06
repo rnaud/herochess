@@ -9,11 +9,15 @@ import {opponentPreview} from './preview.js';
 import {pixelUrl} from './pixels.js';
 import {loadStats,statsLine,recordResult,dailySummary} from './stats.js';
 import {PixelFX} from './pixel-fx.js';
+import {renderRecord} from './record.js';
+import {reviewPositions,reviewMaterial,reviewBoardHtml} from './review.js';
+import {threatData,threatSummary} from './radar.js';
+import {TRIALS,buildTrialState,loadSolved,saveSolved,nextTrial} from './trials.js';
 let cpuSlot=null,cpuPiece=null;
 let impactTimer=null,flatCleanup=null,boardPresentation=null,boardDirty=false;
-const effects=new GameEffects(),sound=new GameSound();let pixelFx=null;let fxIntensity='full';let resultTimer=null;
+const effects=new GameEffects(),sound=new GameSound();let pixelFx=null;let fxIntensity='full';let resultTimer=null;let trial=null,trialSolved=false,trialFeedback='',radar=false,radarData=null,reviewSteps=[],reviewIndex=0;
 for(const event of ['pointerdown','keydown'])document.addEventListener(event,()=>sound.unlock(),{capture:true});
-function renderSound(){const button=document.getElementById('sound-button');button.textContent=sound.enabled?'♪ On':'♪ Off';button.setAttribute('aria-label',sound.enabled?'Mute sound effects':'Enable sound effects');button.setAttribute('aria-pressed',String(sound.enabled));}
+function renderSound(){const button=document.getElementById('sound-button');button.innerHTML=sound.enabled?'♪ <span>On</span>':'♪ <span>Off</span>';button.setAttribute('aria-label',sound.enabled?'Mute sound effects':'Enable sound effects');button.setAttribute('aria-pressed',String(sound.enabled));}
 document.getElementById('sound-button').onclick=async()=>{await sound.toggle();renderSound();};renderSound();
 import {PIECES,initialState,legalMoves,applyMove,outcome,moveLabel,squareName,opposite,inCheck,positionKey} from './engine.js';
 const $=id=>document.getElementById(id),SAVE_KEY='herochess-cards-v2';
@@ -42,7 +46,7 @@ async function ensureBoard(){
  if(!boardLoading)boardLoading=import('./board.js').then(({ChessBoard})=>{board=new ChessBoard($('board-view'),selectSquare);board.flip(flipped);return true;}).catch(error=>{console.warn('WebGL unavailable; using the pixel board.',error);boardFailed=true;boardLoading=null;return false;});
  return boardLoading;
 }
-function save(){try{localStorage.setItem(SAVE_KEY,JSON.stringify({version:3,state,human,snapshots,journal,rewindsUsed,rewindReady,exchangesUsed,hintsUsed,dailyMode,hotseat,resultRecorded,level:$('difficulty').value}));}catch{}}
+function save(){if(trial)return;try{localStorage.setItem(SAVE_KEY,JSON.stringify({version:3,state,human,snapshots,journal,rewindsUsed,rewindReady,exchangesUsed,hintsUsed,dailyMode,hotseat,resultRecorded,level:$('difficulty').value}));}catch{}}
 function stopCPU(){requestId++;worker?.terminate();worker=null;thinking=false;}
 function motionControls(){for(const id of ['flip-button','view-2d','difficulty'])$(id).disabled=animating;$('view-3d').disabled=animating||boardFailed;$('view-3d').title=boardFailed?'3D is unavailable in this browser; the pixel board is in use.':'Switch to the 3D table';}
 function cancelPresentation(){transitionId++;document.body.dataset.animating='false';clearTimeout(impactTimer);clearTimeout(resultTimer);resultTimer=null;pixelFx?.cancel();dealAnimations.forEach(a=>a.cancel());sound.stop();effects.cancel();board?.cancelAnimation();flatAnimations.forEach(a=>a.cancel());flatAnimations=[];flatCleanup?.();flatCleanup=null;animating=false;motionControls();}
@@ -59,7 +63,7 @@ function playableCards(){
  return playableCache;
 }
 function startCPU(){
- if(hotseat||state.turn===human||outcome(state).over)return;stopCPU();thinking=true;render();const id=++requestId;
+ if(trial||hotseat||state.turn===human||outcome(state).over)return;stopCPU();thinking=true;render();const id=++requestId;
  worker=new Worker(new URL('./ai-worker.js',import.meta.url),{type:'module'});
  const levels={'1':{maxDepth:1,timeMs:600,quiescence:false},'2':{maxDepth:3,timeMs:1800},'3':{maxDepth:4,timeMs:4000}};
  worker.onmessage=({data})=>{if(data.id!==requestId)return;if(data.error){cpuFailure();return;}const move=legalMoves(state).find(m=>JSON.stringify(m)===JSON.stringify(data.move));if(!move){cpuFailure();return;}stopCPU();commit(move);$('cpu-caption').textContent=`${['','APPRENTICE','TACTICIAN','STRATEGIST'][$('difficulty').value]} · DEPTH ${data.depth}`;};
@@ -96,6 +100,14 @@ async function animateFlat(state,move){
 }
 async function commit(move){
  const before=state,text=moveLabel(state,move),id=++transitionId;
+ if(trial&&!trialSolved){
+  const attempt=applyMove(before,move,false),result=outcome(attempt);
+  if(result.reason!=='Checkmate'||result.winner!=='w'){
+   trialFeedback=result.over?'That ends the game, but not with mate.':'Not mate yet. Try another action.';
+   resetSelection();render();sound.play('select');return;
+  }
+  trialFeedback='';
+ }
  const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches,fxOn=fxIntensity!=='off'&&!reduced;
  const oldShield=before.shield?.square??null,oldFreeze=before.freeze?.square??null;
  effects.cancel();if(hotseat||before.turn===human)rewindReady=true;
@@ -127,7 +139,7 @@ function renderPieceStatus(){
 $('close-piece-status').onclick=()=>{inspectedSquare=null;renderPieceStatus();};
 document.addEventListener('keydown',event=>{if(event.key==='Escape'){inspectedSquare=null;if(cpuSlot!==null){cpuSlot=null;cpuPiece=null;render();}else renderPieceStatus();}});
 function selectSquare(square){
- if(animating)return;
+ if(animating||trialSolved)return;
  cancelHint();
  inspectedSquare=square;renderPieceStatus();
  if(cpuSlot!==null){if(state.board[square]?.color===opposite(youSide()))cpuPiece=cpuPiece===square?null:square;render();return;}
@@ -143,6 +155,7 @@ function selectSquare(square){
  if(state.board[square]?.color===youSide()){selected=selected===square?null:square;moves=selected===null?[]:available(selected);}else{selected=null;moves=[];}render();
 }
 function selectCard(index){
+ if(trialSolved)return;
  if(animating||thinking||(!hotseat&&state.turn!==human)||outcome(state).over)return;
  cancelHint();cpuSlot=null;cpuPiece=null;slot=slot===index?null:index;usePower=true;pendingFreeze=null;sound.play('select');
  if(slot!==null){
@@ -186,16 +199,16 @@ function renderHand(){
 
  $('hand-panel').hidden=state.mode!=='cards';$('cpu-hand-panel').hidden=state.mode!=='cards';
  $('deck-count').textContent=`${state.deck.length} in deck · ${state.discard.length} discarded`;$('hand').replaceChildren();$('cpu-hand').replaceChildren();
- state.hands[you].forEach((id,index)=>{const c=CARDS[id],canPlay=playable?playable[index]:true,button=document.createElement('button');button.className=`spell-card${slot===index?(usePower?' chosen':' inspected'):''}${canPlay?'':' unplayable'}`;button.dataset.slot=index;button.dataset.action='power';button.dataset.card=id;button.dataset.family=c.family;button.dataset.tier=c.tier;button.setAttribute('aria-pressed',String(slot===index));button.setAttribute('aria-label',`${c.name}. ${FAMILIES[c.family].name}. ${POWER_TIERS[c.tier].name}, power tier ${c.tier} of 3. ${c.text}${canPlay?'':' No legal target in this position yet.'}`);button.innerHTML=`<span class="card-top">${familyBadge(c)}<span>0${index+1}</span></span><img class="card-art" src="${cardArt(id,480)}" alt="" width="480" height="320">${canPlay?'':'<span class="card-wait">NO TARGET YET</span>'}<span class="card-sigil" aria-hidden="true">${c.icon}</span><strong>${c.name}</strong><span class="card-text">${c.summary}</span><span class="card-rating">${tierBadge(c)}<span class="card-mechanic">${c.kind}</span></span><span class="card-bottom">ONE ACTION · TEMPORARY</span>`;button.disabled=thinking||animating||state.turn!==human||outcome(state).over;button.onclick=()=>selectCard(index);$('hand').append(button);});
+ state.hands[you].forEach((id,index)=>{const c=CARDS[id],canPlay=playable?playable[index]:true,button=document.createElement('button');button.className=`spell-card${slot===index?(usePower?' chosen':' inspected'):''}${canPlay?'':' unplayable'}`;button.dataset.slot=index;button.dataset.action='power';button.dataset.card=id;button.dataset.family=c.family;button.dataset.tier=c.tier;button.setAttribute('aria-pressed',String(slot===index));button.setAttribute('aria-label',`${c.name}. ${FAMILIES[c.family].name}. ${POWER_TIERS[c.tier].name}, power tier ${c.tier} of 3. ${c.text}${canPlay?'':' No legal target in this position yet.'}`);button.innerHTML=`<span class="card-top">${familyBadge(c)}<span>0${index+1}</span></span><img class="card-art" src="${cardArt(id,480)}" alt="" width="480" height="320">${canPlay?'':'<span class="card-wait">NO TARGET YET</span>'}<span class="card-sigil" aria-hidden="true">${c.icon}</span><strong>${c.name}</strong><span class="card-text">${c.summary}</span><span class="card-rating">${tierBadge(c)}<span class="card-mechanic">${c.kind}</span></span><span class="card-bottom">ONE ACTION · TEMPORARY</span>`;button.disabled=trialSolved||thinking||animating||state.turn!==human||outcome(state).over;button.onclick=()=>selectCard(index);$('hand').append(button);});
  state.hands[opposite(you)].forEach((id,index)=>{const c=CARDS[id],item=document.createElement('details');item.className='cpu-card';item.setAttribute('name','opponent-cards');item.open=cpuSlot===index;item.dataset.card=id;item.dataset.tier=c.tier;item.innerHTML=`<summary aria-controls="cpu-preview"><img class="cpu-art" src="${cardArt(id,480)}" alt="" width="90" height="90" loading="lazy"><span class="cpu-card-title"><strong>${c.name}</strong><span class="cpu-rating">${FAMILIES[c.family].name} · ${POWER_TIERS[c.tier].stars}</span></span></summary>`;item.querySelector('summary').onclick=event=>{event.preventDefault();if(animating)return;cpuSlot=cpuSlot===index?null:index;sound.play('select');render();$('cpu-hand').children[index].querySelector('summary').focus({preventScroll:true});};$('cpu-hand').append(item);});
  $('normal-mode').hidden=slot===null;$('normal-mode').textContent=slot!==null&&!usePower?'Close card':'↶ Cancel power';
- const canExchange=slot!==null&&!usePower&&exchangesUsed<1;
+ const canExchange=!trial&&slot!==null&&!usePower&&exchangesUsed<1;
  $('exchange-card').hidden=!canExchange;$('exchange-card').textContent=`↻ Swap card · ${1-exchangesUsed}`;
- for(const id of ['normal-mode','exchange-card']){$(id).disabled=animating||thinking||state.turn!==human||outcome(state).over;$(id).setAttribute('aria-pressed',String(id==='normal-mode'&&slot!==null&&!usePower));}
+ for(const id of ['normal-mode','exchange-card']){$(id).disabled=trialSolved||animating||thinking||state.turn!==human||outcome(state).over;$(id).setAttribute('aria-pressed',String(id==='normal-mode'&&slot!==null&&!usePower));}
  let instruction='Move a piece normally, or click a card to activate its power. Normal moves keep all your cards.';
  if(slot!==null){const id=state.hands[you][slot],c=CARDS[id],actions=available();if(!usePower){instruction='No legal target for this card yet. You can still move normally; it stays in your hand.'+(exchangesUsed<1?' You may swap it for a fresh card once this match.':'');}else{instruction=c.text+(['shield','freeze'].includes(c.effect)?' Click a highlighted target.':' Select a piece, then a destination.');if(c.effect==='freeze')instruction=pendingFreeze===null?'Click a highlighted enemy to freeze for its next turn. It will still attack and block paths. Then make a normal move with one of your pieces.':`Freeze ${PIECES[state.board[pendingFreeze].type].name} on ${squareName(pendingFreeze)}, then move one of your pieces normally. The card is spent when you finish the move.`;if(!actions.length)instruction='No legal power action for this card here. You can still move normally; the card stays in your hand.';else if(selected!==null&&!moves.length&&!(c.effect==='freeze'&&pendingFreeze===null))instruction='This piece has no legal destination with this choice. Try another piece or move normally.';}}
  $('selected-card-title').closest('.spell-workspace').classList.toggle('has-selection',!!active);
- $('card-instruction').textContent=thinking?'The Automaton is choosing from its visible hand…':instruction;
+ $('card-instruction').textContent=trialSolved?'Trial solved. Choose Next trial or Exit above the board.':thinking?'The Automaton is choosing from its visible hand…':instruction;
  if(pendingCardFocus){
   pendingCardFocus=false;
   requestAnimationFrame(()=>{
@@ -209,7 +222,7 @@ function renderHand(){
  }
 }
 function renderOpponentPreview(you=youSide()){
- const panel=$('cpu-preview');panel.hidden=cpuSlot===null;document.body.dataset.cpuPreview=String(cpuSlot!==null);
+ const panel=$('cpu-preview');if(trial){panel.hidden=true;document.body.dataset.cpuPreview='false';return null;}panel.hidden=cpuSlot===null;document.body.dataset.cpuPreview=String(cpuSlot!==null);
  if(cpuSlot===null)return null;
  const card=CARDS[state.hands[opposite(you)][cpuSlot]],actions=opponentPreview(state,you,cpuSlot,cpuPiece),destinations=[...new Set(actions.map(m=>m.to))];
  $('cpu-preview-title').textContent=`${hotseat?'Opponent':'CPU'} preview · ${card.name}`;
@@ -235,7 +248,7 @@ function positionCheckMarker(){
 }
 function screenPoint(square){if(view==='3d'&&board)return board.screenPoint(square);const r=$('flat-board').querySelector(`[data-square="${square}"]`)?.getBoundingClientRect();return r?{x:r.left+r.width/2,y:r.top+r.height/2}:null;}
 function renderRewind(){
- const remaining=3-rewindsUsed,button=$('undo-button');button.disabled=remaining===0||!rewindReady||outcome(state).over||(hotseat?!snapshots.length:!snapshots.some(s=>s.turn===human));
+ const remaining=3-rewindsUsed,button=$('undo-button');button.disabled=!!trial||remaining===0||!rewindReady||outcome(state).over||(hotseat?!snapshots.length:!snapshots.some(s=>s.turn===human));
  $('rewind-count').textContent=String(remaining);
  button.title=remaining===0?'No rewinds left this match.':!rewindReady?'Play another turn before rewinding again.':hotseat?`Rewind the last action. ${remaining} uses left.`:`Rewind your last turn and the CPU reply. ${remaining} uses left.`;
  button.setAttribute('aria-label',`Rewind time, ${remaining} uses left. ${button.title}`);
@@ -245,7 +258,7 @@ function renderCheck(end){
  document.body.dataset.check=checked?'true':'false';document.body.dataset.checkmate=checked?String(mate):'false';$('check-banner').hidden=!checked;$('check-marker').hidden=!checked;
  if(!checked){checkKey='';checkAlertAnimation?.cancel();return;}
  const heading=mate?'CHECKMATE':'CHECK';if($('check-heading').textContent!==heading)$('check-heading').textContent=heading;
- const message=mate?(hotseat?`${end.winner==='w'?'White':'Black'} delivered checkmate.`:(end.winner===human?'You win. The Automaton has no escape.':'Your king has no escape. The Automaton wins.')):(hotseat?`The ${state.turn==='w'?'White':'Black'} king is under attack.`:(state.turn===human?'Your king is under attack. Get out of check.':'The Automaton’s king is under attack.'));
+ const message=mate?(trial?'Trial solved. You found mate in one.':hotseat?`${end.winner==='w'?'White':'Black'} delivered checkmate.`:(end.winner===human?'You win. The Automaton has no escape.':'Your king has no escape. The Automaton wins.')):(hotseat?`The ${state.turn==='w'?'White':'Black'} king is under attack.`:(state.turn===human?'Your king is under attack. Get out of check.':'The Automaton’s king is under attack.'));
  if($('check-message').textContent!==message)$('check-message').textContent=message;
  const key=`${state.turn}:${state.fullmove}:${state.lastMove?.from}:${state.lastMove?.to}`;
  if(key!==checkKey){sound.play(mate?'mate':'check');checkKey=key;const king=state.board.findIndex(p=>p?.type==='k'&&p.color===state.turn),pt=king>=0?screenPoint(king):null;if(pt)pixelFx?.check(king,mate,pt);checkAlertAnimation?.cancel();if(!matchMedia('(prefers-reduced-motion: reduce)').matches)checkAlertAnimation=$('check-banner').animate([{opacity:0,transform:'translateY(-12px) scale(.94)'},{opacity:1,transform:'translateY(0) scale(1.03)',offset:.7},{opacity:1,transform:'translateY(0) scale(1)'}],{duration:420,easing:'ease-out'});}
@@ -255,7 +268,7 @@ function dailySeed(){const d=new Date();return (Number(`${d.getFullYear()}${Stri
 function startDaily(){startMatch({mode:'cards',side:'w',level:'2',hs:false,seed:dailySeed(),daily:true});}
 function renderDaily(){const el=$('daily-status');if(el)el.textContent=`Today's deal is shared by everyone. ${dailySummary(loadStats())}`;}
 function cancelHint(){hintRequest++;hintWorker?.terminate();hintWorker=null;hintMove=null;hintText='';}
-function renderHint(){const button=$('hint-button'),left=3-hintsUsed;button.disabled=left<=0||!!hintWorker||thinking||animating||outcome(state).over||(!hotseat&&state.turn!==human);$('hint-count').textContent=String(left);button.title=left<=0?'No hints left this match.':`Show one strong action. ${left} uses left.`;button.setAttribute('aria-label',`Hint, ${left} uses left`);}
+function renderHint(){const button=$('hint-button'),left=3-hintsUsed;button.disabled=!!trial||left<=0||!!hintWorker||thinking||animating||outcome(state).over||(!hotseat&&state.turn!==human);$('hint-count').textContent=String(left);button.title=left<=0?'No hints left this match.':`Show one strong action. ${left} uses left.`;button.setAttribute('aria-label',`Hint, ${left} uses left`);}
 function requestHint(){
  if(hintsUsed>=3||hintWorker||thinking||animating||outcome(state).over||(!hotseat&&state.turn!==human))return;
  cancelHint();const request=++hintRequest;renderHint();
@@ -307,7 +320,7 @@ function openResult(end){
  $('result-stats').innerHTML=`<div><b>${journal.length}</b><span>plies</span></div><div><b>${info.powers.length}</b><span>powers played</span></div><div><b>${rewindsUsed}</b><span>rewinds used</span></div><div><b>${hotseat?'Local':['','Apprentice','Tactician','Strategist'][Number($('difficulty').value)]||'CPU'}</b><span>${hotseat?'two players':'opponent'}</span></div>`;
  let record=loadStats();
  if(!hotseat&&!resultRecorded){
-  record=recordResult({outcome:info.outcome,mode:state.mode,level:$('difficulty').value,moves:journal.length,powers:info.powers,rewinds:rewindsUsed,date:new Date().toISOString().slice(0,10),daily:dailyMode});
+  record=recordResult({outcome:info.outcome,mode:state.mode,level:$('difficulty').value,moves:journal.length,powers:info.powers,rewinds:rewindsUsed,hints:hintsUsed,reason:end.reason,date:new Date().toISOString().slice(0,10),daily:dailyMode});
   resultRecorded=true;save();
  }
  $('result-record').textContent=statsLine(record);
@@ -318,7 +331,16 @@ function resultShareText(end){
  const info=resultContent(end),powers=info.powers.length;
  return `Herochess — The Arcana Deck\n${info.title} ${info.detail}\n${state.mode==='cards'?'Card chess':'Classic chess'} · ${journal.length} plies · ${powers} powers\n${location.href}`;
 }
-$('result-review').onclick=()=>$('result-dialog').close();
+$('result-review').onclick=()=>{$('result-dialog').close();openReview();};
+$('review-button').onclick=()=>openReview();
+$('review-close').onclick=()=>$('review-dialog').close();
+$('review-prev').onclick=()=>stepReview(-1);$('review-next').onclick=()=>stepReview(1);$('review-slider').oninput=()=>{reviewIndex=Number($('review-slider').value);renderReview();};
+$('review-list').onclick=event=>{const button=event.target.closest('[data-review-step]');if(!button)return;reviewIndex=Number(button.dataset.reviewStep);renderReview();};
+$('trials-header').onclick=openTrials;$('trials-button').onclick=openTrials;
+$('record-header').onclick=openRecord;$('record-button').onclick=openRecord;$('record-close').onclick=()=>$('record-dialog').close();
+$('trials-list').onclick=event=>{const item=event.target.closest('[data-trial-id]');if(item)startTrial(item.dataset.trialId);};
+$('trial-retry').onclick=()=>{if(trial)startTrial(trial);};$('trial-next').onclick=()=>{if(trial)startTrial(nextTrial(trial).id);};$('trial-exit').onclick=exitTrial;
+$('radar-button').onclick=()=>toggleRadar();
 $('result-share').onclick=async()=>{
  const end=outcome(state),text=resultShareText(end);
  try{await navigator.clipboard.writeText(text);$('result-share-status').textContent='Copied to clipboard.';}
@@ -328,15 +350,20 @@ $('result-rematch').onclick=()=>{ $('result-dialog').close(); if(dailyMode)start
 function render(){
  renderPieceStatus();
  const you=youSide(),opp=opposite(you),end=outcome(state),sideName=you==='w'?'WHITE':'BLACK',oppName=opp==='w'?'WHITE':'BLACK';
- renderCheck(end);if(end.over)scheduleResult(end);
+ renderCheck(end);
+ if(end.over){
+  if(trial){if(!trialSolved){trialSolved=true;saveSolved([...loadSolved(),trial]);sound.play('mate');}}
+  else scheduleResult(end);
+ }
+ sound.setMood(end.over?(trial?'victory':end.winner===human?'victory':end.winner?'defeat':'calm'):inCheck(state)?'tension':'calm');
  $('turn-number').textContent=`ROUND ${String(state.fullmove).padStart(2,'0')}`;
- $('mode-label').textContent=state.mode==='cards'?'CARD CHESS':'CLASSIC CHESS';
+ $('mode-label').textContent=trial?'ARCANA TRIAL':state.mode==='cards'?'CARD CHESS':'CLASSIC CHESS';
  $('turn-chip').textContent=end.over?'GAME OVER':inCheck(state)?(hotseat?`${sideName} IN CHECK`:(state.turn===human?'YOU ARE IN CHECK':'CPU IN CHECK')):hotseat?`${sideName} TO MOVE`:(state.turn===human?'YOUR TURN':'CPU TURN');
  $('thinking-overlay').hidden=!thinking;
  $('player-caption').textContent=hotseat?`${you==='w'?'IVORY · WHITE':'OBSIDIAN · BLACK'}${end.over?'': ' · TO MOVE'}`:(human==='w'?'IVORY · WHITE':'OBSIDIAN · BLACK');
- $('opponent-side').textContent=hotseat?(opp==='w'?'IVORY':'OBSIDIAN'):(human==='w'?'OBSIDIAN':'IVORY');
+ $('opponent-side').textContent=trial?'TRIAL':hotseat?(opp==='w'?'IVORY':'OBSIDIAN'):(human==='w'?'OBSIDIAN':'IVORY');
  $('bottom-name').textContent=hotseat?(you==='w'?'White':'Black'):'You';
- $('opponent-name').textContent=hotseat?(opp==='w'?'White':'Black'):'The Automaton';
+ $('opponent-name').textContent=trial?'The Puzzle':hotseat?(opp==='w'?'White':'Black'):'The Automaton';
  renderRewind();motionControls();renderHint();
  let title=end.over?(end.winner?(hotseat?`${end.winner==='w'?'White':'Black'} wins.`:(end.winner===human?'A winning hand.':'The Automaton prevails.')):'An even ending.')
   :inCheck(state)?(hotseat?`${sideName[0]+sideName.slice(1).toLowerCase()} is in check!`:(state.turn===human?'You are in check!':'The Automaton is in check.'))
@@ -351,23 +378,24 @@ function render(){
  if(!inCheck(state)&&selected!==null&&!(slot!==null&&CARDS[state.hands[you][slot]].effect)){title=PIECES[state.board[selected].type].name+' · '+squareName(selected);detail=`${moves.length} legal destination${moves.length===1?'':'s'} for this choice. ${state.mode==='cards'&&slot!==null&&usePower?'The piece returns to its normal movement after this action.':''}`;}
  if(cpuSlot!==null&&!inCheck(state)&&!end.over){title=hotseat?'Inspecting opponent powers':'Inspecting CPU powers';detail='Preview only. Exit preview or choose one of your cards to return to your turn.';}
  if(hintText&&!end.over){title='Hint';detail=hintText;}
+ if(trial){const t=TRIALS.find(x=>x.id===trial);title=trialSolved?'Trial solved.':(t?.name||'Arcana Trial');detail=trialSolved?'You found mate in one. Open the next trial or exit.':(t?.prompt||'');}
  $('hint-banner').hidden=!hintText||end.over;$('hint-banner').textContent=hintText?`Hint · ${hintText}`:'';
  $('status-title').textContent=title;$('status-detail').textContent=detail;renderHand();
  const effects=[];if(state.shield)effects.push(`${squareName(state.shield.square)} is shielded: cannot be captured this turn.`);if(state.freeze)effects.push(`${squareName(state.freeze.square)} is frozen: cannot move this turn, but still attacks.`);$('effects').textContent=effects.join(' ')||'No lasting effects.';
  const previewMarks=renderOpponentPreview(you);
  let marks=moves;if(slot!==null&&CARDS[state.hands[you][slot]].effect==='freeze'&&pendingFreeze===null)marks=[...new Set(available().map(m=>m.freezeTarget))].map(to=>({to,usePower:true}));else if(selected===null&&state.mode==='cards'&&slot!==null&&usePower&&CARDS[state.hands[you][slot]].effect==='shield')marks=available();
  if(previewMarks!==null)marks=previewMarks;
- boardPresentation=[cpuSlot!==null||pendingFreeze===null?state:{...state,freeze:{square:pendingFreeze,color:opposite(you)}},cpuSlot!==null?cpuPiece:selected,marks,cpuSlot!==null];boardDirty=true;renderFlat(marks);renderJournal();renderCaptures();renderCPURecap();setView(view);
+ boardPresentation=[cpuSlot!==null||pendingFreeze===null?state:{...state,freeze:{square:pendingFreeze,color:opposite(you)}},cpuSlot!==null?cpuPiece:selected,marks,cpuSlot!==null];boardDirty=true;radarData=radar?threatData(state):null;renderFlat(marks);renderJournal();renderCaptures();renderCPURecap();renderTrialBanner();renderRadar();setView(view);
 }
 function renderFlat(marks){
- const checked=inCheck(state),focused=document.activeElement?.dataset.square,flat=$('flat-board');flat.replaceChildren();
+ const checked=inCheck(state),focused=document.activeElement?.dataset.square,flat=$('flat-board'),threats=radar?radarData:null;flat.replaceChildren();
  for(let row=0;row<8;row++)for(let col=0;col<8;col++){const square=flipped?row*8+7-col:(7-row)*8+col,p=state.board[square],button=document.createElement('button'),legal=marks.some(m=>m.to===square);
- button.className=`flat-square${checked&&p?.type==='k'&&p.color===state.turn?' king-in-check':''}${(square%8+(square>>3))%2===0?' dark':''}${p?.color==='b'?' black-piece':''}${state.shield?.square===square?' shielded':''}${state.freeze?.square===square||(cpuSlot===null&&pendingFreeze===square)?' frozen':''}${cpuSlot!==null?(cpuPiece===square?' preview-origin':''):(selected===square?' selected':'')}${legal?(cpuSlot!==null?' preview-destination':' legal'):''}${cpuSlot===null&&legal&&slot!==null&&usePower&&state.mode==='cards'?' power-move':''}${hintMove&&(hintMove.from===square||hintMove.to===square)?' hint':''}${state.lastMove&&(state.lastMove.from===square||state.lastMove.to===square)?' last':''}`;button.dataset.square=square;button.setAttribute('aria-label',`${squareName(square)}${p?`, ${p.color==='w'?'White':'Black'} ${PIECES[p.type].name}`:', empty'}${checked&&p?.type==='k'&&p.color===state.turn?', in check':''}${legal?(cpuSlot!==null?', CPU preview destination':', legal destination'):''}${state.shield?.square===square?', shielded':''}${state.freeze?.square===square?', frozen':''}${cpuSlot===null&&pendingFreeze===square?', selected freeze target':''}`);button.setAttribute('aria-pressed',String(cpuSlot!==null?cpuPiece===square:selected===square));button.innerHTML=`<span class="flat-piece">${p?`<img class="flat-piece-img" src="${pixelUrl(p.type,p.color)}" alt="" draggable="false">`:''}</span><span class="square-label">${squareName(square)}</span>`;button.onclick=()=>selectSquare(square);button.onkeydown=e=>{const delta={ArrowRight:1,ArrowLeft:-1,ArrowDown:8,ArrowUp:-8}[e.key];if(delta!==undefined){e.preventDefault();const buttons=[...flat.children];buttons[buttons.indexOf(button)+delta]?.focus();}};flat.append(button);}
+ button.className=`flat-square${checked&&p?.type==='k'&&p.color===state.turn?' king-in-check':''}${(square%8+(square>>3))%2===0?' dark':''}${p?.color==='b'?' black-piece':''}${state.shield?.square===square?' shielded':''}${state.freeze?.square===square||(cpuSlot===null&&pendingFreeze===square)?' frozen':''}${cpuSlot!==null?(cpuPiece===square?' preview-origin':''):(selected===square?' selected':'')}${legal?(cpuSlot!==null?' preview-destination':' legal'):''}${cpuSlot===null&&legal&&slot!==null&&usePower&&state.mode==='cards'?' power-move':''}${hintMove&&(hintMove.from===square||hintMove.to===square)?' hint':''}${state.lastMove&&(state.lastMove.from===square||state.lastMove.to===square)?' last':''}${threats?.squares.has(square)?' threat':''}${threats?.own.has(square)?' threat-piece':''}${threats?.pinned.has(square)?' pinned':''}`;button.dataset.square=square;button.setAttribute('aria-label',`${squareName(square)}${p?`, ${p.color==='w'?'White':'Black'} ${PIECES[p.type].name}`:', empty'}${checked&&p?.type==='k'&&p.color===state.turn?', in check':''}${legal?(cpuSlot!==null?', CPU preview destination':', legal destination'):''}${state.shield?.square===square?', shielded':''}${state.freeze?.square===square?', frozen':''}${cpuSlot===null&&pendingFreeze===square?', selected freeze target':''}${threats?.own.has(square)?', under threat':''}${threats?.pinned.has(square)?', pinned':''}`);button.setAttribute('aria-pressed',String(cpuSlot!==null?cpuPiece===square:selected===square));button.innerHTML=`<span class="flat-piece">${p?`<img class="flat-piece-img" src="${pixelUrl(p.type,p.color)}" alt="" draggable="false">`:''}</span><span class="square-label">${squareName(square)}</span>`;button.onclick=()=>selectSquare(square);button.onkeydown=e=>{const delta={ArrowRight:1,ArrowLeft:-1,ArrowDown:8,ArrowUp:-8}[e.key];if(delta!==undefined){e.preventDefault();const buttons=[...flat.children];buttons[buttons.indexOf(button)+delta]?.focus();}};flat.append(button);}
  if(focused!==undefined&&view==='2d')flat.querySelector(`[data-square="${focused}"]`)?.focus();
 }
 function renderJournal(){const container=$('journal');container.replaceChildren();$('move-count').textContent=String(journal.length).padStart(2,'0');if(!journal.length){container.innerHTML='<p class="empty-journal">The first card is yours to play.</p>';return;}journal.forEach((text,i)=>{const row=document.createElement('div');row.className='turn-entry';row.textContent=`${Math.floor(i/2)+1}${i%2?' …':' .'} ${text}`;container.append(row);});container.scrollTop=container.scrollHeight;}
 function renderCPURecap(){
- const panel=$('cpu-recap');if(hotseat){panel.hidden=true;return;}
+ const panel=$('cpu-recap');if(hotseat||trial){panel.hidden=true;return;}
  const index=snapshots.findLastIndex(s=>s.turn!==human);panel.hidden=index<0;
  if(index<0)return;
  const before=snapshots[index],after=snapshots[index+1]||state,m=after.lastMove;if(!m)return;
@@ -388,17 +416,21 @@ async function setView(next){
 $('hand-toggle').onclick=()=>{handOpen=!handOpen;renderHand();if(handOpen)requestAnimationFrame(()=>$('hand-panel').scrollIntoView({block:'end'}));};
 $('normal-mode').onclick=()=>selectCard(null);
 $('exchange-card').onclick=()=>{
- if(exchangesUsed>=1||slot===null||usePower||animating||thinking||(!hotseat&&state.turn!==human)||outcome(state).over)return;
+ if(trial||exchangesUsed>=1||slot===null||usePower||animating||thinking||(!hotseat&&state.turn!==human)||outcome(state).over)return;
  const next=exchangeCard(state,slot);if(next===state)return;
  cancelPresentation();exchangesUsed=1;state=next;slot=null;usePower=true;selected=null;moves=[];pendingFreeze=null;if(matchMedia('(max-width:600px)').matches)handOpen=true;
  save();sound.play('draw');render();
 };
 $('view-3d').onclick=()=>setView('3d');$('view-2d').onclick=()=>setView('2d');$('flip-button').onclick=()=>{flipped=!flipped;board?.flip(flipped);render();};
-$('undo-button').onclick=()=>{if(rewindsUsed>=3||!rewindReady)return;let index=snapshots.length-1;if(!hotseat)while(index>=0&&snapshots[index].turn!==human)index--;if(index<0)return;cancelPresentation();stopCPU();state=snapshots[index];snapshots=snapshots.slice(0,index);journal=journal.slice(0,index);rewindsUsed++;rewindReady=false;resetSelection();save();render();sound.play('rewind');effects.rewind($('board-view').closest('.board-shell').getBoundingClientRect(),3-rewindsUsed);};
+$('undo-button').onclick=()=>{if(trial||rewindsUsed>=3||!rewindReady)return;let index=snapshots.length-1;if(!hotseat)while(index>=0&&snapshots[index].turn!==human)index--;if(index<0)return;cancelPresentation();stopCPU();state=snapshots[index];snapshots=snapshots.slice(0,index);journal=journal.slice(0,index);rewindsUsed++;rewindReady=false;resetSelection();save();render();sound.play('rewind');effects.rewind($('board-view').closest('.board-shell').getBoundingClientRect(),3-rewindsUsed);};
 $('difficulty').onchange=()=>{save();if(!hotseat&&state.turn!==human&&!outcome(state).over)startCPU();};
 $('mobile-difficulty').onchange=()=>{$('difficulty').value=$('mobile-difficulty').value;$('difficulty').onchange();};
 $('fx-intensity').onchange=()=>{fxIntensity=$('fx-intensity').value;try{localStorage.setItem('herochess-fx',fxIntensity);}catch{}document.body.dataset.fx=fxIntensity;pixelFx.setIntensity(fxIntensity);sound.play('select');if(fxIntensity!=='off')setTimeout(()=>pixelFx.preview('#f0d59b'),60);};
+$('music-toggle').checked=sound.musicEnabled;$('music-volume').value=String(Math.round(sound.musicVolume*100));$('sfx-volume').value=String(Math.round(sound.sfxVolume*100));
+$('music-toggle').onchange=async()=>{const on=await sound.toggleMusic();$('music-toggle').checked=on;if(on)sound.play('select');};
+$('music-volume').oninput=()=>sound.setMusicVolume(Number($('music-volume').value)/100);$('sfx-volume').oninput=()=>sound.setSfxVolume(Number($('sfx-volume').value)/100);
 function startMatch({mode='cards',side='w',level:nextLevel=null,hs=false,seed=undefined,daily=false}={}){
+ trial=null;trialSolved=false;trialFeedback='';document.body.dataset.trial='false';$('trial-banner').hidden=true;
  cancelPresentation();stopCPU();
  const nextSide=hs?'w':(side||human),lv=nextLevel||$('difficulty').value||'2';
  state=initialState(mode,seed);human=nextSide;hotseat=!!hs;
@@ -431,6 +463,85 @@ $('tier-filter').innerHTML='<option value="">All power tiers</option>'+Object.en
 $('family-filter').onchange=renderLibrary;$('tier-filter').onchange=renderLibrary;
 $('reset-filters').onclick=()=>{$('family-filter').value='';$('tier-filter').value='';renderLibrary();};
 $('card-key-button').onclick=()=>{$('library-dialog').showModal();$('card-legend').open=true;$('card-legend').scrollIntoView({block:'nearest'});};
+
+function renderTrialBanner(){
+ const t=TRIALS.find(x=>x.id===trial);
+ $('trial-banner').hidden=!t;
+ document.body.dataset.trial=String(!!t);
+ if(!t)return;
+ const index=TRIALS.findIndex(x=>x.id===t.id);
+ $('trial-progress-label').textContent=`${index+1} / ${TRIALS.length}`;
+ $('trial-name').textContent=t.name;
+ $('trial-prompt').textContent=t.prompt;
+ $('trial-feedback').textContent=trialSolved?'Mate found. The position is solved.':trialFeedback;
+ $('trial-feedback').dataset.solved=String(trialSolved);
+ $('trial-retry').hidden=false;
+ $('trial-next').hidden=!trialSolved;
+ $('trial-exit').hidden=false;
+}
+function renderRadar(){
+ document.body.dataset.radar=String(radar);
+ $('radar-button').setAttribute('aria-pressed',String(radar));
+ if(!radar){$('radar-chip').hidden=true;return;}
+ const data=radarData||threatData(state);radarData=data;
+ $('radar-chip').hidden=false;
+ $('radar-chip').textContent=`THREAT RADAR · ${threatSummary(data)}`;
+ $('radar-chip').dataset.king=String(data.kingThreat);
+}
+async function toggleRadar(){
+ radar=!radar;
+ if(radar&&view==='3d')await setView('2d');
+ radarData=radar?threatData(state):null;
+ sound.play('select');render();
+}
+function startTrial(id){
+ if(animating||thinking)return;
+ if(!trial)save();
+ const t=TRIALS.find(x=>x.id===id);if(!t)return;
+ cancelPresentation();stopCPU();
+ trial=t.id;trialSolved=false;trialFeedback='';resultShown=false;resultRecorded=true;dailyMode=false;
+ state=buildTrialState(t);human='w';hotseat=false;snapshots=[];journal=[];rewindsUsed=0;rewindReady=true;exchangesUsed=0;hintsUsed=0;
+ resetSelection();handOpen=false;flipped=false;board?.flip(false);
+ $('trials-dialog').close();$('result-dialog').close();$('new-dialog').close();
+ $('difficulty').value=level;$('mobile-difficulty').value=level;
+ $('cpu-caption').textContent='ARCANA TRIAL';$('opponent-name').textContent='The Puzzle';$('bottom-name').textContent='You';$('opponent-side').textContent='OBSIDIAN';
+ document.body.dataset.hotseat='false';
+ sound.play('deal');setView('2d');render();renderTrialBanner();
+}
+function exitTrial(){
+ if(!trial)return;
+ trial=null;trialSolved=false;trialFeedback='';document.body.dataset.trial='false';$('trial-banner').hidden=true;
+ location.reload();
+}
+function renderTrials(){
+ const solved=loadSolved(),set=new Set(solved);
+ $('trials-progress').innerHTML=`<span>${solved.length} / ${TRIALS.length} solved</span><span>One action · mate in one</span>`;
+ $('trials-list').innerHTML=TRIALS.map((t,index)=>{const c=CARDS[t.card],done=set.has(t.id);return `<button type="button" class="trial-item${done?' solved':''}" data-trial-id="${t.id}"><span class="trial-index">${done?'★':String(index+1).padStart(2,'0')}</span><span class="trial-copy"><strong>${t.name}</strong><span>${c.name} · ${FAMILIES[c.family].name}</span><small>${t.prompt}</small></span><span class="trial-state">${done?'Solved':'Start →'}</span></button>`;}).join('');
+}
+function openTrials(){$('new-dialog').close();renderTrials();$('trials-dialog').showModal();}
+function openRecord(){$('new-dialog').close();renderRecord($('record-body'));$('record-dialog').showModal();}
+function renderReview(){
+ if(!reviewSteps.length)return;
+ const step=reviewSteps[reviewIndex],last=reviewSteps.length-1,material=reviewMaterial(step.position),diff=material.diff;
+ const diffText=diff===0?'Material even':diff>0?`+${diff} White`:`+${-diff} Black`;
+ const checked=inCheck(step.position);
+ $('review-step-count').textContent=`${step.index} / ${last}`;
+ $('review-step-title').textContent=step.label;
+ $('review-meta').textContent=`${step.position.turn==='w'?'White':'Black'} to move${checked?' · in check':''} · ${diffText}${step.final?' · final position':''}`;
+ $('review-board').innerHTML=reviewBoardHtml(step.position,flipped);
+ $('review-board').setAttribute('aria-label',`Review position ${step.index} of ${last}. ${step.label}. ${step.position.turn==='w'?'White':'Black'} to move${checked?', in check':''}.`);
+ const slider=$('review-slider');slider.max=String(last);slider.value=String(reviewIndex);
+ $('review-prev').disabled=reviewIndex<=0;$('review-next').disabled=reviewIndex>=last;
+ $('review-list').innerHTML=reviewSteps.map(item=>`<button type="button" class="review-move${item.index===reviewIndex?' active':''}" data-review-step="${item.index}"${item.index===reviewIndex?' aria-current="step"':''}><span>${String(item.index).padStart(2,'0')}</span>${item.label}</button>`).join('');
+ const active=$('review-list').querySelector('.active');if(active)requestAnimationFrame(()=>active.scrollIntoView({block:'nearest'}));
+}
+function openReview(start=null){
+ reviewSteps=reviewPositions(snapshots,state,journal);
+ reviewIndex=start===null?reviewSteps.length-1:Math.max(0,Math.min(reviewSteps.length-1,start));
+ $('review-dialog').showModal();renderReview();
+}
+function stepReview(delta){reviewIndex=Math.max(0,Math.min(reviewSteps.length-1,reviewIndex+delta));renderReview();}
+
 renderLibrary();
 render();startCPU();if(!resumed)dealHand();
 try{if(!localStorage.getItem('herochess-coach-v1'))setTimeout(()=>coachStep(0),900);}catch{}
