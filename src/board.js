@@ -23,7 +23,7 @@ export class ChessBoard {
   const key=new THREE.DirectionalLight(0xffe6c4,2.2);key.position.set(-3,14,3);key.castShadow=true;key.shadow.mapSize.set(2048,2048);Object.assign(key.shadow.camera,{left:-7,right:7,top:7,bottom:-7,near:.5,far:25});key.shadow.normalBias=.035;key.shadow.bias=-.0004;key.shadow.radius=5;key.shadow.intensity=.45;this.scene.add(key);
   const fill=new THREE.DirectionalLight(0xd5e2f2,1.25);fill.position.set(5,5,-6);this.scene.add(fill);
   this.materials=createPieceMaterials();
-  this.pieceTextures={};for(const color of ['w','b'])for(const type of Object.keys(SPRITE_HEIGHT)){const texture=new THREE.CanvasTexture(pixelCanvas(type,color));texture.magFilter=THREE.NearestFilter;texture.minFilter=THREE.NearestFilter;texture.generateMipmaps=false;texture.colorSpace=THREE.SRGBColorSpace;this.pieceTextures[color+type]=texture;}
+  this.pieceTextures={};for(const color of ['w','b'])for(const type of Object.keys(SPRITE_HEIGHT)){const texture=new THREE.CanvasTexture(pixelCanvas(type,color));texture.magFilter=THREE.LinearFilter;texture.minFilter=THREE.LinearMipmapLinearFilter;texture.generateMipmaps=true;texture.colorSpace=THREE.SRGBColorSpace;this.pieceTextures[color+type]=texture;}
   this.shadowTexture=(()=>{const c=document.createElement('canvas');c.width=32;c.height=16;const x=c.getContext('2d');for(let y=0;y<16;y++)for(let i=0;i<32;i++){const dx=(i-15.5)/15.5,dy=(y-7.5)/7.5,d=dx*dx+dy*dy;if(d<1){x.fillStyle=d<.5?'rgba(0,0,0,.52)':'rgba(0,0,0,.24)';x.fillRect(i,y,1,1);}}const t=new THREE.CanvasTexture(c);t.magFilter=THREE.NearestFilter;t.minFilter=THREE.NearestFilter;t.generateMipmaps=false;return t;})();
   const base=new THREE.Mesh(new THREE.BoxGeometry(8.7,.32,8.7),new THREE.MeshStandardMaterial({color:0x514134,metalness:.25,roughness:.45}));base.position.y=-.23;base.receiveShadow=true;this.scene.add(base);
   const trim=new THREE.Mesh(new THREE.BoxGeometry(8.72,.045,8.72),this.materials.gold);trim.position.y=-.35;this.scene.add(trim);
@@ -68,7 +68,7 @@ export class ChessBoard {
  pick(event){const r=this.container.getBoundingClientRect();this.pointer.set((event.clientX-r.left)/r.width*2-1,-(event.clientY-r.top)/r.height*2+1);this.raycaster.setFromCamera(this.pointer,this.camera);const hits=this.raycaster.intersectObjects([...this.pieceMeshes,...this.squares],true);for(const hit of hits){let obj=hit.object;while(obj){if(obj.userData.square!==undefined)return obj.userData.square;obj=obj.parent;}}return null;}
  piece(type,color){
   const group=new THREE.Group(),height=SPRITE_HEIGHT[type]||.85;
-  const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:this.pieceTextures[color+type],transparent:true,alphaTest:.42,depthWrite:true}));
+  const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:this.pieceTextures[color+type],transparent:true,alphaTest:.08,depthWrite:true}));
   sprite.center.set(.5,0);sprite.scale.set(height,height,1);sprite.position.y=.045;sprite.userData.disposableMaterial=true;group.add(sprite);
   const shadow=new THREE.Mesh(new THREE.PlaneGeometry(height*.86,height*.34),new THREE.MeshBasicMaterial({map:this.shadowTexture,transparent:true,opacity:.62,depthWrite:false}));
   shadow.rotation.x=-Math.PI/2;shadow.position.y=.012;shadow.renderOrder=1;shadow.userData.disposableMaterial=true;group.add(shadow);

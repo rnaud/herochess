@@ -1,8 +1,10 @@
 import {PIXEL_PIECES,PIXEL_PALETTES,PIXEL_SIZE} from './pixel-pieces.js';
+import {pieceArtUrl,pieceArtCanvas} from './piece-art.js';
 
-const canvases=new Map(),urls=new Map();
+const canvases=new Map();
 
 export function pixelCanvas(type,color){
+ const art=pieceArtCanvas(type,color);if(art)return art;
  const key=color+type;if(canvases.has(key))return canvases.get(key);
  const rows=PIXEL_PIECES[color][type],palette=PIXEL_PALETTES[color];
  const canvas=document.createElement('canvas');canvas.width=PIXEL_SIZE;canvas.height=PIXEL_SIZE;
@@ -15,7 +17,4 @@ export function pixelCanvas(type,color){
  canvases.set(key,canvas);return canvas;
 }
 
-export function pixelUrl(type,color){
- const key=color+type;if(urls.has(key))return urls.get(key);
- const url=pixelCanvas(type,color).toDataURL('image/png');urls.set(key,url);return url;
-}
+export function pixelUrl(type,color){return pieceArtUrl(type,color,'pixel');}

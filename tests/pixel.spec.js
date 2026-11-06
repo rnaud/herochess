@@ -5,7 +5,7 @@ test('pixel board is the default and tabulates the pixel piece sprites',async({p
  await fresh(page);
  await expect(page.locator('#view-2d')).toHaveAttribute('aria-pressed','true');
  await expect(page.locator('#flat-board .flat-piece-img')).toHaveCount(32);
- await expect(page.locator('.flat-piece-img').first()).toHaveAttribute('src',/^data:image\/png/);
+ await expect(page.locator('.flat-piece-img').first()).toHaveAttribute('src',/art\/pieces\/.*-96\.webp$/);
  await page.locator('#view-3d').click();await expect(page.locator('#board-view canvas')).toBeVisible();
 });
 test('mobile 320px keeps the board above the tray and never clips the toolbar',async({page})=>{

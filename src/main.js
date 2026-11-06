@@ -7,6 +7,7 @@ import {GameSound} from './sound.js';
 import {actionTiming} from './motion.js';
 import {opponentPreview} from './preview.js';
 import {pixelUrl} from './pixels.js';
+import {preloadPieceArt} from './piece-art.js';
 import {loadStats,statsLine,recordResult,dailySummary} from './stats.js';
 import {PixelFX} from './pixel-fx.js';
 import {renderRecord} from './record.js';
@@ -43,7 +44,7 @@ if(!canUseWebGL())boardFailed=true;
 async function ensureBoard(){
  if(board)return true;
  if(boardFailed)return false;
- if(!boardLoading)boardLoading=import('./board.js').then(({ChessBoard})=>{board=new ChessBoard($('board-view'),selectSquare);board.flip(flipped);return true;}).catch(error=>{console.warn('WebGL unavailable; using the pixel board.',error);boardFailed=true;boardLoading=null;return false;});
+ if(!boardLoading)boardLoading=Promise.all([import('./board.js'),preloadPieceArt()]).then(([{ChessBoard}])=>{board=new ChessBoard($('board-view'),selectSquare);board.flip(flipped);return true;}).catch(error=>{console.warn('WebGL unavailable; using the pixel board.',error);boardFailed=true;boardLoading=null;return false;});
  return boardLoading;
 }
 function save(){if(trial)return;try{localStorage.setItem(SAVE_KEY,JSON.stringify({version:3,state,human,snapshots,journal,rewindsUsed,rewindReady,exchangesUsed,hintsUsed,dailyMode,hotseat,resultRecorded,level:$('difficulty').value}));}catch{}}
