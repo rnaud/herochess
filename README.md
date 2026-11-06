@@ -51,7 +51,7 @@ The 50-move draw and stalemate remain. Repetition includes the complete position
 
 ## Interface and saves
 
-- The **Pixel** board is the default: keyboard-accessible, hand-painted reliquary piece miniatures with compact 96 px painted-pixel variants, and no WebGL needed. **Table** is an optional, lazily loaded 3D view using 256 px cutout textures.
+- The **Pixel** board is the default: keyboard-accessible, bold heraldic reliquary piece icons designed to read at a distance, and no WebGL needed. **Table** is an optional, lazily loaded 3D view using the more detailed 256 px miniature cutout textures.
 - Move/capture animations in both views, plus reduced-motion support.
 - Three difficulty levels, playing either side, exact undo, and local autosave.
 - Read all 18 cards from **Card atlas** in the header.
@@ -97,7 +97,7 @@ Use `PLAYWRIGHT_CHANNEL=chrome npm run test:e2e` to test an installed Chrome. Te
 - `src/cards.js`: card definitions, deterministic shuffle, hand cycling and the once-per-match exchange.
 - `src/engine.js`: standard chess rules, card actions, effects, turn application and results.
 - `src/ai.js` / `src/ai-worker.js`: public-information CPU search off the main thread, shared by Hint.
-- `src/piece-art.js` / `src/pixels.js`: the new 96 px/256 px hand-painted reliquary piece set. `src/piece-model.js` / `src/pixel-pieces.js` remain as the procedural fallback and pixel-baking source.
+- `src/piece-art.js` / `src/pixels.js`: the two-tier reliquary art — 160 px heraldic icons for the flat board and 256 px detailed miniatures for the Table. `src/piece-model.js` / `src/pixel-pieces.js` remain as the procedural fallback and pixel-baking source.
 - `src/board.js`: the lazily loaded 3D table, picking, motion, capture and effect visuals.
 - `src/stats.js`: local record, matches, trophies and daily bookkeeping.
 - `src/review.js` / `src/radar.js` / `src/trials.js` / `src/record.js`: review positions, threat data, the six curated trials and the career-record renderer.
@@ -120,7 +120,7 @@ The permanent-hero editions remain recoverable in Git history. This edition has 
 
 ### Artwork and interface
 
-The Shattered Court uses 18 distinct Midjourney paintings: different characters, environments, palettes and moods connected by a hand-painted fantasy illustration style. Each card has its own frame accent. The current build ships optimized WebP derivatives; the original JPEGs remain in Git history. The complete interface uses an illustrated citadel backdrop, a textured stone board, brass ornament, opponent spell disclosures, and a three-card hand beneath the battlefield. The piece set is a matching ivory/obsidian reliquary miniature collection; see [the piece sheet](art-direction/piece-set-v1.webp).
+The Shattered Court uses 18 distinct Midjourney paintings: different characters, environments, palettes and moods connected by a hand-painted fantasy illustration style. Each card has its own frame accent. The current build ships optimized WebP derivatives; the original JPEGs remain in Git history. The complete interface uses an illustrated citadel backdrop, a textured stone board, brass ornament, opponent spell disclosures, and a three-card hand beneath the battlefield. The piece set is a matching ivory/obsidian reliquary collection; see [the miniature sheet](art-direction/piece-set-v1.webp), [the flat-board icons](art-direction/piece-icons-v1.webp) and [the in-game board](art-direction/piece-set-flat-v1.webp).
 
 See [art direction](art-direction/README.md), [full-screen reference](art-direction/site-reference-v2.png) and [prompts / provenance](art-direction/prompts-v2.json). Optimized local images live in `public/art/realms/`; no Midjourney connection is needed to play. The earlier monochromatic concept remains documented as a superseded reference.
 

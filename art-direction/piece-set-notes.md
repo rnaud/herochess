@@ -4,8 +4,8 @@ The game pieces are now a single hand-painted ivory/obsidian miniature set rathe
 32 px procedural sprites. Each piece was rendered as an isolated collectible miniature on a
 neutral studio background, cut out, normalized to a shared baseline, and exported at two sizes:
 
-- **96 px compact WebP** for the flat **Pixel** board and small UI thumbnails.
-- **256 px alpha WebP** for the 3D **Table** textures.
+- **160 px heraldic icon WebP** for the flat **Pixel** board and small UI thumbnails. These are deliberately simplified, high-contrast silhouettes with side-colored metal rims so the pieces stay readable at board distance.
+- **256 px alpha WebP** detailed miniature cutouts for the 3D **Table** textures.
 
 ## Source and fallback
 
@@ -26,6 +26,7 @@ Prompt shape:
 
 ## Files
 
-`public/art/pieces/{ivory|obsidian}-{p|n|b|r|q|k}-{96|256}.webp`
+`public/art/pieces/icon-{ivory|obsidian}-{p|n|b|r|q|k}-160.webp` for the flat board and
+`public/art/pieces/{ivory|obsidian}-{p|n|b|r|q|k}-256.webp` for Table.
 
-The reference sheet is [piece-set-v1.webp](piece-set-v1.webp).
+Reference sheets: [miniatures](piece-set-v1.webp) and [flat icons](piece-icons-v1.webp).

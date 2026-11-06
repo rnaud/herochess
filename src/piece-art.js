@@ -7,6 +7,9 @@ const paths=size=>`${import.meta.env.BASE_URL}art/pieces/`;
 export function pieceArtUrl(type,color,size='pixel'){
  return `${paths(size)}${NAMES[color]}-${type}-${size==='table'?'256':'96'}.webp`;
 }
+export function iconArtUrl(type,color){
+ return `${paths('pixel')}icon-${NAMES[color]}-${type}-160.webp`;
+}
 function loadImage(url){
  return new Promise(resolve=>{
   const img=new Image();img.decoding='async';img.onload=()=>resolve(img);img.onerror=()=>resolve(null);img.src=url;

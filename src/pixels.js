@@ -1,5 +1,5 @@
 import {PIXEL_PIECES,PIXEL_PALETTES,PIXEL_SIZE} from './pixel-pieces.js';
-import {pieceArtUrl,pieceArtCanvas} from './piece-art.js';
+import {iconArtUrl,pieceArtCanvas} from './piece-art.js';
 
 const canvases=new Map();
 
@@ -17,4 +17,4 @@ export function pixelCanvas(type,color){
  canvases.set(key,canvas);return canvas;
 }
 
-export function pixelUrl(type,color){return pieceArtUrl(type,color,'pixel');}
+export function pixelUrl(type,color){return iconArtUrl(type,color);}
