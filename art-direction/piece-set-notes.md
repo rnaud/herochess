@@ -4,16 +4,16 @@ The game pieces are now a single hand-painted ivory/obsidian miniature set rathe
 32 px procedural sprites. Each piece was rendered as an isolated collectible miniature on a
 neutral studio background, cut out, normalized to a shared baseline, and exported at two sizes:
 
-- **96 px painted-pixel WebP** for the flat **Pixel** board and small UI thumbnails.
+- **96 px compact WebP** for the flat **Pixel** board and small UI thumbnails.
 - **256 px alpha WebP** for the 3D **Table** textures.
 
 ## Source and fallback
 
-The current set was generated with **FAL FLUX dev** and **FAL BirefNet v2** cutout because the
-provided OpenAI image key returned `credit_balance_exhausted`. The prompts and size/normalization
-pipeline are provider-independent and can be re-run with `gpt-image-2` when OpenAI image credits
-are available. The original procedural pixel atlas remains in `src/pixel-pieces.js` as a fallback
-if an art asset fails to load.
+The current set was generated with **OpenAI `gpt-image-1.5`**, high quality, native transparent
+PNG output. It replaces an earlier FAL FLUX dev + BirefNet set that was used while the OpenAI
+key had no image credits; that earlier set remains in Git history. The OpenAI model supports
+transparent output directly, so no external cutout step is needed. Microsoft's procedural pixel
+atlas remains in `src/pixel-pieces.js` as a fallback if an art asset fails to load.
 
 Prompt shape:
 
